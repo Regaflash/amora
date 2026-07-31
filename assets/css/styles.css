@@ -64,6 +64,12 @@ summary::-webkit-details-marker { display: none; }
 .film :focus-visible,
 .contact :focus-visible,
 .lightbox :focus-visible { outline-color: var(--ivory); }
+/* ...except where a light panel sits inside one of those dark sections. The
+   lead form is ivory on the ivory-on-charcoal contact block, so the rule above
+   was painting an ivory ring on an ivory card: measured 1.00:1, i.e. no visible
+   focus indicator at all on the site's only conversion path. */
+.contact .form:focus-visible,
+.contact .form :focus-visible { outline-color: var(--charcoal); }
 
 @keyframes amFloat {
   0%, 100% { transform: translateY(0); opacity: .85; }
@@ -107,6 +113,10 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .2em;
   color: var(--champagne);
   margin: 0 0 12px;
+  /* Nine eyebrows read "Behind the lens — 01" without this: the leading number
+     is a neutral run and bidi reorders it to the far side. */
+  direction: ltr;
+  text-align: right;
 }
 
 .h2 {
@@ -682,7 +692,9 @@ summary::-webkit-details-marker { display: none; }
   cursor: pointer;
   border-radius: 2px;
 }
-.lightbox__count { font-family: var(--script); font-size: 16px; color: var(--sand); }
+/* "1 / 18" renders as "18 / 1" inside the RTL document without this. */
+.lightbox__count { font-family: var(--script); font-size: 16px; color: var(--sand);
+  direction: ltr; unicode-bidi: isolate; }
 
 /* --------------------------------------------------------------- film --- */
 
@@ -988,6 +1000,7 @@ summary::-webkit-details-marker { display: none; }
 .field { display: grid; gap: 7px; }
 .field__label { font-size: 12px; letter-spacing: .14em; color: var(--mocha); }
 .field__opt { opacity: .7; letter-spacing: normal; }
+.field__control::placeholder { color: var(--mocha); opacity: 1; }  /* Firefox dims it without opacity:1 */
 .field__control {
   width: 100%;
   padding: 13px 14px;

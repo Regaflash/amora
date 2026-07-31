@@ -14,6 +14,6 @@
   padding: 18px 20px;
   margin: 0 0 clamp(28px, 4vw, 40px);
 }
-.legal__draft p { color: var(--terracotta); margin: 0; font-size: 15px; }
+.legal__draft p { color: #8A4938; margin: 0; font-size: 15px; }  /* terracotta measured 4.05:1 on this ground */
 .legal__back { display: inline-block; margin-top: clamp(34px, 5vw, 56px); font-size: 12px; letter-spacing: .18em; padding: 15px 30px; border: 1px solid var(--champagne); color: var(--charcoal); }
 .legal__back:hover { background: var(--champagne); color: var(--charcoal); }
