@@ -8,4 +8,4 @@ Disallow: /chats/
 Disallow: /docs/
 Disallow: /tools/
 
-Sitemap: SITE_URL/sitemap.xml
+Sitemap: https://www.amora-studios.com/sitemap.xml
