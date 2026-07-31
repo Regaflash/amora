@@ -19,8 +19,8 @@
     //   2. Settings → API → paste the project URL and the anon/publishable key.
     // The anon key is public by design; the RLS policy in that file allows
     // INSERT only, so nobody can read the leads with it.
-    supabaseUrl: '',
-    supabaseKey: '',
+    supabaseUrl: 'https://dkejuaildigikufrdiru.supabase.co',
+    supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZWp1YWlsZGlnaWt1ZnJkaXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0ODkxODgsImV4cCI6MjEwMTA2NTE4OH0.rN244HfLzw7iI2J9uF9lmRoW96aMAN117fVWvlCDWLE',
 
     // Option B · any generic form service (Web3Forms, Formspree, Netlify).
     //   Web3Forms: https://api.web3forms.com/submit + the access key below.
