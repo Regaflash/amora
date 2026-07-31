@@ -29,6 +29,14 @@ create policy "anon can insert leads"
   to anon
   with check (true);
 
+-- The policy alone is not enough. RLS decides which ROWS a role may touch, but
+-- Postgres still checks the table privilege first, and anon does not get one by
+-- default. Without this grant every submission from the browser fails with
+-- "permission denied for table leads" — the policy above is never consulted.
+-- INSERT only, so the same key still cannot read a single lead back.
+grant usage on schema public to anon;
+grant insert on table public.leads to anon;
+
 -- Basic abuse guard: reject obviously empty submissions at the database level,
 -- so a bot that skips the client-side validation still gets nothing in.
 alter table public.leads

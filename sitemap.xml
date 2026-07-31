@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- accessibility.html and privacy.html are deliberately absent: both are
+     unapproved drafts carrying <meta name="robots" content="noindex, follow">,
+     and submitting a noindex URL only earns a permanent Search Console warning.
+     The footer links keep them reachable, and "follow" preserves link flow. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.amora-studios.com/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://www.amora-studios.com/camera-3d.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
-  <url><loc>https://www.amora-studios.com/accessibility.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
-  <url><loc>https://www.amora-studios.com/privacy.html</loc><changefreq>yearly</changefreq><priority>0.2</priority></url>
+  <url><loc>https://www.amora-studios.com/</loc></url>
+  <url><loc>https://www.amora-studios.com/camera-3d.html</loc></url>
 </urlset>
