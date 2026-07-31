@@ -1,0 +1,19 @@
+/* Shared shell for the accessibility statement and privacy policy. */
+.legal { max-width: 820px; margin: 0 auto; padding: clamp(90px, 12vw, 150px) var(--gutter) var(--section-y); }
+.legal h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.8rem, 4vw, 2.8rem); line-height: 1.2; margin: 0 0 10px; }
+.legal__meta { font-size: 14px; color: var(--mocha); margin: 0 0 clamp(30px, 5vw, 50px); }
+.legal h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.15rem, 2.2vw, 1.5rem); margin: clamp(30px, 4vw, 44px) 0 12px; }
+.legal p, .legal li { font-size: 16px; color: var(--mocha); max-width: 68ch; }
+.legal ul { padding-inline-start: 22px; }
+.legal li { margin-bottom: 8px; }
+.legal a { border-bottom: 1px solid var(--line); }
+.legal__draft {
+  border: 1px solid var(--terracotta);
+  border-radius: 2px;
+  background: rgba(168, 92, 74, 0.06);
+  padding: 18px 20px;
+  margin: 0 0 clamp(28px, 4vw, 40px);
+}
+.legal__draft p { color: var(--terracotta); margin: 0; font-size: 15px; }
+.legal__back { display: inline-block; margin-top: clamp(34px, 5vw, 56px); font-size: 12px; letter-spacing: .18em; padding: 15px 30px; border: 1px solid var(--champagne); color: var(--charcoal); }
+.legal__back:hover { background: var(--champagne); color: var(--ivory); }

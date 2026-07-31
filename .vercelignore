@@ -1,0 +1,19 @@
+# Reference material that lives in the repo but must never be served.
+# project/ is a near-duplicate of the homepage and would compete with it in
+# search; chats/ and docs/ are internal.
+project/
+chats/
+docs/
+tools/
+node_modules/
+*.md
+
+# The studio's raw photo library, uploaded straight to the repo root.
+# A leading slash anchors these to the root, so the processed derivatives in
+# assets/img/ are untouched. Prefix patterns were tried first and silently
+# missed 23 of the 87 files — match by location instead.
+/*.jpg
+/*.jpeg
+/*.png
+/*.heic
+/תמונות

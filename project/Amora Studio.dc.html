@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Amora Studio | צילום וידאו וסטילס לחתונות — תל אביב</title>
+<meta name="description" content="Amora Studio — צילום וידאו וסטילס לחתונות ואירועים. תל אביב, פעילות בכל הארץ. אספקה תוך 30 יום. לבדיקת זמינות: 050-3662699" />
+<meta property="og:title" content="Amora Studio | הרגעים שלכם. לנצח." />
+<meta property="og:description" content="צילום וידאו וסטילס לחתונות ואירועים — תל אביב, בכל הארץ." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="uploads/logo-1785487386291.jpg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;600;700&family=Heebo:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --champagne:#C9AE8C;
+  --sand:#D9C3A5;
+  --cream:#F7F2EA;
+  --ivory:#FFFDF9;
+  --mocha:#6B5B4B;
+  --charcoal:#1C1A18;
+  --overlay:rgba(28,26,24,0.45);
+  --terracotta:#A85C4A;
+  --line:rgba(201,174,140,0.3);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--cream);color:var(--charcoal);-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:var(--champagne);text-decoration:none}
+a:hover{color:var(--mocha)}
+button,input,select,textarea{font:inherit;color:inherit}
+summary::-webkit-details-marker{display:none}
+summary{list-style:none;cursor:pointer}
+::selection{background:var(--sand);color:var(--charcoal)}
+:focus-visible{outline:2px solid var(--champagne);outline-offset:3px}
+@keyframes amFloat{0%,100%{transform:translateY(0);opacity:.85}50%{transform:translateY(10px);opacity:.4}}
+@keyframes amSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+<script>
+document.documentElement.setAttribute('dir','rtl');
+document.documentElement.setAttribute('lang','he');
+document.addEventListener('error', function(e){
+  var t = e.target;
+  if (t && t.tagName === 'IMG' && !t.dataset.fb) {
+    t.dataset.fb = '1';
+    t.removeAttribute('src');
+    t.style.background = 'repeating-linear-gradient(135deg,#E8DCC8 0 6px,#F7F2EA 6px 14px)';
+    t.style.minHeight = '180px';
+  }
+}, true);
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"LocalBusiness","additionalType":"https://schema.org/Photograph","name":"Amora Studio","description":"צילום וידאו וסטילס לחתונות ואירועים","telephone":"+972503662699","address":{"@type":"PostalAddress","addressLocality":"תל אביב","addressCountry":"IL"},"areaServed":"IL","sameAs":["https://www.instagram.com/amora___studio/"]}
+</script>
+</helmet>
+
+<div dir="rtl" style="font-family:Heebo,sans-serif;font-weight:300;background:var(--cream);color:var(--charcoal);overflow-x:hidden;line-height:1.8">
+
+  <!-- ===== כותרת דביקה ===== -->
+  <header ref="{{ headerRef }}" style="position:fixed;top:0;right:0;left:0;z-index:60;background:rgba(247,242,234,0);backdrop-filter:blur(0px);border-bottom:1px solid rgba(201,174,140,0);transition:background 400ms cubic-bezier(0.4,0,0.2,1),border-color 400ms,backdrop-filter 400ms">
+    <div style="max-width:1320px;margin:0 auto;padding:14px clamp(18px,4vw,56px);display:flex;align-items:center;justify-content:space-between;gap:24px">
+      <a href="#top" style="display:flex;align-items:center;gap:12px">
+        <!-- החלף: לוגו Amora Studio -->
+        <img src="uploads/logo-1785487386291.jpg" alt="Amora Studio" width="46" height="46" style="width:46px;height:46px;border-radius:50%;object-fit:cover" />
+      </a>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <nav aria-label="ניווט ראשי" style="display:flex;align-items:center;gap:clamp(14px,2vw,30px);flex-wrap:wrap;justify-content:flex-end">
+        <a href="#about" ref="{{ navRef1 }}" style="font-size:13px;letter-spacing:.06em;color:var(--charcoal)">אודות</a>
+        <a href="#services" ref="{{ navRef2 }}" style="font-size:13px;letter-spacing:.06em;color:var(--charcoal)">שירותים</a>
+        <a href="#gallery" ref="{{ navRef3 }}" style="font-size:13px;letter-spacing:.06em;color:var(--charcoal)">גלריה</a>
+        <a href="#gear" ref="{{ navRef7 }}" style="font-size:13px;letter-spacing:.06em;color:var(--charcoal)">ציוד</a>
+        <a href="#process" ref="{{ navRef4 }}" style="font-size:13px;letter-spacing:.06em;color:var(--charcoal)">תהליך</a>
+        <a href="#faq" ref="{{ navRef5 }}" style="font-size:13px;letter-spacing:.06em;color:var(--charcoal)">שאלות</a>
+        <a href="#contact" ref="{{ navRef6 }}" style="font-size:12px;letter-spacing:.14em;padding:10px 20px;border:1px solid var(--champagne);color:#FFFDF9;background:transparent;transition:background 300ms,color 300ms" style-hover="background:var(--champagne);color:#1C1A18">בדיקת זמינות</a>
+      </nav>
+      </sc-if>
+      <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <a href="#contact" ref="{{ navRef8 }}" style="font-size:11px;letter-spacing:.12em;padding:11px 16px;border:1px solid var(--champagne);color:#FFFDF9;white-space:nowrap">בדיקת זמינות</a>
+          <button type="button" ref="{{ burgerRef }}" onClick="{{ toggleMenu }}" aria-label="תפריט" aria-expanded="{{ menuOpen }}" style="{{ burgerStyle }}">
+            <span aria-hidden="true" style="{{ burgerLine }}"></span>
+            <span aria-hidden="true" style="{{ burgerLine }}"></span>
+            <span aria-hidden="true" style="{{ burgerLine }}"></span>
+          </button>
+        </div>
+      </sc-if>
+    </div>
+    <div aria-hidden="true" style="height:1px;background:var(--line)">
+      <div ref="{{ progRef }}" style="height:1px;width:0%;background:var(--champagne)"></div>
+    </div>
+  </header>
+
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-modal="true" aria-label="תפריט" style="position:fixed;inset:0;z-index:80;background:var(--cream);display:grid;align-content:center;gap:6px;padding:clamp(24px,8vw,60px)">
+      <button type="button" onClick="{{ toggleMenu }}" aria-label="סגירה" style="position:absolute;top:18px;left:18px;width:46px;height:46px;background:transparent;border:1px solid var(--line);color:var(--charcoal);cursor:pointer;border-radius:2px;font-size:16px">✕</button>
+      <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 18px">Amora Studio</p>
+      <a href="#about" onClick="{{ closeMenu }}" style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:26px;color:var(--charcoal);padding:12px 0;border-bottom:1px solid var(--line)">אודות</a>
+      <a href="#services" onClick="{{ closeMenu }}" style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:26px;color:var(--charcoal);padding:12px 0;border-bottom:1px solid var(--line)">שירותים</a>
+      <a href="#gallery" onClick="{{ closeMenu }}" style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:26px;color:var(--charcoal);padding:12px 0;border-bottom:1px solid var(--line)">גלריה</a>
+      <a href="#gear" onClick="{{ closeMenu }}" style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:26px;color:var(--charcoal);padding:12px 0;border-bottom:1px solid var(--line)">הציוד</a>
+      <a href="#process" onClick="{{ closeMenu }}" style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:26px;color:var(--charcoal);padding:12px 0;border-bottom:1px solid var(--line)">תהליך</a>
+      <a href="#faq" onClick="{{ closeMenu }}" style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:26px;color:var(--charcoal);padding:12px 0;border-bottom:1px solid var(--line)">שאלות נפוצות</a>
+      <a href="#contact" onClick="{{ closeMenu }}" style="font-size:13px;letter-spacing:.16em;padding:17px 24px;background:var(--champagne);color:#1C1A18;text-align:center;margin-top:22px">לבדיקת זמינות</a>
+      <a href="tel:0503662699" style="font-size:14px;color:var(--mocha);text-align:center;margin-top:6px">050-3662699</a>
+    </div>
+  </sc-if>
+
+  <!-- ===== 01 · Hero ===== -->
+  <section id="top" data-screen-label="Hero" style="position:relative;min-height:640px;height:100svh;display:grid;place-items:center;overflow:hidden;background:var(--charcoal)">
+    <!-- החלף: וידאו לופ שקט 8 שניות (mp4/webm) + poster — עד אז מוצג placeholder -->
+    <video autoplay="" muted="" loop="" playsinline="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:repeating-linear-gradient(135deg,#26221C 0 8px,#1C1A18 8px 18px)"></video>
+    <p style="position:absolute;bottom:18px;right:18px;z-index:4;font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:rgba(217,195,165,0.5);margin:0">החלף: hero video loop · 8s · muted</p>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,26,24,0.55) 0%,rgba(28,26,24,0.35) 45%,rgba(28,26,24,0.6) 100%)"></div>
+    <div style="position:relative;z-index:2;text-align:center;padding:110px clamp(20px,6vw,40px) 120px;max-width:940px">
+      <img src="uploads/logo-1785487386291.jpg" alt="Amora Studio" width="92" height="92" style="width:clamp(76px,9vw,100px);height:clamp(76px,9vw,100px);border-radius:50%;object-fit:cover;margin:0 auto 34px" />
+      <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(15px,1.6vw,19px);letter-spacing:.22em;color:var(--sand);margin:0 0 18px">Wedding Films &amp; Photography</p>
+      <h1 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;letter-spacing:-0.01em;font-size:clamp(2.5rem,7vw,6rem);line-height:1.05;color:#FFFDF9;margin:0 0 22px;text-wrap:balance">הרגעים שלכם. לנצח.</h1>
+      <p style="font-size:clamp(15px,1.7vw,19px);color:rgba(255,253,249,0.82);margin:0 auto 44px;max-width:560px;line-height:1.8">צילום וידאו וסטילס לחתונות ואירועים — Amora Studio, תל אביב</p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+        <a href="#contact" style="background:var(--champagne);color:#1C1A18;padding:17px 34px;font-size:13px;letter-spacing:.14em;border:1px solid var(--champagne);transition:background 320ms,transform 320ms" style-hover="background:var(--sand);transform:translateY(-2px)">לבדיקת זמינות לתאריך שלכם</a>
+        <a href="#gallery" style="color:#FFFDF9;padding:17px 34px;font-size:13px;letter-spacing:.14em;border:1px solid rgba(255,253,249,0.55);transition:background 320ms,border-color 320ms" style-hover="background:rgba(255,253,249,0.12);border-color:#FFFDF9">לצפייה בעבודות</a>
+      </div>
+    </div>
+    <a href="#trust" aria-label="גלול למטה" style="position:absolute;bottom:34px;left:50%;transform:translateX(-50%);z-index:3;display:grid;justify-items:center;gap:8px">
+      <span style="display:block;width:1px;height:46px;background:linear-gradient(180deg,rgba(255,253,249,0) 0%,var(--sand) 100%);animation:amFloat 2.6s ease-in-out infinite"></span>
+      <span style="display:block;width:8px;height:8px;border-left:1px solid var(--sand);border-bottom:1px solid var(--sand);transform:rotate(-45deg);animation:amFloat 2.6s ease-in-out infinite"></span>
+    </a>
+  </section>
+
+  <!-- ===== 02 · פס אמון ===== -->
+  <section id="trust" style="scroll-margin-top:92px;background:var(--cream);border-bottom:1px solid var(--line)">
+    <div style="max-width:1320px;margin:0 auto;padding:22px clamp(18px,4vw,56px);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 26px">
+      <span style="font-size:13px;letter-spacing:.05em;color:var(--mocha)">+500 זוגות מאושרים</span>
+      <span aria-hidden="true" style="width:4px;height:4px;background:var(--champagne);border-radius:50%"></span>
+      <span style="font-size:13px;letter-spacing:.05em;color:var(--mocha)">צילום + וידאו תחת קורת גג אחת</span>
+      <span aria-hidden="true" style="width:4px;height:4px;background:var(--champagne);border-radius:50%"></span>
+      <span style="font-size:13px;letter-spacing:.05em;color:var(--mocha)">אספקה תוך 30 יום</span>
+      <span aria-hidden="true" style="width:4px;height:4px;background:var(--champagne);border-radius:50%"></span>
+      <span style="font-size:13px;letter-spacing:.05em;color:var(--mocha)">זמינות בכל הארץ</span>
+    </div>
+  </section>
+
+  <!-- ===== 03 · אודות ===== -->
+  <section id="about" data-screen-label="אודות" data-reveal="" style="scroll-margin-top:92px;max-width:1320px;margin:0 auto;padding:clamp(84px,11vw,168px) clamp(18px,4vw,56px)">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:clamp(34px,6vw,90px);align-items:center">
+      <div style="order:0">
+        <!-- החלף: תמונת פורטרט של הצלם/הצוות בעבודה (4:5) -->
+        <div role="img" aria-label="צוות Amora Studio בעבודה" style="display:grid;place-items:center;width:100%;aspect-ratio:4/5;border-radius:2px;background:repeating-linear-gradient(135deg,#EFE6D6 0 7px,#F7F2EA 7px 15px);border:1px solid var(--line)"><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--mocha);text-align:center;padding:10px">החלף: פורטרט צוות · 4:5</span></div>
+      </div>
+      <div>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 14px">01 — Behind the lens</p>
+        <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;letter-spacing:-0.01em;font-size:clamp(1.9rem,4vw,3.2rem);line-height:1.15;margin:0 0 26px">מאחורי העדשה</h2>
+        <div style="width:56px;height:1px;background:var(--champagne);margin:0 0 26px"></div>
+        <p style="font-size:17px;color:var(--mocha);margin:0 0 20px;max-width:52ch;text-wrap:pretty">אנחנו לא באים לביים לכם את החתונה. אנחנו באים להיות שם — כדי שבעוד עשרים שנה תוכלו להרגיש שוב בדיוק את מה שהרגשתם.</p>
+        <p style="font-size:16px;color:var(--mocha);margin:0 0 20px;max-width:52ch;text-wrap:pretty">שנינו מצלמים ביחד, סטילס ווידאו, מהבוקר של ההכנות ועד השיר האחרון. בלי הפרעות, בלי "תעמדו רגע ככה" — רק העין שיודעת מתי להיות קרובה ומתי לתת מרחב.</p>
+        <p style="font-size:16px;color:var(--mocha);margin:0 0 32px;max-width:52ch">אנחנו מתל אביב, ומגיעים לכל הארץ.</p>
+        <a href="#gallery" style="font-size:12px;letter-spacing:.2em;color:var(--charcoal);border-bottom:1px solid var(--champagne);padding-bottom:6px" style-hover="color:var(--mocha)">לצפייה בעבודות שלנו →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 04 · שירותים ===== -->
+  <section id="services" data-screen-label="שירותים" data-reveal="" style="scroll-margin-top:92px;max-width:1320px;margin:0 auto;padding:0 clamp(18px,4vw,56px) clamp(84px,11vw,168px)">
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:16px;border-top:1px solid var(--line);padding-top:34px;margin-bottom:clamp(34px,5vw,64px)">
+      <div>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 12px">02 — What we shoot</p>
+        <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:clamp(1.9rem,4vw,3.2rem);line-height:1.15;margin:0">מה אנחנו מצלמים</h2>
+      </div>
+      <p style="font-size:15px;color:var(--mocha);max-width:34ch;margin:0">חמישה סוגי צילום, אותה עין. אפשר לשלב הכול לחבילה אחת.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:clamp(20px,2.5vw,34px)">
+      <a href="#contact" style="display:block;background:var(--ivory);border:1px solid var(--line);border-radius:2px;overflow:hidden;color:var(--charcoal)" style-hover="border-color:var(--champagne)">
+        <span style="display:block;overflow:hidden">
+          <!-- החלף: Our Couples · 4:5 -->
+          <span role="img" aria-label="צילום חתונה מלא — סטילס ווידאו" style="display:grid;place-items:center;width:100%;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EFE6D6 0 7px,#F7F2EA 7px 15px);transition:transform 700ms cubic-bezier(0.4,0,0.2,1)" style-hover="transform:scale(1.04)"><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--mocha);text-align:center;padding:10px">החלף: Our Couples · 4:5</span></span>
+        </span>
+        <span style="display:block;padding:24px 24px 28px">
+          <span style="display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:var(--champagne);margin-bottom:6px">Our Couples</span>
+          <span style="display:block;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin-bottom:10px">חתונה מלאה</span>
+          <span style="display:block;font-size:15px;color:var(--mocha);margin-bottom:16px">מהבוקר ועד השיר האחרון — סטילס ווידאו, שני צלמים.</span>
+          <span style="display:block;font-size:12px;letter-spacing:.18em;color:var(--charcoal)">לפרטים →</span>
+        </span>
+      </a>
+      <a href="#contact" style="display:block;background:var(--ivory);border:1px solid var(--line);border-radius:2px;overflow:hidden;color:var(--charcoal)" style-hover="border-color:var(--champagne)">
+        <span style="display:block;overflow:hidden">
+          <!-- החלף: Save the Date · 4:5 -->
+          <span role="img" aria-label="צילומי זוגיות בלוקיישן לפני החתונה" style="display:grid;place-items:center;width:100%;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EFE6D6 0 7px,#F7F2EA 7px 15px);transition:transform 700ms cubic-bezier(0.4,0,0.2,1)" style-hover="transform:scale(1.04)"><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--mocha);text-align:center;padding:10px">החלף: Save the Date · 4:5</span></span>
+        </span>
+        <span style="display:block;padding:24px 24px 28px">
+          <span style="display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:var(--champagne);margin-bottom:6px">Save the Date</span>
+          <span style="display:block;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin-bottom:10px">צילומי זוגיות</span>
+          <span style="display:block;font-size:15px;color:var(--mocha);margin-bottom:16px">שעה וחצי בלוקיישן שאתם אוהבים, לפני היום הגדול.</span>
+          <span style="display:block;font-size:12px;letter-spacing:.18em;color:var(--charcoal)">לפרטים →</span>
+        </span>
+      </a>
+      <a href="#contact" style="display:block;background:var(--ivory);border:1px solid var(--line);border-radius:2px;overflow:hidden;color:var(--charcoal)" style-hover="border-color:var(--champagne)">
+        <span style="display:block;overflow:hidden">
+          <!-- החלף: Touch Up · 4:5 -->
+          <span role="img" aria-label="צילומי הכנות, איפור ושיער בבוקר האירוע" style="display:grid;place-items:center;width:100%;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EFE6D6 0 7px,#F7F2EA 7px 15px);transition:transform 700ms cubic-bezier(0.4,0,0.2,1)" style-hover="transform:scale(1.04)"><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--mocha);text-align:center;padding:10px">החלף: Touch Up · 4:5</span></span>
+        </span>
+        <span style="display:block;padding:24px 24px 28px">
+          <span style="display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:var(--champagne);margin-bottom:6px">Touch Up</span>
+          <span style="display:block;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin-bottom:10px">הכנות בבוקר</span>
+          <span style="display:block;font-size:15px;color:var(--mocha);margin-bottom:16px">איפור, שיער, השמלה על הקולב — הרגעים השקטים.</span>
+          <span style="display:block;font-size:12px;letter-spacing:.18em;color:var(--charcoal)">לפרטים →</span>
+        </span>
+      </a>
+      <a href="#contact" style="display:block;background:var(--ivory);border:1px solid var(--line);border-radius:2px;overflow:hidden;color:var(--charcoal)" style-hover="border-color:var(--champagne)">
+        <span style="display:block;overflow:hidden">
+          <!-- החלף: Your Event · 4:5 -->
+          <span role="img" aria-label="צילומי אירועים — חינה, אירוסין, בר מצווה" style="display:grid;place-items:center;width:100%;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EFE6D6 0 7px,#F7F2EA 7px 15px);transition:transform 700ms cubic-bezier(0.4,0,0.2,1)" style-hover="transform:scale(1.04)"><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--mocha);text-align:center;padding:10px">החלף: Your Event · 4:5</span></span>
+        </span>
+        <span style="display:block;padding:24px 24px 28px">
+          <span style="display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:var(--champagne);margin-bottom:6px">Your Event</span>
+          <span style="display:block;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin-bottom:10px">אירועים</span>
+          <span style="display:block;font-size:15px;color:var(--mocha);margin-bottom:16px">חינה, אירוסין, בר ובת מצווה, ימי הולדת.</span>
+          <span style="display:block;font-size:12px;letter-spacing:.18em;color:var(--charcoal)">לפרטים →</span>
+        </span>
+      </a>
+      <a href="#contact" style="display:block;background:var(--ivory);border:1px solid var(--line);border-radius:2px;overflow:hidden;color:var(--charcoal)" style-hover="border-color:var(--champagne)">
+        <span style="display:block;overflow:hidden">
+          <!-- החלף: Attendants · 4:5 -->
+          <span role="img" aria-label="צילומי משפחה, שושבינות וחברות" style="display:grid;place-items:center;width:100%;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EFE6D6 0 7px,#F7F2EA 7px 15px);transition:transform 700ms cubic-bezier(0.4,0,0.2,1)" style-hover="transform:scale(1.04)"><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--mocha);text-align:center;padding:10px">החלף: Attendants · 4:5</span></span>
+        </span>
+        <span style="display:block;padding:24px 24px 28px">
+          <span style="display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:var(--champagne);margin-bottom:6px">Attendants</span>
+          <span style="display:block;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin-bottom:10px">האנשים שלכם</span>
+          <span style="display:block;font-size:15px;color:var(--mocha);margin-bottom:16px">משפחה, סבתות, שושבינות — הפורטרטים שנשארים.</span>
+          <span style="display:block;font-size:12px;letter-spacing:.18em;color:var(--charcoal)">לפרטים →</span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===== 05 · גלריה ===== -->
+  <section id="gallery" data-screen-label="גלריה" data-reveal="" style="scroll-margin-top:92px;background:var(--ivory);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div style="max-width:1320px;margin:0 auto;padding:clamp(84px,11vw,168px) clamp(18px,4vw,56px)">
+      <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 12px">03 — The gallery</p>
+      <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:clamp(1.9rem,4vw,3.2rem);line-height:1.15;margin:0 0 30px">רגעים מהעבודות שלנו</h2>
+      <div role="group" aria-label="סינון גלריה" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:clamp(26px,4vw,44px)">
+        <button type="button" onClick="{{ setAll }}" style="{{ fAll }}">הכל</button>
+        <button type="button" onClick="{{ setWed }}" style="{{ fWed }}">חתונות</button>
+        <button type="button" onClick="{{ setStd }}" style="{{ fStd }}">Save the Date</button>
+        <button type="button" onClick="{{ setPrep }}" style="{{ fPrep }}">הכנות</button>
+        <button type="button" onClick="{{ setEvt }}" style="{{ fEvt }}">אירועים</button>
+      </div>
+      <div style="columns:300px;column-gap:16px" hint-placeholder-count="0">
+        <sc-for list="{{ photos }}" as="p" hint-placeholder-count="9">
+          <button type="button" onClick="{{ p.open }}" aria-label="{{ p.alt }}" style="{{ p.style }}">
+            <span style="{{ p.imgStyle }}" style-hover="transform:scale(1.03)"><span style="font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--mocha);text-align:center;padding:10px">{{ p.label }}</span></span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:clamp(30px,4vw,52px)">
+        <a href="#contact" style="font-size:12px;letter-spacing:.18em;padding:17px 36px;border:1px solid var(--champagne);color:var(--charcoal);transition:background 320ms,color 320ms" style-hover="background:var(--champagne);color:var(--ivory)">לצפייה בגלריה המלאה</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 06 · סרטון תדמית ===== -->
+  <sc-if value="{{ showFilm }}" hint-placeholder-val="{{ true }}">
+    <section data-screen-label="סרטון תדמית" style="background:var(--charcoal)">
+      <div style="max-width:1180px;margin:0 auto;padding:clamp(84px,11vw,150px) clamp(18px,4vw,56px);text-align:center">
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 12px">04 — The film</p>
+        <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:clamp(1.9rem,4vw,3.2rem);line-height:1.15;margin:0 0 18px;color:#FFFDF9">חתונה אחת, שלוש דקות</h2>
+        <p style="font-size:16px;color:rgba(255,253,249,0.68);margin:0 auto clamp(34px,5vw,56px);max-width:46ch">הסרט שאנחנו הכי אוהבים להראות. שווה אוזניות.</p>
+        <div style="position:relative;border:1px solid rgba(201,174,140,0.35);border-radius:2px;overflow:hidden">
+          <!-- החלף: קובץ הסרטון של הסטודיו (mp4) + poster -->
+          <video controls="" preload="none" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:repeating-linear-gradient(135deg,#26221C 0 8px,#1C1A18 8px 18px)"></video>
+          <p style="position:absolute;bottom:14px;right:16px;font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:rgba(217,195,165,0.55);margin:0">החלף: studio film · 16:9</p>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <!-- ===== 06.5 · הציוד בתלת־מימד ===== -->
+  <section id="gear" data-screen-label="ציוד 3D" data-reveal="" style="scroll-margin-top:92px;background:var(--ivory);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+    <div style="max-width:1320px;margin:0 auto;padding:clamp(84px,11vw,150px) clamp(18px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(30px,4vw,64px);align-items:center">
+      <div>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 12px">05 — The tool</p>
+        <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:clamp(1.9rem,4vw,3.2rem);line-height:1.15;margin:0 0 22px">מה מצלם אתכם</h2>
+        <div style="width:56px;height:1px;background:var(--champagne);margin:0 0 22px"></div>
+        <p style="font-size:16px;color:var(--mocha);margin:0 0 18px;max-width:46ch">גוף פול־פריים, עדשות פריים מהירות, ותאורה שמכבדת את האור שיש בחדר. בלי פלאשים שמסמאים את האורחים.</p>
+        <p style="font-size:15px;color:var(--mocha);margin:0 0 28px;max-width:46ch">סובבו את הדגם — זה הכלי שמלווה אותנו מהבוקר של ההכנות ועד השיר האחרון.</p>
+        <a href="amora-camera-3d.html" style="font-size:12px;letter-spacing:.18em;padding:16px 32px;border:1px solid var(--champagne);color:var(--charcoal);display:inline-block;transition:background 320ms,color 320ms" style-hover="background:var(--champagne);color:var(--ivory)">לתצוגה מלאה במסך גדול →</a>
+      </div>
+      <div style="border:1px solid var(--line);border-radius:2px;overflow:hidden;background:var(--cream)">
+        <iframe src="amora-camera-3d.html?embed=1" title="דגם תלת־מימד של המצלמה" loading="lazy" style="display:block;width:100%;height:clamp(360px,48vw,520px);border:0"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 07 · תהליך העבודה ===== -->
+  <section id="process" data-screen-label="תהליך" data-reveal="" style="scroll-margin-top:92px;max-width:1320px;margin:0 auto;padding:clamp(84px,11vw,168px) clamp(18px,4vw,56px)">
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 12px">06 — How it works</p>
+    <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:clamp(1.9rem,4vw,3.2rem);line-height:1.15;margin:0 0 clamp(34px,5vw,64px)">איך זה עובד</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:clamp(26px,3vw,44px)">
+      <div style="border-top:1px solid var(--champagne);padding-top:22px">
+        <p style="font-family:'Cormorant Garamond',serif;font-size:34px;color:var(--champagne);margin:0 0 10px">01</p>
+        <h3 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin:0 0 10px">שיחת היכרות</h3>
+        <p style="font-size:15px;color:var(--mocha);margin:0">20 דקות בטלפון או קפה. מבינים מה חשוב לכם ומה הלוק שאתם מחפשים.</p>
+      </div>
+      <div style="border-top:1px solid var(--line);padding-top:22px">
+        <p style="font-family:'Cormorant Garamond',serif;font-size:34px;color:var(--champagne);margin:0 0 10px">02</p>
+        <h3 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin:0 0 10px">תכנון האירוע</h3>
+        <p style="font-size:15px;color:var(--mocha);margin:0">לוח זמנים, לוקיישנים, רגעים שאסור לפספס. עוברים על הכול מראש.</p>
+      </div>
+      <div style="border-top:1px solid var(--line);padding-top:22px">
+        <p style="font-family:'Cormorant Garamond',serif;font-size:34px;color:var(--champagne);margin:0 0 10px">03</p>
+        <h3 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin:0 0 10px">יום הצילומים</h3>
+        <p style="font-size:15px;color:var(--mocha);margin:0">אנחנו שם מההכנות ועד הסוף. אתם לא צריכים לחשוב עלינו אפילו לרגע.</p>
+      </div>
+      <div style="border-top:1px solid var(--line);padding-top:22px">
+        <p style="font-family:'Cormorant Garamond',serif;font-size:34px;color:var(--champagne);margin:0 0 10px">04</p>
+        <h3 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin:0 0 10px">האלבום והסרט</h3>
+        <p style="font-size:15px;color:var(--mocha);margin:0">תוך 30 יום: גלריה מלאה, אלבום מודפס והסרט. אצלכם, לתמיד.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 08 · המלצות ===== -->
+  <section data-screen-label="המלצות" data-reveal="" style="background:var(--ivory);border-top:1px solid var(--line)">
+    <div style="max-width:960px;margin:0 auto;padding:clamp(84px,11vw,150px) clamp(18px,4vw,56px);text-align:center">
+      <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 clamp(30px,4vw,50px)">07 — Our couples say</p>
+      <div ref="{{ swipeRef }}" style="overflow:hidden;touch-action:pan-y">
+        <div style="{{ trackStyle }}">
+          <div style="min-width:100%;padding:0 clamp(4px,2vw,20px)">
+            <blockquote style="font-family:'Frank Ruhl Libre',serif;font-weight:400;font-size:clamp(1.25rem,2.6vw,2rem);line-height:1.5;color:var(--charcoal);margin:0 0 28px;text-wrap:pretty">״קיבלנו את הסרט וישבנו לבכות על הספה. הם היו שם בכל רגע ולא הרגשנו אותם אפילו פעם אחת.״</blockquote>
+            <!-- החלף: תמונת הזוג נועה ואיתי -->
+            <div role="img" aria-label="נועה ואיתי" style="width:56px;height:56px;border-radius:50%;margin:0 auto 12px;background:repeating-linear-gradient(135deg,#EFE6D6 0 5px,#F7F2EA 5px 11px);border:1px solid var(--line)"></div>
+            <p style="font-size:14px;letter-spacing:.06em;color:var(--charcoal);margin:0">נועה ואיתי</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--mocha);margin:4px 0 0">מאי 2025 · כפר הירוק</p>
+          </div>
+          <div style="min-width:100%;padding:0 clamp(4px,2vw,20px)">
+            <blockquote style="font-family:'Frank Ruhl Libre',serif;font-weight:400;font-size:clamp(1.25rem,2.6vw,2rem);line-height:1.5;color:var(--charcoal);margin:0 0 28px;text-wrap:pretty">״אמא שלי עוד מראה את האלבום לכל מי שנכנס הביתה. זה אומר הכול.״</blockquote>
+            <!-- החלף: תמונת הזוג שירה ודניאל -->
+            <div role="img" aria-label="שירה ודניאל" style="width:56px;height:56px;border-radius:50%;margin:0 auto 12px;background:repeating-linear-gradient(135deg,#EFE6D6 0 5px,#F7F2EA 5px 11px);border:1px solid var(--line)"></div>
+            <p style="font-size:14px;letter-spacing:.06em;color:var(--charcoal);margin:0">שירה ודניאל</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--mocha);margin:4px 0 0">אוגוסט 2025 · חוות רונית</p>
+          </div>
+          <div style="min-width:100%;padding:0 clamp(4px,2vw,20px)">
+            <blockquote style="font-family:'Frank Ruhl Libre',serif;font-weight:400;font-size:clamp(1.25rem,2.6vw,2rem);line-height:1.5;color:var(--charcoal);margin:0 0 28px;text-wrap:pretty">״בחרנו אותם מהאינסטגרם בגלל הלוק, וקיבלנו גם אנשים שאפשר לסמוך עליהם בעיניים עצומות.״</blockquote>
+            <!-- החלף: תמונת הזוג מאיה ויונתן -->
+            <div role="img" aria-label="מאיה ויונתן" style="width:56px;height:56px;border-radius:50%;margin:0 auto 12px;background:repeating-linear-gradient(135deg,#EFE6D6 0 5px,#F7F2EA 5px 11px);border:1px solid var(--line)"></div>
+            <p style="font-size:14px;letter-spacing:.06em;color:var(--charcoal);margin:0">מאיה ויונתן</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--mocha);margin:4px 0 0">נובמבר 2025 · יפו</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-top:36px">
+        <button type="button" onClick="{{ prevSlide }}" aria-label="הקודם" style="width:44px;height:44px;border:1px solid var(--line);background:transparent;cursor:pointer;color:var(--charcoal);border-radius:2px;transition:border-color 300ms" style-hover="border-color:var(--champagne)">→</button>
+        <span style="display:flex;gap:8px;align-items:center">
+          <button type="button" onClick="{{ go0 }}" aria-label="המלצה 1" style="{{ dot0 }}"></button>
+          <button type="button" onClick="{{ go1 }}" aria-label="המלצה 2" style="{{ dot1 }}"></button>
+          <button type="button" onClick="{{ go2 }}" aria-label="המלצה 3" style="{{ dot2 }}"></button>
+        </span>
+        <button type="button" onClick="{{ nextSlide }}" aria-label="הבא" style="width:44px;height:44px;border:1px solid var(--line);background:transparent;cursor:pointer;color:var(--charcoal);border-radius:2px;transition:border-color 300ms" style-hover="border-color:var(--champagne)">←</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 09 · שאלות נפוצות ===== -->
+  <section id="faq" data-screen-label="שאלות נפוצות" data-reveal="" style="scroll-margin-top:92px;max-width:980px;margin:0 auto;padding:clamp(84px,11vw,168px) clamp(18px,4vw,56px)">
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--champagne);margin:0 0 12px">08 — Good to know</p>
+    <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:clamp(1.9rem,4vw,3.2rem);line-height:1.15;margin:0 0 clamp(30px,4vw,54px)">שאלות שנשאלנו כבר</h2>
+    <details style="border-top:1px solid var(--line);padding:22px 0">
+      <summary style="display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:18px">כמה זמן עד שנקבל את החומרים?<span aria-hidden="true" style="color:var(--champagne);font-family:Heebo,sans-serif;font-weight:300">+</span></summary>
+      <p style="font-size:16px;color:var(--mocha);margin:14px 0 0;max-width:66ch">גלריית תמונות ראשונה תוך 7 ימים, הגלריה המלאה והסרט תוך 30 יום מהאירוע. אלבום מודפס עוד שבועיים אחרי שאתם מאשרים את הבחירה.</p>
+    </details>
+    <details style="border-top:1px solid var(--line);padding:22px 0">
+      <summary style="display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:18px">אתם מגיעים לכל הארץ?<span aria-hidden="true" style="color:var(--champagne);font-family:Heebo,sans-serif;font-weight:300">+</span></summary>
+      <p style="font-size:16px;color:var(--mocha);margin:14px 0 0;max-width:66ch">כן. הבסיס בתל אביב ואנחנו מצלמים מהגליל ועד אילת, בלי תוספת נסיעות באזור המרכז.</p>
+    </details>
+    <details style="border-top:1px solid var(--line);padding:22px 0">
+      <summary style="display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:18px">יש צלם שני?<span aria-hidden="true" style="color:var(--champagne);font-family:Heebo,sans-serif;font-weight:300">+</span></summary>
+      <p style="font-size:16px;color:var(--mocha);margin:14px 0 0;max-width:66ch">בחתונה מלאה תמיד. אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות.</p>
+    </details>
+    <details style="border-top:1px solid var(--line);padding:22px 0">
+      <summary style="display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:18px">מה כוללת החבילה?<span aria-hidden="true" style="color:var(--champagne);font-family:Heebo,sans-serif;font-weight:300">+</span></summary>
+      <p style="font-size:16px;color:var(--mocha);margin:14px 0 0;max-width:66ch">כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם. אלבום מודפס וצילומי Save the Date אפשר להוסיף.</p>
+    </details>
+    <details style="border-top:1px solid var(--line);padding:22px 0">
+      <summary style="display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:18px">מה המחיר?<span aria-hidden="true" style="color:var(--champagne);font-family:Heebo,sans-serif;font-weight:300">+</span></summary>
+      <p style="font-size:16px;color:var(--mocha);margin:14px 0 0;max-width:66ch">כל חתונה נבנית אחרת — מספר שעות, מספר צלמים, לוקיישנים. השאירו פרטים ונשמח לשלוח הצעה מותאמת עוד באותו יום.</p>
+    </details>
+    <details style="border-top:1px solid var(--line);padding:22px 0">
+      <summary style="display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:18px">אפשר לראות אלבום שלם של חתונה?<span aria-hidden="true" style="color:var(--champagne);font-family:Heebo,sans-serif;font-weight:300">+</span></summary>
+      <p style="font-size:16px;color:var(--mocha);margin:14px 0 0;max-width:66ch">בשמחה. בשיחה נשלח לכם 2–3 גלריות מלאות של חתונות דומות לשלכם, מהבוקר ועד הסוף — לא רק את הפריים המושלם.</p>
+    </details>
+    <details style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0">
+      <summary style="display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:18px">ומה אם התאריך זז?<span aria-hidden="true" style="color:var(--champagne);font-family:Heebo,sans-serif;font-weight:300">+</span></summary>
+      <p style="font-size:16px;color:var(--mocha);margin:14px 0 0;max-width:66ch">התאריך עובר איתכם ללא עלות, בכפוף לזמינות. אם אנחנו תפוסים בתאריך החדש — נחזיר את המקדמה במלואה.</p>
+    </details>
+  </section>
+
+  <!-- ===== 10 · CTA + טופס לידים ===== -->
+  <section id="contact" data-screen-label="טופס לידים" style="scroll-margin-top:92px;position:relative;background:var(--charcoal)">
+    <!-- החלף: תמונה רומנטית לרקע ה-CTA (full-bleed) -->
+    <div aria-hidden="true" style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,#26221C 0 8px,#1C1A18 8px 18px)"></div>
+    <div style="position:absolute;inset:0;background:rgba(28,26,24,0.45)"></div>
+    <p aria-hidden="true" style="position:absolute;bottom:14px;left:18px;z-index:3;font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.1em;color:rgba(217,195,165,0.45);margin:0">החלף: CTA background · 21:9</p>
+    <div style="position:relative;z-index:2;max-width:1320px;margin:0 auto;padding:clamp(84px,11vw,150px) clamp(18px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:clamp(34px,5vw,80px);align-items:center">
+      <div>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;letter-spacing:.2em;color:var(--sand);margin:0 0 14px">09 — Let's talk</p>
+        <h2 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:clamp(2rem,5vw,3.6rem);line-height:1.12;margin:0 0 20px;color:#FFFDF9">התאריך שלכם עדיין פנוי?</h2>
+        <p style="font-size:17px;color:rgba(255,253,249,0.78);margin:0 0 26px;max-width:40ch">השאירו פרטים ונחזור אליכם היום עם זמינות והצעה מותאמת.</p>
+        <a href="tel:0503662699" style="display:inline-block;font-size:15px;letter-spacing:.1em;color:var(--sand);border-bottom:1px solid rgba(217,195,165,0.5);padding-bottom:5px">050-3662699</a>
+      </div>
+      <form onSubmit="{{ submit }}" noValidate="" style="background:var(--ivory);border-radius:2px;padding:clamp(24px,3vw,40px)">
+        <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:26px 6px">
+            <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--champagne);margin:0 0 10px">Thank you</p>
+            <h3 style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:24px;margin:0 0 12px">קיבלנו. נחזור אליכם היום.</h3>
+            <p style="font-size:15px;color:var(--mocha);margin:0 0 22px">בינתיים, אפשר לכתוב לנו ישירות בוואטסאפ.</p>
+            <a href="https://wa.me/972503662699" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;letter-spacing:.16em;padding:15px 30px;border:1px solid var(--champagne);color:var(--charcoal)">לוואטסאפ →</a>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;gap:16px">
+            <p style="font-family:'Frank Ruhl Libre',serif;font-weight:600;font-size:20px;margin:0">בדיקת זמינות</p>
+            <label style="display:grid;gap:7px">
+              <span style="font-size:12px;letter-spacing:.14em;color:var(--mocha)">שם מלא</span>
+              <input name="name" type="text" autoComplete="name" value="{{ vName }}" onChange="{{ onName }}" style="{{ sName }}" />
+              <span style="{{ eNameStyle }}">{{ eName }}</span>
+            </label>
+            <label style="display:grid;gap:7px">
+              <span style="font-size:12px;letter-spacing:.14em;color:var(--mocha)">טלפון</span>
+              <input name="phone" type="tel" inputMode="tel" autoComplete="tel" value="{{ vPhone }}" onChange="{{ onPhone }}" style="{{ sPhone }}" />
+              <span style="{{ ePhoneStyle }}">{{ ePhone }}</span>
+            </label>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px">
+              <label style="display:grid;gap:7px">
+                <span style="font-size:12px;letter-spacing:.14em;color:var(--mocha)">תאריך האירוע</span>
+                <input name="date" type="date" min="{{ minDate }}" value="{{ vDate }}" onChange="{{ onDate }}" style="{{ sDate }}" />
+                <span style="{{ eDateStyle }}">{{ eDate }}</span>
+              </label>
+              <label style="display:grid;gap:7px">
+                <span style="font-size:12px;letter-spacing:.14em;color:var(--mocha)">סוג האירוע</span>
+                <select name="type" value="{{ vType }}" onChange="{{ onType }}" style="{{ sType }}">
+                  <option value="">בחרו</option>
+                  <option value="wedding">חתונה</option>
+                  <option value="std">Save the Date</option>
+                  <option value="henna">חינה / אירוסין</option>
+                  <option value="mitzvah">בר / בת מצווה</option>
+                  <option value="other">אירוע אחר</option>
+                </select>
+                <span style="{{ eTypeStyle }}">{{ eType }}</span>
+              </label>
+            </div>
+            <label style="display:grid;gap:7px">
+              <span style="font-size:12px;letter-spacing:.14em;color:var(--mocha)">הודעה (אופציונלי)</span>
+              <textarea name="message" rows="3" value="{{ vMsg }}" onChange="{{ onMsg }}" style="width:100%;padding:13px 14px;background:var(--cream);border:1px solid var(--line);border-radius:2px;font-size:15px;resize:vertical"></textarea>
+            </label>
+            <input type="text" name="company" tabIndex="-1" autoComplete="off" aria-hidden="true" onChange="{{ onTrap }}" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
+            <button type="submit" style="{{ submitStyle }}">{{ submitLabel }}</button>
+            <p style="font-size:13px;color:var(--mocha);margin:0;text-align:center">או בוואטסאפ ישירות → <a href="https://wa.me/972503662699" target="_blank" rel="noopener" style="border-bottom:1px solid var(--line)">050-3662699</a></p>
+          </div>
+        </sc-if>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== 11 · פוטר ===== -->
+  <footer style="background:var(--cream);border-top:1px solid var(--line)">
+    <div style="max-width:1320px;margin:0 auto;padding:clamp(50px,7vw,84px) clamp(18px,4vw,56px) 30px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:36px">
+      <div>
+        <img src="uploads/logo-1785487386291.jpg" alt="Amora Studio" width="64" height="64" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:16px" />
+        <p style="font-size:14px;color:var(--mocha);margin:0;max-width:26ch">צילום וידאו וסטילס לחתונות ואירועים. תל אביב — ובכל הארץ.</p>
+      </div>
+      <nav aria-label="ניווט פוטר" style="display:grid;gap:10px;align-content:start">
+        <a href="#about" style="font-size:14px;color:var(--charcoal)">אודות</a>
+        <a href="#services" style="font-size:14px;color:var(--charcoal)">שירותים</a>
+        <a href="#gallery" style="font-size:14px;color:var(--charcoal)">גלריה</a>
+        <a href="#faq" style="font-size:14px;color:var(--charcoal)">שאלות נפוצות</a>
+        <a href="#contact" style="font-size:14px;color:var(--charcoal)">בדיקת זמינות</a>
+      </nav>
+      <div style="display:grid;gap:10px;align-content:start">
+        <a href="tel:0503662699" style="font-size:14px;color:var(--charcoal)">050-3662699</a>
+        <a href="https://www.instagram.com/amora___studio/" target="_blank" rel="noopener" style="font-size:14px;color:var(--charcoal);letter-spacing:.04em">Instagram — @amora___studio</a>
+        <a href="https://www.facebook.com/" target="_blank" rel="noopener" style="font-size:14px;color:var(--charcoal)">Facebook — Amora Studio</a>
+        <p style="font-size:14px;color:var(--mocha);margin:0">אזור פעילות: כל הארץ</p>
+      </div>
+    </div>
+    <div style="max-width:1320px;margin:0 auto;padding:20px clamp(18px,4vw,56px) 40px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between">
+      <p style="font-size:12px;letter-spacing:.06em;color:var(--mocha);margin:0">© 2026 Amora Studio · כל הזכויות שמורות</p>
+      <div style="display:flex;gap:20px">
+        <a href="#top" style="font-size:12px;color:var(--mocha)">הצהרת נגישות</a>
+        <a href="#top" style="font-size:12px;color:var(--mocha)">מדיניות פרטיות</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- כפתור וואטסאפ צף -->
+  <a href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ" style="{{ waStyle }}">
+    <span style="font-size:13px;letter-spacing:.1em">וואטסאפ</span>
+  </a>
+
+  <!-- Lightbox -->
+  <sc-if value="{{ lightboxOpen }}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-modal="true" aria-label="תצוגת תמונה" style="position:fixed;inset:0;z-index:90;background:rgba(28,26,24,0.94);display:grid;place-items:center;padding:clamp(16px,4vw,60px)">
+      <!-- החלף: התמונה המלאה בגלריה -->
+      <div role="img" aria-label="{{ lbAlt }}" style="{{ lbBox }}"><span style="font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.08em;color:var(--sand);text-align:center;padding:16px">{{ lbAlt }}</span></div>
+      <div style="position:absolute;top:18px;left:18px;display:flex;gap:10px">
+        <button type="button" onClick="{{ closeLb }}" aria-label="סגירה" style="width:44px;height:44px;background:transparent;border:1px solid rgba(217,195,165,0.5);color:var(--sand);cursor:pointer;border-radius:2px">✕</button>
+      </div>
+      <div style="position:absolute;bottom:22px;right:50%;transform:translateX(50%);display:flex;align-items:center;gap:16px">
+        <button type="button" onClick="{{ lbPrev }}" aria-label="הקודמת" style="width:48px;height:48px;background:transparent;border:1px solid rgba(217,195,165,0.5);color:var(--sand);cursor:pointer;border-radius:2px">→</button>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--sand)">{{ lbLabel }}</span>
+        <button type="button" onClick="{{ lbNext }}" aria-label="הבאה" style="width:48px;height:48px;background:transparent;border:1px solid rgba(217,195,165,0.5);color:var(--sand);cursor:pointer;border-radius:2px">←</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#C9AE8C&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#C9AE8C&quot;,&quot;#B99B77&quot;,&quot;#C2A98F&quot;,&quot;#A88F6E&quot;],&quot;section&quot;:&quot;מותג&quot;},&quot;showFilm&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;סקשנים&quot;},&quot;reveal&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;סקשנים&quot;}}">
+// כל תמונה היא placeholder מסומן — החלף ב-src אמיתי (ratio נשמר)
+const PHOTOS = [
+  { cat: 'weddings', alt: 'רגע החופה', r: '4/5' },
+  { cat: 'weddings', alt: 'פורטרט כלה', r: '4/5' },
+  { cat: 'weddings', alt: 'הזוג אחרי הטקס', r: '16/9' },
+  { cat: 'std', alt: 'צילומי זוגיות בלוקיישן', r: '4/5' },
+  { cat: 'weddings', alt: 'השמלה והצעדים הראשונים', r: '4/5' },
+  { cat: 'std', alt: 'Save the Date בשקיעה', r: '16/9' },
+  { cat: 'weddings', alt: 'ריקודים', r: '4/5' },
+  { cat: 'weddings', alt: 'חופה בשקיעה', r: '21/9' },
+  { cat: 'prep', alt: 'איפור בבוקר האירוע', r: '4/5' },
+  { cat: 'prep', alt: 'עיצוב שיער לכלה', r: '4/5' },
+  { cat: 'prep', alt: 'זר הכלה', r: '16/9' },
+  { cat: 'events', alt: 'עיצוב שולחנות באירוע', r: '4/5' },
+  { cat: 'events', alt: 'חגיגה עם האורחים', r: '16/9' },
+  { cat: 'events', alt: 'שושבינות', r: '4/5' },
+  { cat: 'std', alt: 'זוג בעיר', r: '4/5' },
+  { cat: 'weddings', alt: 'רגע שקט בין השניים', r: '4/5' },
+  { cat: 'weddings', alt: 'ההליכה אל החופה', r: '16/9' },
+  { cat: 'std', alt: 'פורטרט זוגי', r: '4/5' }
+];
+
+class Component extends DCLogic {
+  state = {
+    filter: 'all', lb: -1, slide: 0, wa: false, mobile: false, menu: false,
+    f: { name: '', phone: '', date: '', type: '', msg: '', trap: '' },
+    err: {}, sending: false, sent: false
+  };
+
+  componentDidMount() {
+    const accent = this.props.accent;
+    if (accent) {
+      document.documentElement.style.setProperty('--champagne', accent);
+      document.documentElement.style.setProperty('--line', accent + '4d');
+    }
+    this.mq = window.matchMedia('(max-width: 760px)');
+    this.onMq = () => this.setState({ mobile: this.mq.matches, menu: false });
+    this.mq.addEventListener('change', this.onMq);
+    this.setState({ mobile: this.mq.matches });
+
+    this.onScroll = () => {
+      const y = window.scrollY;
+      const h = this.header;
+      if (h) {
+        const on = y > 80;
+        h.style.background = on ? 'rgba(247,242,234,0.94)' : 'rgba(247,242,234,0)';
+        h.style.backdropFilter = on ? 'blur(10px)' : 'blur(0px)';
+        h.style.borderBottomColor = on ? 'rgba(201,174,140,0.3)' : 'rgba(201,174,140,0)';
+        [this.n1, this.n2, this.n3, this.n4, this.n5, this.n6, this.n7, this.n8].forEach(function (a) {
+          if (a) a.style.color = on ? 'var(--charcoal)' : '#FFFDF9';
+        });
+        if (this.burger) {
+          this.burger.style.color = on ? 'var(--charcoal)' : '#FFFDF9';
+          this.burger.style.borderColor = on ? 'rgba(201,174,140,0.6)' : 'rgba(255,253,249,0.45)';
+        }
+      }
+      const pct = y / (document.body.scrollHeight - window.innerHeight || 1);
+      if (this.prog) this.prog.style.width = Math.min(100, Math.max(0, pct * 100)) + '%';
+      const wa = pct > 0.3 && this.mq && this.mq.matches;
+      if (wa !== this.state.wa) this.setState({ wa: wa });
+    };
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    this.onScroll();
+
+    this.onKey = (e) => {
+      if (e.key === 'Escape' && this.state.menu) this.setState({ menu: false });
+      if (this.state.lb < 0) return;
+      if (e.key === 'Escape') this.setState({ lb: -1 });
+      if (e.key === 'ArrowRight') this.step(-1);
+      if (e.key === 'ArrowLeft') this.step(1);
+    };
+    window.addEventListener('keydown', this.onKey);
+
+    // אקורדיון: + הופך ל־ בפתיחה
+    Array.prototype.forEach.call(document.querySelectorAll('details'), function (d) {
+      const sign = d.querySelector('summary span');
+      d.addEventListener('toggle', function () { if (sign) sign.textContent = d.open ? '–' : '+'; });
+    });
+
+    // קרוסלה: החלקה באצבע + קידום אוטומטי עד למגע ראשון
+    const sw = this.swipe;
+    if (sw) {
+      let x0 = null;
+      sw.addEventListener('pointerdown', (e) => { x0 = e.clientX; this.touched = true; });
+      sw.addEventListener('pointerup', (e) => {
+        if (x0 === null) return;
+        const dx = e.clientX - x0;
+        x0 = null;
+        if (Math.abs(dx) < 40) return;
+        this.setState((s) => ({ slide: (s.slide + (dx < 0 ? 2 : 1)) % 3 }));
+      });
+    }
+    this.auto = setInterval(() => {
+      if (this.touched || document.hidden) return;
+      this.setState((s) => ({ slide: (s.slide + 1) % 3 }));
+    }, 7000);
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const nodes = Array.prototype.slice.call(document.querySelectorAll('[data-reveal]'));
+    if (this.props.reveal === false || reduced || !('IntersectionObserver' in window)) {
+      nodes.forEach(function (n) { n.style.opacity = '1'; n.style.transform = 'none'; });
+      return;
+    }
+    nodes.forEach(function (n) {
+      n.style.opacity = '0';
+      n.style.transform = 'translateY(20px)';
+      n.style.transition = 'opacity 600ms cubic-bezier(0.4,0,0.2,1), transform 600ms cubic-bezier(0.4,0,0.2,1)';
+    });
+    this.io = new IntersectionObserver(function (entries, obs) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) {
+          en.target.style.opacity = '1';
+          en.target.style.transform = 'none';
+          obs.unobserve(en.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.05 });
+    nodes.forEach((n) => this.io.observe(n));
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.onScroll);
+    window.removeEventListener('keydown', this.onKey);
+    if (this.mq) this.mq.removeEventListener('change', this.onMq);
+    if (this.io) this.io.disconnect();
+    if (this.t) clearTimeout(this.t);
+    if (this.auto) clearInterval(this.auto);
+  }
+
+  visible() {
+    const f = this.state.filter;
+    return PHOTOS.filter(function (p) { return f === 'all' || p.cat === f; });
+  }
+
+  step(d) {
+    const list = this.visible();
+    const n = list.length;
+    this.setState({ lb: (this.state.lb + d + n) % n });
+  }
+
+  field(k) {
+    return (e) => {
+      const v = e.target.value;
+      this.setState((s) => {
+        const f = Object.assign({}, s.f); f[k] = v;
+        const err = Object.assign({}, s.err); delete err[k];
+        return { f: f, err: err };
+      });
+    };
+  }
+
+  submit(e) {
+    e.preventDefault();
+    const f = this.state.f;
+    const err = {};
+    if (!f.name.trim() || f.name.trim().length < 2) err.name = 'נעים להכיר — איך קוראים לכם?';
+    if (!/^0\d{1,2}[-\s]?\d{7}$|^\+?\d{9,15}$/.test(f.phone.replace(/[\s-]/g, '')) ) err.phone = 'מספר טלפון לא תקין';
+    if (!f.date) err.date = 'איזה תאריך אנחנו בודקים?';
+    if (!f.type) err.type = 'בחרו סוג אירוע';
+    if (f.trap) return;
+    if (Object.keys(err).length) { this.setState({ err: err }); return; }
+    this.setState({ err: {}, sending: true });
+    this.t = setTimeout(() => this.setState({ sending: false, sent: true }), 1200);
+  }
+
+  chip(active) {
+    return 'font-size:12px;letter-spacing:.14em;white-space:nowrap;padding:12px 20px;cursor:pointer;border-radius:2px;transition:background 300ms,color 300ms,border-color 300ms;border:1px solid ' +
+      (active ? 'var(--champagne)' : 'var(--line)') +
+      ';background:' + (active ? 'var(--champagne)' : 'transparent') +
+      ';color:' + (active ? 'var(--ivory)' : 'var(--mocha)');
+  }
+
+  dot(active) {
+    return 'width:' + (active ? '26px' : '7px') + ';height:7px;padding:0;border:0;cursor:pointer;border-radius:2px;transition:width 400ms,background 400ms;background:' +
+      (active ? 'var(--champagne)' : 'rgba(107,91,75,0.28)');
+  }
+
+  input(bad) {
+    return 'width:100%;padding:13px 14px;background:var(--cream);border-radius:2px;font-size:15px;border:1px solid ' +
+      (bad ? 'var(--terracotta)' : 'var(--line)');
+  }
+
+  errStyle(msg) {
+    return 'font-size:13px;color:var(--terracotta);min-height:' + (msg ? '18px' : '0px') + ';display:' + (msg ? 'block' : 'none');
+  }
+
+  renderVals() {
+    const st = this.state;
+    const list = this.visible();
+    const lbOpen = st.lb >= 0 && st.lb < list.length;
+    const cur = lbOpen ? list[st.lb] : null;
+    const set = (k) => () => this.setState({ filter: k, lb: -1 });
+
+    const photos = list.map((p, i) => ({
+      alt: p.alt,
+      label: 'החלף: ' + p.alt + ' · ' + p.r,
+      style: 'display:block;width:100%;padding:0;margin:0 0 16px;border:0;background:transparent;cursor:zoom-in;overflow:hidden;border-radius:2px;break-inside:avoid',
+      imgStyle: 'display:grid;place-items:center;width:100%;aspect-ratio:' + p.r +
+        ';background:repeating-linear-gradient(135deg,#EFE6D6 0 7px,#F7F2EA 7px 15px);border:1px solid var(--line);transition:transform 700ms cubic-bezier(0.4,0,0.2,1)',
+      open: () => this.setState({ lb: i })
+    }));
+
+    return {
+      headerRef: (el) => { this.header = el; },
+      navRef1: (el) => { this.n1 = el; }, navRef2: (el) => { this.n2 = el; },
+      navRef3: (el) => { this.n3 = el; }, navRef4: (el) => { this.n4 = el; },
+      navRef5: (el) => { this.n5 = el; }, navRef6: (el) => { this.n6 = el; }, navRef7: (el) => { this.n7 = el; },
+      navRef8: (el) => { this.n8 = el; },
+      mobile: st.mobile, desktop: !st.mobile, menuOpen: st.menu,
+      toggleMenu: () => this.setState((s) => ({ menu: !s.menu })),
+      closeMenu: () => this.setState({ menu: false }),
+      burgerRef: (el) => { this.burger = el; if (el && this.onScroll) this.onScroll(); },
+      burgerStyle: 'display:grid;gap:4px;width:44px;height:44px;place-content:center;background:transparent;border:1px solid ' +
+        (st.menu ? 'var(--champagne)' : 'rgba(201,174,140,0.45)') + ';border-radius:2px;cursor:pointer;padding:0 11px',
+      burgerLine: 'display:block;width:20px;height:1px;background:currentColor',
+      showFilm: this.props.showFilm !== false,
+      photos: photos,
+      setAll: set('all'), setWed: set('weddings'), setStd: set('std'), setPrep: set('prep'), setEvt: set('events'),
+      fAll: this.chip(st.filter === 'all'), fWed: this.chip(st.filter === 'weddings'),
+      fStd: this.chip(st.filter === 'std'), fPrep: this.chip(st.filter === 'prep'),
+      fEvt: this.chip(st.filter === 'events'),
+      lightboxOpen: lbOpen,
+      lbBox: 'display:grid;place-items:center;width:min(1100px,90vw);aspect-ratio:' + (cur ? cur.r : '4/5') +
+        ';max-height:82vh;background:repeating-linear-gradient(135deg,#26221C 0 8px,#1C1A18 8px 18px);border:1px solid rgba(201,174,140,0.35)',
+      lbAlt: cur ? 'החלף: ' + cur.alt + ' · ' + cur.r : '',
+      lbLabel: lbOpen ? (st.lb + 1) + ' / ' + list.length : '',
+      closeLb: () => this.setState({ lb: -1 }),
+      lbPrev: () => this.step(-1), lbNext: () => this.step(1),
+      progRef: (el) => { this.prog = el; },
+      swipeRef: (el) => { this.swipe = el; },
+      minDate: new Date().toISOString().slice(0, 10),
+      trackStyle: 'display:flex;transition:transform 600ms cubic-bezier(0.4,0,0.2,1);transform:translateX(' + (st.slide * 100) + '%)',
+      prevSlide: () => { this.touched = true; this.setState({ slide: (st.slide + 2) % 3 }); },
+      nextSlide: () => { this.touched = true; this.setState({ slide: (st.slide + 1) % 3 }); },
+      go0: () => { this.touched = true; this.setState({ slide: 0 }); },
+      go1: () => { this.touched = true; this.setState({ slide: 1 }); },
+      go2: () => { this.touched = true; this.setState({ slide: 2 }); },
+      dot0: this.dot(st.slide === 0), dot1: this.dot(st.slide === 1), dot2: this.dot(st.slide === 2),
+      waStyle: 'position:fixed;bottom:20px;left:20px;z-index:70;display:flex;align-items:center;gap:8px;padding:14px 20px;background:var(--champagne);color:#1C1A18;border-radius:2px;box-shadow:0 6px 24px rgba(28,26,24,0.18);transition:opacity 400ms,transform 400ms;opacity:' +
+        (st.wa ? '1' : '0') + ';transform:translateY(' + (st.wa ? '0' : '14px') + ');pointer-events:' + (st.wa ? 'auto' : 'none'),
+      submit: (e) => this.submit(e),
+      sent: st.sent, notSent: !st.sent,
+      vName: st.f.name, vPhone: st.f.phone, vDate: st.f.date, vType: st.f.type, vMsg: st.f.msg,
+      onName: this.field('name'), onPhone: this.field('phone'), onDate: this.field('date'),
+      onType: this.field('type'), onMsg: this.field('msg'), onTrap: this.field('trap'),
+      sName: this.input(st.err.name), sPhone: this.input(st.err.phone),
+      sDate: this.input(st.err.date), sType: this.input(st.err.type),
+      eName: st.err.name || '', ePhone: st.err.phone || '', eDate: st.err.date || '', eType: st.err.type || '',
+      eNameStyle: this.errStyle(st.err.name), ePhoneStyle: this.errStyle(st.err.phone),
+      eDateStyle: this.errStyle(st.err.date), eTypeStyle: this.errStyle(st.err.type),
+      submitLabel: st.sending ? 'שולחים…' : 'שלחו — נחזור אליכם היום',
+      submitStyle: 'width:100%;padding:17px 24px;font-size:13px;letter-spacing:.14em;border:1px solid var(--champagne);border-radius:2px;cursor:' +
+        (st.sending ? 'wait' : 'pointer') + ';background:' + (st.sending ? 'var(--sand)' : 'var(--champagne)') +
+        ';color:#1C1A18;transition:background 300ms;opacity:' + (st.sending ? '0.75' : '1')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Reference material that ships in the repo but must never be indexed —
+# project/ is a near-duplicate of the homepage and would compete with it.
+Disallow: /project/
+Disallow: /chats/
+Disallow: /docs/
+Disallow: /tools/
+
+Sitemap: SITE_URL/sitemap.xml
