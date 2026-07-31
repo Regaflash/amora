@@ -1,0 +1,549 @@
+/* ==========================================================================
+   Amora Studio — תפריט נגישות (accessibility widget)
+   Zero dependencies. Pairs with assets/js/a11y-widget.js, which injects the
+   markup and puts the html.a11y-* classes this file reacts to on <html>.
+
+   Three parts:
+     1. the widget's own chrome   (.a11y-ui, .a11y-fab, .a11y-panel)
+     2. the effects               (html.a11y-contrast, html.a11y-invert, …)
+     3. the widget re-asserting itself against its own effects
+
+   Part 3 exists because part 2 repaints everything inside <body> — including
+   the panel. An accessibility panel that loses its own contrast, or inverts,
+   at exactly the moment a mode is switched on is worse than no panel. The
+   obvious fix is to exclude the widget with :not(.a11y-ui *), but a complex
+   selector inside :not() is dropped whole by Safari below 16.4, which would
+   silently disable the mode itself. Broad rules plus explicit re-assertion
+   works everywhere.
+   ========================================================================== */
+
+/* ======================================================== widget chrome === */
+
+.a11y-ui {
+  /* Its own palette, so the panel stays legible while a mode repaints the
+     page. Champagne is borrowed from the site; the rest is a dark shell
+     measured against WCAG — ink on panel 16.2:1, ink on row 16.2:1,
+     charcoal on champagne (a pressed row) 8.8:1. */
+  --a11y-ink: #FFFDF9;
+  --a11y-ink-dim: #E4D9C7;
+  --a11y-bg: #14120F;
+  --a11y-row: #241F19;
+  --a11y-row-hover: #332C23;
+  --a11y-accent: #C9AE8C;
+  --a11y-on-accent: #14120F;
+  --a11y-focus: #FFD86B;
+  --a11y-radius: 3px;
+
+  font-family: var(--sans, Heebo, Arial, sans-serif);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.a11y-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- the floating button -------------------------------------------------
+   Pinned to the physical right. .wa-float is at `left: 20px` (physical, even
+   though the document is RTL), so the two never meet — at 320px there is
+   still ~110px of clear space between them. z-index 74 sits above the header
+   (60) and the WhatsApp pill (70) but below the mobile menu (80) and the
+   lightbox (90), so a site modal covers the widget instead of the widget
+   punching through it. */
+.a11y-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 74;
+  width: 54px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid var(--a11y-on-accent);
+  border-radius: 50%;
+  background: var(--a11y-accent);
+  color: var(--a11y-on-accent);
+  box-shadow: 0 6px 24px rgba(28, 26, 24, 0.28);
+  cursor: pointer;
+  transition: transform 200ms var(--ease, ease), background-color 200ms var(--ease, ease);
+}
+.a11y-fab:hover { background: #D9C3A5; transform: translateY(-2px); }
+.a11y-fab:focus-visible { outline: 3px solid var(--a11y-on-accent); outline-offset: 3px; }
+.a11y-fab svg { width: 28px; height: 28px; display: block; }
+
+/* A visitor who set high contrast on a previous visit arrives to a page that
+   does not look like the one their friend sent them. The dot says the
+   difference is theirs and where to undo it. */
+.a11y-fab::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--a11y-ink);
+  border-radius: 50%;
+  background: var(--a11y-on-accent);
+  opacity: 0;
+}
+.a11y-fab[data-a11y-active="true"]::after { opacity: 1; }
+
+/* --- the panel ----------------------------------------------------------
+   `bottom: 86px` clears both its own trigger and the WhatsApp button, which
+   between them own the bottom 74px of the viewport. Nothing a visitor might
+   want to press ends up underneath the panel, even at 320px wide. */
+.a11y-panel {
+  position: fixed;
+  bottom: 86px;
+  right: 20px;
+  z-index: 76;
+  width: 322px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 110px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--a11y-bg);
+  color: var(--a11y-ink);
+  border: 1px solid var(--a11y-accent);
+  border-radius: var(--a11y-radius);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  text-align: right;
+  animation: a11yPanelIn 180ms var(--ease, ease);
+}
+.a11y-panel[hidden] { display: none; }
+
+@keyframes a11yPanelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.a11y-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(201, 174, 140, 0.4);
+}
+.a11y-panel__title {
+  margin: 0;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--a11y-ink);
+}
+.a11y-close {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 253, 249, 0.4);
+  border-radius: var(--a11y-radius);
+  background: transparent;
+  color: var(--a11y-ink);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.a11y-close:hover { background: var(--a11y-row-hover); }
+
+.a11y-panel__body { padding: 12px; overflow-y: auto; }
+
+.a11y-group { margin-bottom: 10px; }
+.a11y-group__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  letter-spacing: .04em;
+  color: var(--a11y-ink-dim);
+}
+.a11y-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: var(--a11y-row);
+  border: 1px solid rgba(255, 253, 249, 0.18);
+  border-radius: var(--a11y-radius);
+}
+.a11y-step {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--a11y-accent);
+  border-radius: var(--a11y-radius);
+  background: transparent;
+  color: var(--a11y-ink);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.a11y-step:hover { background: var(--a11y-row-hover); }
+.a11y-step[aria-disabled="true"] { opacity: .45; cursor: default; }
+.a11y-size__value {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--a11y-ink);
+}
+
+.a11y-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding: 9px 10px;
+  min-height: 46px;
+  border: 1px solid rgba(255, 253, 249, 0.18);
+  border-radius: var(--a11y-radius);
+  background: var(--a11y-row);
+  color: var(--a11y-ink);
+  font-size: 15px;
+  text-align: right;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease, ease);
+}
+.a11y-item:hover { background: var(--a11y-row-hover); }
+.a11y-item__icon { flex: none; width: 22px; height: 22px; display: block; }
+.a11y-item__label { flex: 1 1 auto; }
+.a11y-item__hint { display: block; font-size: 12px; color: var(--a11y-ink-dim); }
+.a11y-item__hint:empty { display: none; }
+.a11y-item__state {
+  flex: none;
+  min-width: 44px;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-size: 12px;
+  text-align: center;
+  letter-spacing: .04em;
+}
+.a11y-item[aria-pressed="true"] {
+  background: var(--a11y-accent);
+  border-color: var(--a11y-accent);
+  color: var(--a11y-on-accent);
+  font-weight: 600;
+}
+.a11y-item[aria-pressed="true"] .a11y-item__hint { color: #3B3125; }
+.a11y-item[aria-disabled="true"] { cursor: default; }
+
+.a11y-panel__foot {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(201, 174, 140, 0.4);
+}
+.a11y-reset {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--a11y-ink);
+  border-radius: var(--a11y-radius);
+  background: transparent;
+  color: var(--a11y-ink);
+  font-size: 14px;
+  letter-spacing: .04em;
+  cursor: pointer;
+}
+.a11y-reset:hover { background: var(--a11y-row-hover); }
+.a11y-link {
+  display: block;
+  padding: 6px 2px;
+  color: var(--a11y-accent);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.a11y-link:hover { color: var(--a11y-ink); }
+
+/* One ring for every control in the widget: the site's charcoal ring would
+   disappear against this panel. */
+.a11y-ui :focus-visible { outline: 3px solid var(--a11y-focus); outline-offset: 2px; }
+
+@media (max-width: 420px) {
+  .a11y-panel { right: 12px; bottom: 82px; max-width: calc(100vw - 24px); }
+  .a11y-fab { bottom: 16px; right: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .a11y-panel { animation: none; }
+  .a11y-fab { transition: none; }
+}
+
+/* Furniture, never part of the printed page. */
+@media print { .a11y-ui { display: none !important; } }
+
+/* ============================================================== effects === */
+
+/* --- 1. גודל טקסט --------------------------------------------------------
+   The scaling itself happens in JS, element by element, because the site's
+   type is built on clamp(px, vw, px): those never look at the root font-size,
+   so `html { font-size: 125% }` — the usual widget trick — would move almost
+   nothing here. All the CSS has to do is keep long Hebrew words inside their
+   boxes once they are half as wide again. */
+html.a11y-text-scaled body { overflow-wrap: break-word; }
+html.a11y-text-scaled body * { overflow-wrap: break-word; }
+
+/* --- 2. ניגודיות גבוהה --------------------------------------------------- */
+html.a11y-contrast { background: #000; color-scheme: dark; }
+html.a11y-contrast body,
+html.a11y-contrast body * {
+  background-color: #000 !important;
+  background-image: none !important;
+  color: #FFF !important;
+  border-color: #FFF !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+html.a11y-contrast body a {
+  color: #FFFF00 !important;
+  text-decoration: underline !important;
+}
+html.a11y-contrast body button,
+html.a11y-contrast body input,
+html.a11y-contrast body select,
+html.a11y-contrast body textarea { border: 1px solid #FFF !important; }
+html.a11y-contrast body input::placeholder,
+html.a11y-contrast body textarea::placeholder { color: #D0D0D0 !important; }
+/* The hero's scrim is repainted opaque black by the rule above, which is what
+   hides the loop behind it; stopping the decode as well saves the battery it
+   would otherwise spend painting nothing. */
+html.a11y-contrast .hero__video { display: none !important; }
+
+/* --- 3. מצב כהה / היפוך צבעים -------------------------------------------
+   One inversion, on the root element. A filter normally turns an element into
+   the containing block for its fixed descendants — which would tear the
+   sticky header and both floating buttons off the viewport — but the spec
+   exempts the document root, so this is the one place it is safe. Media is
+   inverted back so photographs still look like photographs. */
+html.a11y-invert { filter: invert(1) hue-rotate(180deg); background: #FFF; }
+html.a11y-invert img,
+html.a11y-invert video,
+html.a11y-invert iframe,
+html.a11y-invert canvas { filter: invert(1) hue-rotate(180deg); }
+
+/* --- 4. הדגשת קישורים ---------------------------------------------------- */
+html.a11y-links body a {
+  background: #FFFF00 !important;
+  color: #000 !important;
+  text-decoration: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 2px !important;
+  outline: 1px solid #000 !important;
+  outline-offset: 1px;
+}
+html.a11y-links body a * { color: #000 !important; background: transparent !important; }
+
+/* --- 5. עצירת אנימציות ---------------------------------------------------
+   Near-zero durations rather than `none`: anything waiting on a
+   transitionend/animationend still gets its event, so nothing stalls
+   half-finished. The site reveals its sections by transitioning opacity, so
+   those are forced visible — otherwise "stop animations" would mean "hide
+   most of the page". */
+html.a11y-no-motion *,
+html.a11y-no-motion *::before,
+html.a11y-no-motion *::after {
+  animation-duration: .001ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
+  transition-delay: 0ms !important;
+}
+html.a11y-no-motion { scroll-behavior: auto !important; }
+html.a11y-no-motion [data-reveal] { opacity: 1 !important; transform: none !important; }
+html.a11y-no-motion .wa-float { opacity: 1 !important; transform: none !important; }
+
+/* --- 6. גופן קריא --------------------------------------------------------
+   System faces only — no webfont may be fetched. Arial covers Hebrew on every
+   platform this site sees (Arial Hebrew on macOS/iOS, Arial on Windows,
+   Noto/Liberation elsewhere). The site's body weight is 300, thin for anyone
+   with low vision, so running text is pushed to 400; headings and <strong>
+   keep their own weight. */
+html.a11y-font body,
+html.a11y-font body * {
+  font-family: Arial, "Noto Sans Hebrew", "Segoe UI", Tahoma, sans-serif !important;
+}
+html.a11y-font body p,
+html.a11y-font body li,
+html.a11y-font body a,
+html.a11y-font body label,
+html.a11y-font body td,
+html.a11y-font body dd,
+html.a11y-font body figcaption,
+html.a11y-font body summary,
+html.a11y-font body button,
+html.a11y-font body input,
+html.a11y-font body select,
+html.a11y-font body textarea { font-weight: 400 !important; }
+
+/* --- 7. ריווח טקסט -------------------------------------------------------
+   The numbers are WCAG 2.1 SC 1.4.12 Text Spacing: letter-spacing .12em,
+   word-spacing .16em, paragraph spacing 2em, line-height 1.5x. Line height
+   goes past the minimum to 1.9 because the site's body copy already sits at
+   1.8; headings are held at 1.4 so display type does not fall apart. Hebrew
+   has no cursive joining, so letter-spacing is safe here in a way it would
+   not be for Arabic. */
+html.a11y-spacing body,
+html.a11y-spacing body * {
+  line-height: 1.9 !important;
+  letter-spacing: .12em !important;
+  word-spacing: .16em !important;
+}
+html.a11y-spacing body p { margin-bottom: 2em !important; }
+html.a11y-spacing body h1,
+html.a11y-spacing body h2,
+html.a11y-spacing body h3,
+html.a11y-spacing body .h2,
+html.a11y-spacing body .hero__title { line-height: 1.4 !important; }
+
+/* --- 8. סמן עכבר גדול ----------------------------------------------------
+   48px PNGs inlined as data URIs: no request, and PNG rather than SVG because
+   Safari refuses SVG cursors. The keyword after the comma is what the browser
+   falls back to if it will not take the image at all. This is the one mode
+   applied to the widget's own chrome too — a large cursor that vanishes over
+   the accessibility panel is a bug. */
+html.a11y-cursor,
+html.a11y-cursor * {
+  cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAEjUlEQVR4nMyaXUhkZRjH/zOpbB/2tSk2BrtQGQQF1oWaa4KLkBcqQSgkCuWFKGFlinpRWjdZUklRXmU3a8QKBW5gMCta5qY3XXghhLSWlYEimG6ZKdn/P3PONp2ccT7ec2Z+8Mx73vPx+vznmffrOfrh4OjoKED7iPY+7Q5kOL7IiuXwEu0e69T3tCqfz7eGDMXvqDfhX+fFvbRvKOwsMhSngLvsg/7+fvswQFukiPuQgfijXRgaGkJHR4ddzactUMRDyDD8sS6Ojo6itbVVfUPV07SvePwIMgj/STeMjY2hubnZFnE7wiJKkCGcKECMj4+jsbERh4eHqt5Mm6GIc8gA4hIgJiYmUFdXh4ODA1VvpAUp4gmkGaeAo1g3T01NoaamBvv7+6qe0imKqEcaiTsCNtPT06iursbe3p596lOKeAppwinAF89Dc3NzqKqqws7Ojt3GRYp4Gmkg4QjYLCwsoKKiAtvb26pK+AWKeAYek7QAsbS0hPLycmxtbakqEWMU8Tw8JCUBYnl5GWVlZdjY2LBPjVDEy/CIlAWIlZUVlJaWYn193T71GkW8Aw8wIkCsrq6GIqHS4gWK+AAuY0yAWFtbC0VCEbFop4gP4SJGBQj1BUVCfcPiWYrQCBXXEJ0oxgUIjUoanTRKWWij9BlF3ADDuCJAaH7QPKH5wkJLjksUkQWDuCZAaKbWjK2Z26KG9gVF5MAQrgoQWjNp7aQ1lMV52mWKuAkGcF2A0OpVq1itZi0qEN4Y5SJFPBEgtI/QfkL7CotHaV9TxG1IAc8ECO3otLPTDs/iYdoVirgTSeKpAKG9tfbY2mtbPIiwiLuRBJ4LEBKhbIeyHhYP0L5Mpk+kRYCN8k4jIyN29X5aAxLE6KQSyezsLCorK5EgpxK8370IDA4OIgkuIUGSjoAcDAaDmJ+fP/a6IrC4uIiSkus5sLdo16I09zMtmEwWPCkB3d3dGBgYQHFxMerro2dV+vr6MDMzY1e36ODrMEzCPyE5Pzw8HDqura1FUVFR1HvtKFi8xFHmFhgmIQGRzgt+o+jt7Y35jKJgoeSw8Q1/3AIczmvze0UHLS0tyMvLi/qcIwovmo5CXAIczv9CK6O1qZKVlRW6Hgs3o+B8RzbIYiB0wRe+dIzzj9mjBe+/zOL87u4uCgsLoTIa2thYI9JvtEK28TsMEDMCxzh/zjHUvaGP3NxctLe3x2oqMgpafXbCEFEj0NPT43T+cTp/1dkAn/mWRfHm5iYCgYD9DuFYIqKgVN5ZtncNKeKMwPX0WjzOW7ypD3VkdehYOPqCkTyqU8DnjvoPiO28+sonLH7UsYZUu+9EkpOTg6ampv8MweRWGOB/f40/iTMsqml/0S7SoT9PaoTPPMfiPR1rZp6cnAydLygoQFtbW2jVmZ+fH/nIrwj3p6tIESPJJgrQK6efaKe1Nurq6kJnZycaGhqQnZ0deasiJaGjdP4PGMBYtowiXmXxSpTLWhC9S5uk43/DICYFKE2ifOIZ65S+4Qu0t+n0d3AJo/lKitD/VjyJsPMf0/FtuIwrCVcv+QcAAP//avcZDwAAAAZJREFUAwAvW9N42hF6hQAAAABJRU5ErkJggg==") 5 2, auto !important;
+}
+html.a11y-cursor a,
+html.a11y-cursor button,
+html.a11y-cursor summary,
+html.a11y-cursor label,
+html.a11y-cursor select,
+html.a11y-cursor [role="button"],
+html.a11y-cursor input[type="submit"],
+html.a11y-cursor input[type="button"],
+html.a11y-cursor input[type="checkbox"],
+html.a11y-cursor input[type="radio"] {
+  cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAADx0lEQVR4nOyZX0hTURzHv9PUCUIMBUHIyJxrPphWqz34FBX0lD0tQlrCHnpTXyaxB0vtQRB86KUegr0MsRdBRAl6VgeruZLp7J8jLQgkDGLqMvudtRt31/05Z9u9XsMPfDnnbOd3d373nLtzfr97DIecYyiAvb29BirOksykd6QFg8HwCRpiQB7QwC1U+Ejn03ztJ3WSI++hASUQhAZ/l4q3SD94xiXSIvXrhAYIOUCDOkPFU1LZ1tYWuru7YTabUVlZiaamJvT29oJ9TlSQnlF/K1SGewnRYNjz8orU4vf74XQ6EYlE9vWzWq3w+Xxoa2tjzRDpHC2n31AJkRmwk1pYZXp6Ou3gGUtLS5icnJSa7AG3QUVEHGiQKuPj41k7zszMyJuNUBGRv9ETUmV1dTVrx+XlZXnzJFREZAbKpMr29nbWjpubm/JmCz0/btJN0ikUmYI2Mk4cSSUgJ4q6T2jhgBJpn3hE5bfkZwHSG3IqDkGENzJeOPaJAdKTpJgDn8mpaxBEZB94QEV/wsiQ28xisfDsE+nop+sPgBPVZiDbPjEyMoL29naYTKaEWH1qakrq8pBu1mVwotoM5MPExAQ6OjpY9QvJSr/zI5eNajOQD8PDw1K1jnSdx+Yg/oUywpaXjDoeG105oNgAj/PY6MqBfPj/HZDFvVegQzI6kCnuDYVC0BNp/0azxb1jY2PQE/tmQBn39vX1JSKwtbU11NTUYH19HXoixYFk3MvCrfJ0cS9zQkMqeDopZ4Ar7lWL0tLSlCaPjdIB7rhXDUpKUh7JXzw2Sge44141iMdT4pkdHhulA9xxr144OkocNEcOHDRKB7iefD2hPAuFpQrLKmhNbW2tvPmVx0bpQFCqOBwOaE1ra6u8+ZrHJsUBygJEqXjB6h6PJ1vuRhVkDrD3CQs8NumO0y5SrLy8HLOzs+jp6Ulk14xGI+rr65XnlaJRVVUFl8slNRd504z7HCBDduS8R4qzQY+OjmJlZQWxWAzRaBRDQ0NQg8HBQTQ2/nuV8JjXLmOGKlNEtru7C5vNhmAwiGLBlk4gEJBm9yXdxKu8thkTW3SRCOkCVU+TbpBY1mmH/QhbWizQKXQ5MXu32425uTnpWj9JTpFrCOUIaVZuU+FF8tA3Pz8Pr9eLcDic0MbGRs5rVFdXo7m5OZHk7erqgt1ul75ip8c7dNOeQwDhJGeOl9z5wt5+3srnpYdwbpQtLSoukjwofOdmd/0+u16+b2wKSjPTbBjx9xlpSMrEYfad9JH0gYkGXlDgoU6eXEMO/Wn0DwAAAP//JBj7PQAAAAZJREFUAwCK/EcHqQT75AAAAABJRU5ErkJggg==") 16 3, pointer !important;
+}
+html.a11y-cursor input[type="text"],
+html.a11y-cursor input[type="tel"],
+html.a11y-cursor input[type="email"],
+html.a11y-cursor input[type="date"],
+html.a11y-cursor textarea { cursor: text !important; }
+
+/* --- 9. the focus ring, put back ----------------------------------------
+   styles.css draws it as `outline: 2px solid var(--charcoal)` (#1C1A18).
+   Two of the modes above destroy it:
+     · high contrast repaints every background #000, and #1C1A18 on #000 is
+       1.2:1 — the ring is there and nobody can see it;
+     · link highlighting puts a permanent `outline: 1px solid #000` on every
+       <a> with !important, so a focused link looks exactly like an unfocused
+       one and the indicator stops existing.
+   Either one on its own fails WCAG 2.4.7 across the whole site, which is not
+   a thing an accessibility menu is allowed to do. Yellow on the black ground
+   of contrast mode; black, thicker and further out on the yellow ground of
+   link mode, so it reads as a change from the resting 1px. */
+html.a11y-contrast body :focus-visible {
+  outline: 3px solid #FFFF00 !important;
+  outline-offset: 2px !important;
+}
+html.a11y-links body a:focus-visible {
+  outline: 4px solid #000 !important;
+  outline-offset: 3px !important;
+}
+
+/* ================================================ the widget, re-asserted ===
+   Everything above deliberately reaches every element in <body>, the widget
+   included. These rules put the panel back. Each one out-specifies the rule
+   it is undoing (two classes and up, against one class plus a tag), so the
+   order in this file is not what is holding them up.
+   ---------------------------------------------------------------------- */
+
+/* Contrast: black-on-black rows and an invisible panel edge, undone.
+   `color: inherit` rather than a fixed colour, because the blanket rule above
+   has cut every descendant off from its parent — restoring inheritance means
+   the four rules below are enough, instead of one per element. */
+html.a11y-contrast .a11y-ui,
+html.a11y-contrast .a11y-ui * {
+  background-color: transparent !important;
+  color: inherit !important;
+  border-color: rgba(255, 253, 249, 0.4) !important;
+}
+html.a11y-contrast .a11y-ui .a11y-panel {
+  background-color: var(--a11y-bg) !important;
+  color: var(--a11y-ink) !important;
+  border-color: var(--a11y-accent) !important;
+}
+html.a11y-contrast .a11y-ui .a11y-fab {
+  background-color: var(--a11y-accent) !important;
+  color: var(--a11y-on-accent) !important;
+  border-color: var(--a11y-on-accent) !important;
+}
+html.a11y-contrast .a11y-ui .a11y-item,
+html.a11y-contrast .a11y-ui .a11y-size {
+  background-color: var(--a11y-row) !important;
+}
+html.a11y-contrast .a11y-ui .a11y-item[aria-pressed="true"] {
+  background-color: var(--a11y-accent) !important;
+  color: var(--a11y-on-accent) !important;
+  border-color: var(--a11y-accent) !important;
+}
+html.a11y-contrast .a11y-ui .a11y-item__state { border-color: currentColor !important; }
+html.a11y-contrast .a11y-ui .a11y-link { color: var(--a11y-accent) !important; }
+html.a11y-contrast .a11y-ui .a11y-step { border-color: var(--a11y-accent) !important; }
+
+/* Inversion: the panel is inverted back to itself. Applying the filter to the
+   two fixed elements individually — never to their static wrapper — because a
+   filter on the wrapper WOULD become their containing block and throw them
+   into the middle of the page. */
+html.a11y-invert .a11y-fab,
+html.a11y-invert .a11y-panel { filter: invert(1) hue-rotate(180deg); }
+
+/* Highlight links: the statement link keeps the panel's own styling. */
+html.a11y-links .a11y-ui a {
+  background: transparent !important;
+  color: var(--a11y-accent) !important;
+  outline: 0 !important;
+  text-decoration-thickness: auto !important;
+}
+
+/* The two rules in part 9 reach into the panel as well: they would have put a
+   yellow ring on the champagne trigger (1.2:1) and, via the `outline: 0` just
+   above, left the statement link with no ring at all. The widget keeps its own
+   ring in every mode. */
+html.a11y-contrast .a11y-ui :focus-visible,
+html.a11y-links .a11y-ui :focus-visible,
+html.a11y-links .a11y-ui a:focus-visible {
+  outline: 3px solid var(--a11y-focus) !important;
+  outline-offset: 2px !important;
+}
+html.a11y-contrast .a11y-ui .a11y-fab:focus-visible,
+html.a11y-links .a11y-ui .a11y-fab:focus-visible {
+  outline-color: var(--a11y-on-accent) !important;
+}
+
+/* Readable font / text spacing: the panel is already set in a system sans at
+   a comfortable size, and its rows are fixed-height. */
+html.a11y-font .a11y-ui,
+html.a11y-font .a11y-ui * {
+  font-family: var(--sans, Heebo, Arial, sans-serif) !important;
+}
+html.a11y-spacing .a11y-ui,
+html.a11y-spacing .a11y-ui * {
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+}
+html.a11y-spacing .a11y-ui .a11y-group__label,
+html.a11y-spacing .a11y-ui .a11y-item__state { letter-spacing: .04em !important; }
+
+/* Stop animations: the panel's entrance is an animation too. */
+html.a11y-no-motion .a11y-panel { animation: none !important; }

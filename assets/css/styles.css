@@ -498,7 +498,7 @@ summary::-webkit-details-marker { display: none; }
 
 .about__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: clamp(34px, 6vw, 90px);
   align-items: center;
 }
@@ -963,7 +963,7 @@ summary::-webkit-details-marker { display: none; }
   margin: 0 auto;
   padding: clamp(84px, 11vw, 150px) var(--gutter);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: clamp(34px, 5vw, 80px);
   align-items: center;
 }
@@ -1116,7 +1116,10 @@ textarea.field__control { resize: vertical; }
 .site-footer__bottom {
   max-width: var(--shell);
   margin: 0 auto;
-  padding: 20px var(--gutter) 40px;
+  /* Clear the floating controls: WhatsApp, the assistant launcher and the
+     accessibility button. 132px is the tallest outer edge (assistant:
+     bottom 84 + 48 high). Without this they cover the legal links. */
+  padding: 20px var(--gutter) calc(40px + 132px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
   display: flex;
   flex-wrap: wrap;

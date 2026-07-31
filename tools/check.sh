@@ -5,7 +5,7 @@ fail=0
 say() { printf '%-46s %s\n' "$1" "$2"; }
 
 # every src/srcset target actually exists
-missing=$(grep -oE '(src|srcset)="[^"]*"' index.html accessibility.html privacy.html camera-3d.html 2>/dev/null \
+missing=$(grep -oE '(src|srcset)="[^"]*"' index.html accessibility.html privacy.html terms.html camera-3d.html admin.html 2>/dev/null \
   | sed 's/.*="//;s/"$//' | tr ',' '\n' | sed 's/ [0-9]*w$//' | tr -d ' ' \
   | grep -E '^assets/' | sort -u | while read -r f; do [ -f "$f" ] || echo "$f"; done)
 if [ -n "$missing" ]; then say "קבצים חסרים" "✗"; echo "$missing" | sed 's/^/    /'; fail=1; else say "כל הנכסים קיימים" "✓"; fi
@@ -36,7 +36,11 @@ print(f'{"JSON-LD תקין":<46} ✓ ({len(blocks)} בלוקים)')
 PY
 
 # no external runtime dependency crept back in
-ext=$(grep -oE 'https://(fonts\.googleapis|fonts\.gstatic|unpkg)\.com' index.html camera-3d.html 2>/dev/null | sort -u)
+ext=$(grep -oE 'https://(fonts\.googleapis|fonts\.gstatic|unpkg|cdn\.jsdelivr)\.(com|net)' index.html camera-3d.html accessibility.html privacy.html terms.html admin.html 2>/dev/null | sort -u)
 if [ -n "$ext" ]; then say "תלות חיצונית חזרה" "✗"; echo "$ext" | sed 's/^/    /'; fail=1; else say "אין תלויות חיצוניות בזמן ריצה" "✓"; fi
+
+# a service key or private token must never reach anything the browser loads
+secrets=$(grep -lE 'service_role[\"'"'"']*[[:space:]]*[:=]|sb_secret_|sk-ant-' index.html admin.html assets/js/*.js 2>/dev/null)
+if [ -n "$secrets" ]; then say "סוד בקוד צד-לקוח" "✗"; echo "$secrets" | sed 's/^/    /'; fail=1; else say "אין סודות בקוד צד-לקוח" "✓"; fi
 
 exit $fail

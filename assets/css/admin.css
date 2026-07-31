@@ -1,0 +1,341 @@
+/* ==========================================================================
+   Amora Studio — ניהול פניות (private lead CRM)
+   Loaded after styles.css and reuses its custom properties, .form/.field and
+   .chip. Everything here is prefixed crm- so nothing on the public site can
+   pick it up by accident. Logical properties throughout — this page is RTL.
+   ========================================================================== */
+
+.crm { background: var(--cream); }
+
+/* ------------------------------------------------------------- header --- */
+
+.crm__header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(247, 242, 234, 0.94);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.crm__header-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 14px var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.crm__brand {
+  font-family: var(--script);
+  font-style: italic;
+  font-size: 14px;
+  letter-spacing: .2em;
+  color: var(--champagne);
+  margin: 0;
+}
+.crm__title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  line-height: 1.2;
+  margin: 0;
+}
+.crm__header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.crm__ghost {
+  min-height: 44px;
+  padding: 11px 18px;
+  font-size: 12px;
+  letter-spacing: .14em;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--charcoal);
+  cursor: pointer;
+  transition: background 300ms, border-color 300ms;
+}
+.crm__ghost:hover { background: var(--champagne); border-color: var(--champagne); color: var(--charcoal); }
+.crm__ghost[hidden] { display: none; }
+
+/* --------------------------------------------------------------- shell --- */
+
+.crm__main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(22px, 4vw, 40px) var(--gutter) clamp(60px, 10vw, 110px);
+}
+
+/* ---------------------------------------------------------------- gate --- */
+
+.crm__gate[hidden],
+.crm__app[hidden] { display: none; }
+
+.crm__gate { display: grid; place-items: center; padding-block: clamp(20px, 8vw, 70px); }
+.crm__login { width: min(420px, 100%); }
+.crm__login-note { font-size: 14px; color: var(--mocha); margin: 0; }
+/* Passwords and e-mail addresses are LTR sequences inside an RTL document. */
+.crm__login .field__control[type="password"],
+.crm__login .field__control[type="email"] { direction: ltr; text-align: right; }
+
+/* --------------------------------------------------------------- stats --- */
+
+.crm__stats {
+  list-style: none;
+  margin: 0 0 clamp(18px, 3vw, 26px);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.crm-stat {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 2px;
+}
+.crm-stat--alert { border-color: rgba(168, 92, 74, 0.45); }
+.crm-stat__num {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1.1;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.crm-stat--alert .crm-stat__num { color: var(--terracotta); }
+.crm-stat__label { font-size: 12px; letter-spacing: .06em; color: var(--mocha); }
+
+/* ------------------------------------------------------------- toolbar --- */
+
+.crm__toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  align-items: end;
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 16px 18px;
+}
+.crm__search { grid-column: 1 / -1; }
+@media (min-width: 760px) {
+  .crm__search { grid-column: auto; }
+}
+.crm__chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-self: end;
+  padding-block-end: 2px;
+}
+.crm__chips .chip { min-height: 44px; }
+
+.crm__meta {
+  font-size: 12px;
+  color: var(--mocha);
+  margin: 14px 0 0;
+  min-height: 18px;
+}
+
+/* -------------------------------------------------------------- states --- */
+
+.crm__state {
+  margin: 22px 0 0;
+  padding: 22px 20px;
+  border: 1px dashed var(--line);
+  border-radius: 2px;
+  background: var(--ivory);
+  font-size: 15px;
+  color: var(--mocha);
+  text-align: center;
+}
+.crm__state[hidden] { display: none; }
+/* Terracotta carries the alarm on the border and the button edge, but not in
+   the running text: on this tinted panel (which sits on --cream, not --ivory)
+   terracotta measures 4.03:1 against its own background, under the 4.5:1 AA
+   floor for 15px. This panel is where "no read permission" and "could not
+   load" are explained, so it has to be readable. Charcoal measures 15.6:1. */
+.crm__state--error {
+  border-style: solid;
+  border-color: var(--terracotta);
+  background: rgba(168, 92, 74, 0.07);
+  color: var(--charcoal);
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+.crm__state-text { margin: 0; max-width: 46ch; }
+.crm__state--error .crm__ghost { border-color: var(--terracotta); color: var(--charcoal); }
+.crm__state--error .crm__ghost:hover { background: var(--terracotta); color: var(--ivory); }
+
+/* --------------------------------------------------------------- cards --- */
+
+.crm__list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 900px) {
+  .crm__list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+
+.crm-card {
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  /* inline-start is the right edge in RTL — the flag sits beside the name. */
+  border-inline-start: 3px solid transparent;
+  border-radius: 2px;
+  padding: 18px 20px;
+  display: grid;
+  gap: 12px;
+}
+/* An event inside the next month is the one thing here that cannot wait. */
+.crm-card.is-urgent { border-inline-start-color: var(--terracotta); }
+.crm-card.is-soon { border-inline-start-color: var(--champagne); }
+.crm-card.is-past { opacity: .72; }
+.crm-card.is-handled { background: var(--cream); opacity: .8; }
+.crm-card.is-handled.is-urgent { border-inline-start-color: var(--sand); }
+
+.crm-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+.crm-card__name {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.25;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.crm-card__badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.crm-card__badge {
+  font-size: 11px;
+  letter-spacing: .08em;
+  padding: 5px 10px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  color: var(--mocha);
+  white-space: nowrap;
+}
+.crm-card__badge--urgent {
+  border-color: var(--terracotta);
+  background: var(--terracotta);
+  color: var(--ivory);
+}
+.crm-card__badge--past { opacity: .7; }
+.crm-card__badge--status { border-color: rgba(201, 174, 140, 0.6); }
+.crm-card.is-handled .crm-card__badge--status {
+  background: var(--champagne);
+  color: var(--charcoal);
+  border-color: var(--champagne);
+}
+
+.crm-card__grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 14px;
+}
+.crm-card__dt { color: var(--mocha); font-size: 12px; letter-spacing: .06em; padding-block-start: 2px; }
+.crm-card__dd { margin: 0; overflow-wrap: anywhere; }
+.crm-card__tel { color: var(--charcoal); border-bottom: 1px solid var(--line); }
+.crm-num { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+.crm-card__message {
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: 14px;
+  color: var(--mocha);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.crm-card.is-handled .crm-card__message { background: var(--ivory); }
+
+.crm-card__stamp { margin: 0; font-size: 12px; color: var(--mocha); opacity: .85; }
+
+.crm-card__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+.crm-act {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--charcoal);
+  cursor: pointer;
+  transition: background 260ms, border-color 260ms, color 260ms;
+}
+.crm-act:hover { background: var(--champagne); border-color: var(--champagne); color: var(--charcoal); }
+.crm-act--wa { border-color: rgba(201, 174, 140, 0.75); }
+.crm-act--mark { background: var(--champagne); border-color: var(--champagne); color: var(--charcoal); }
+.crm-act--mark:hover { background: var(--sand); }
+.crm-act[disabled] { opacity: .55; cursor: wait; }
+
+/* --------------------------------------------------------------- toast --- */
+
+.crm__toast {
+  position: fixed;
+  inset-block-end: 18px;
+  inset-inline-start: 50%;
+  transform: translateX(50%) translateY(8px);
+  z-index: 40;
+  margin: 0;
+  padding: 13px 20px;
+  background: var(--charcoal);
+  color: var(--ivory);
+  border-radius: 2px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 220ms var(--ease), transform 220ms var(--ease);
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+/* translateX(50%) recentres in RTL: inset-inline-start:50% puts the box's
+   right edge at the middle of the screen, so it must move right, not left. */
+.crm__toast.is-shown { opacity: 1; transform: translateX(50%) translateY(0); }
+.crm__toast[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .crm__toast { transition: none; }
+}
+
+/* -------------------------------------------------------------- mobile --- */
+
+@media (max-width: 560px) {
+  .crm__header-inner { padding-block: 10px; }
+  .crm__title { font-size: 1.15rem; }
+  .crm-card { padding: 16px; }
+  .crm-card__grid { grid-template-columns: 1fr; gap: 2px; }
+  .crm-card__dt { padding-block-start: 8px; }
+  .crm-card__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media print {
+  .crm__header-actions,
+  .crm__toolbar,
+  .crm-card__actions,
+  .crm__toast { display: none; }
+}
