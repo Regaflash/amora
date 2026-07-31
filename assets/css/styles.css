@@ -57,7 +57,13 @@ summary { list-style: none; cursor: pointer; }
 summary::-webkit-details-marker { display: none; }
 
 ::selection { background: var(--sand); color: var(--charcoal); }
-:focus-visible { outline: 2px solid var(--champagne); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--charcoal); outline-offset: 3px; }
+/* Champagne rings scored 1.9:1 on the cream page. Charcoal carries the cream
+   sections; the dark-ground sections need the inverse to stay visible. */
+.hero :focus-visible,
+.film :focus-visible,
+.contact :focus-visible,
+.lightbox :focus-visible { outline-color: var(--ivory); }
 
 @keyframes amFloat {
   0%, 100% { transform: translateY(0); opacity: .85; }
@@ -181,7 +187,7 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .18em;
   padding: 17px 36px;
 }
-.btn--outline:hover { background: var(--champagne); color: var(--ivory); }
+.btn--outline:hover { background: var(--champagne); color: var(--charcoal); }
 
 .link-underline {
   font-size: 12px;
@@ -576,7 +582,9 @@ summary::-webkit-details-marker { display: none; }
 .chip[aria-pressed="true"] {
   border-color: var(--champagne);
   background: var(--champagne);
-  color: var(--ivory);
+  /* Ivory on champagne is 2.1:1 — below AA for any text size. Charcoal on the
+     same fill is 8.2:1. Applies to every champagne-filled control below. */
+  color: var(--charcoal);
 }
 
 /* Columns are 300px wide at their narrowest; the browser fits as many as
@@ -783,7 +791,7 @@ summary::-webkit-details-marker { display: none; }
   color: var(--charcoal);
   transition: background 320ms, color 320ms;
 }
-.gear__cta:hover { background: var(--champagne); color: var(--ivory); }
+.gear__cta:hover { background: var(--champagne); color: var(--charcoal); }
 .gear__stage {
   border: 1px solid var(--line);
   border-radius: 2px;
@@ -902,7 +910,7 @@ summary::-webkit-details-marker { display: none; }
   border: 0;
   cursor: pointer;
   border-radius: 2px;
-  background: rgba(107, 91, 75, 0.28);
+  background: rgba(107, 91, 75, 0.6);
   transition: width 400ms, background 400ms;
 }
 .quotes__dot[aria-current="true"] { width: 26px; background: var(--champagne); }
@@ -972,6 +980,10 @@ summary::-webkit-details-marker { display: none; }
   padding: clamp(24px, 3vw, 40px);
 }
 .form__fields { display: grid; gap: 16px; }
+/* display:grid outranks the hidden attribute's UA display:none, so without
+   this the JS setting fields.hidden = true leaves the whole form on screen
+   underneath the thank-you panel. Same pattern as the rules above. */
+.form__fields[hidden] { display: none; }
 .form__title { font-family: var(--serif); font-weight: 600; font-size: 20px; margin: 0; }
 .field { display: grid; gap: 7px; }
 .field__label { font-size: 12px; letter-spacing: .14em; color: var(--mocha); }

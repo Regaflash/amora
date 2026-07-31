@@ -27,9 +27,9 @@
     formEndpoint: '',
     formKey: '',
 
-    // Until an endpoint is configured the form does NOT pretend to send.
-    // It hands the completed details to WhatsApp instead, so the lead still
-    // reaches the studio and the visitor is never told a lie.
+    // Until an endpoint is configured the form does NOT pretend to send. It
+    // hands the completed details to WhatsApp and says so plainly — the
+    // thank-you panel is reserved for a delivery we actually confirmed.
     whatsapp: '972503662699'
   };
 
@@ -509,7 +509,10 @@
       if (!values.name.trim() || values.name.trim().length < 2) {
         errors.name = 'נעים להכיר — איך קוראים לכם?';
       }
-      if (!/^0\d{1,2}[-\s]?\d{7}$|^\+?\d{9,15}$/.test(values.phone.replace(/[\s-]/g, ''))) {
+      // Strip the separators people actually type. Only spaces and hyphens were
+      // stripped before, so a perfectly valid "(050) 366-2699" was rejected and
+      // the lead bounced off its own contact form.
+      if (!/^0\d{1,2}\d{7}$|^\+?\d{9,15}$/.test(values.phone.replace(/[\s\-().]/g, ''))) {
         errors.phone = 'מספר טלפון לא תקין';
       }
       if (!values.date) errors.date = 'איזה תאריך אנחנו בודקים?';
@@ -599,11 +602,29 @@
         };
       }
 
-      // Nothing configured yet: hand the details to WhatsApp rather than
-      // showing a thank-you for a message that was never sent anywhere.
+      // Nothing configured yet: hand the details to WhatsApp. The send is not
+      // ours to confirm — the visitor still has to press send over there — so
+      // succeed() must NOT run. Saying "קיבלנו" here would be a lie, and a
+      // visitor who closes that tab becomes a lead the studio never hears about.
       if (!endpoint) {
         window.open(waLink(summary), '_blank', 'noopener');
-        succeed();
+        sending = false;
+        submitBtn.classList.remove('is-sending');
+        submitBtn.textContent = 'שלחו — נחזור אליכם היום';
+        failure.hidden = false;
+        // Assigning textContent also clears the anchor appended by a previous
+        // submit, so repeated attempts do not stack links.
+        failure.textContent = 'הפרטים מוכנים בוואטסאפ — נותר ללחוץ שם על שליחה, ' +
+                              'ונחזור אליכם היום. אם החלון לא נפתח:';
+        var hand = document.createElement('a');
+        hand.href = waLink(summary);
+        hand.target = '_blank';
+        hand.rel = 'noopener';
+        hand.className = 'form__done-cta';
+        hand.style.marginTop = '12px';
+        hand.textContent = 'פתיחת וואטסאפ עם הפרטים →';
+        failure.appendChild(document.createElement('br'));
+        failure.appendChild(hand);
         return;
       }
 
