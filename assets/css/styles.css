@@ -377,21 +377,122 @@ summary::-webkit-details-marker { display: none; }
   inset: 0;
   background: var(--charcoal);
 }
-.hero__poster,
-.hero__video {
+.hero__poster {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-/* The video fades over the poster once it can actually play, so a blocked or
-   slow load degrades to a still frame instead of a black box. */
-.hero__video {
+
+/* --- the YouTube layer ---------------------------------------------------
+   main.js builds this after first paint and fades it in only once the player
+   has proved it is alive (see initHero). Until then — and for good, if YouTube
+   is blocked, throttled or unreachable — it is a transparent nothing and the
+   poster underneath is the hero, exactly as it was.
+
+   The frame is decoration: pointer-events:none so a click can never navigate
+   to YouTube, and the .hero__scrim below sits above it in paint order as a
+   second lock. main.js adds inert + tabindex="-1" for the keyboard. */
+.hero__yt {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
   opacity: 0;
   transition: opacity 900ms var(--ease);
+
+  /* The box the frame has to cover, for browsers with no container queries.
+     Exact as long as .hero keeps height:100svh with min-height:640px — the
+     min-height is what makes a plain 100svh wrong on a phone held sideways.
+     100vw may include the scrollbar, which over-crops by a few pixels; that
+     way round is harmless, the other way would letterbox.
+
+     This first pair deliberately uses 100vh, not 100svh. A browser old enough
+     to lack container queries may also lack small-viewport units, and an
+     unknown unit inside a custom property is not caught at parse time — it
+     fails when it is substituted into the calc() below, which drops width and
+     height to their initial `auto` and leaves a 300x150 iframe sitting in the
+     middle of the hero. 100vh is a valid value everywhere, and in exactly
+     those browsers `height: 100svh` on .hero is dropped too, so the hero is
+     never taller than 100vh and this over-covers — the harmless direction. */
+  --yt-box-w: 100vw;
+  --yt-box-h: max(640px, 100vh);
 }
-.hero__video.is-ready { opacity: 1; }
+.hero__yt.is-ready { opacity: 1; }
+/* Hero copy measured below AA once footage plays full-bleed on phones: eyebrow
+   3.51:1, sub 4.29:1 against the brightest frame a white veil can produce.
+   0.18 alpha was not enough at 390px (4.30:1); 0.24 clears everything —
+   eyebrow 5.17, sub 6.25, title 8.28, ghost button 8.15. Scoped to the YouTube
+   layer, so it fades in and out with the footage and a blocked or
+   reduced-motion visitor still gets the poster the design was tuned for. */
+.hero__yt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 26, 24, 0.24);
+}
+
+/* Where small-viewport units exist, use them: 100vh is the *large* viewport on
+   a phone, so it over-covers by the height of the browser chrome. */
+@supports (height: 100svh) {
+  .hero__yt { --yt-box-h: max(640px, 100svh); }
+}
+
+@supports (container-type: size) {
+  /* Measured from the hero itself, so the maths survives any future change to
+     how the hero is sized. These are read by .hero__yt-frame, whose nearest
+     query container is this element — an element's own cq units would look
+     past it to an ancestor. */
+  .hero__yt { container-type: size; --yt-box-w: 100cqw; --yt-box-h: 100cqh; }
+}
+
+.hero__yt-frame {
+  display: block;
+  border: 0;
+  /* Centred by hand rather than by grid or flex alignment. Both of those treat
+     a child bigger than its box as an overflow to be protected against and
+     quietly fall back to start alignment — measured, in Chromium, in RTL: the
+     frame ended up pinned to the right edge with the whole crop taken off one
+     side. top/left are physical on purpose; a physical offset with a physical
+     translate is the one combination that behaves identically in RTL and LTR. */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* A few percent past "just covering". On a viewport narrower than the source
+     the cover maths crops the sides and leaves the top and bottom edges exactly
+     on the hero's — which is where a channel watermark or a hover title bar
+     would sit. The overscan hides a band of 2.83% of each frame dimension
+     (19.2px at 320x568, the tightest viewport tested) on every
+     viewport. It costs 3% of the frame on each side; set it to 1 to turn it
+     off. It cannot help with an end screen, which YouTube draws in the middle:
+     those have to be taken off the two videos in YouTube Studio. */
+  --yt-overscan: 1.06;
+  transform: translate(-50%, -50%) scale(var(--yt-overscan));
+  /* Floor for browsers that have neither container queries nor max(): the
+     frame fills the box and YouTube letterboxes inside it. Never reached in
+     practice; it is here so a dropped declaration cannot leave a 300x150px
+     iframe sitting in the middle of the hero. */
+  width: 100%;
+  height: 100%;
+}
+
+/* Cover, not contain. The frame is grown to the larger of "as wide as the box"
+   and "as tall as the box", keeping the source's own aspect ratio, and the
+   excess is cropped by overflow:hidden — which, with the overscan above, is
+   what puts YouTube's corner chrome outside the visible area.
+      16:9 source · w = max(box_w, box_h × 16/9), h = max(box_h, box_w × 9/16)
+       9:16 source · w = max(box_w, box_h ×  9/16), h = max(box_h, box_w × 16/9)
+   Both branches of each max() describe the same rectangle, so the ratio holds
+   whichever one wins. */
+.hero__yt--wide .hero__yt-frame {
+  width: max(var(--yt-box-w), calc(var(--yt-box-h) * 16 / 9));
+  height: max(var(--yt-box-h), calc(var(--yt-box-w) * 9 / 16));
+}
+.hero__yt--vertical .hero__yt-frame {
+  width: max(var(--yt-box-w), calc(var(--yt-box-h) * 9 / 16));
+  height: max(var(--yt-box-h), calc(var(--yt-box-w) * 16 / 9));
+}
 /* Two layers: the design's original top-to-bottom wash, plus an ellipse
    concentrated behind the text block. Measured worst-case contrast over the
    loop was 2.18:1 with the wash alone — the bride's veil is near-white, and

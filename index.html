@@ -221,9 +221,13 @@
 
   <!-- ===== 01 · Hero ===== -->
   <section class="hero" id="top">
-    <!-- The poster is the LCP element and always renders. The <video> is left
-         empty on purpose: main.js picks the orientation and attaches sources
-         only when it is appropriate to play (see initHero). -->
+    <!-- The poster is the largest above-the-fold paint and must keep
+         fetchpriority="high"; Chromium actually reports the <h1> as LCP.
+         It always renders. Nothing else is in
+         here: after the page has loaded, main.js appends a muted, looping,
+         non-interactive YouTube frame over it and fades that in only once the
+         player has proved it is playing (see initHero). If YouTube is slow,
+         blocked or unreachable the poster is simply left alone. -->
     <div class="hero__media" data-hero>
       <picture>
         <source type="image/webp" media="(max-aspect-ratio: 1/1)" srcset="assets/img/hero-vertical-poster.webp" />
@@ -232,8 +236,6 @@
         <img class="hero__poster" src="assets/img/hero-wide-poster.jpg" alt=""
              width="1280" height="720" fetchpriority="high" decoding="async" />
       </picture>
-      <video class="hero__video" muted loop playsinline preload="none"
-             aria-hidden="true" tabindex="-1" data-hero-video></video>
     </div>
     <div class="hero__scrim" aria-hidden="true"></div>
 

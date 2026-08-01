@@ -31,6 +31,34 @@
   var FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), ' +
     'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+  /** The hero's background footage is a cross-origin YouTube frame, not a
+   *  <video>. Nothing in this document can pause it directly, and no CSS rule
+   *  can reach inside it: display:none stops it being painted, it does not stop
+   *  it playing. The only channel into a frame we do not own is postMessage,
+   *  and the message below is the one the player itself listens for.
+   *
+   *  Only the hero. The showreel further down the page is an iframe too, but a
+   *  visitor put it there by pressing play and it carries its own controls;
+   *  WCAG 2.2.2 is about motion that starts on its own. */
+  var HERO_FRAME_SEL = '.hero__yt-frame';
+
+  // Where a message from the hero's player may legitimately come from. The
+  // embed is requested from nocookie and is free to redirect to youtube.com.
+  var YT_ORIGINS = ['https://www.youtube-nocookie.com', 'https://www.youtube.com'];
+
+  /** A player that is playing narrates itself several times a second, and a
+   *  command sent back on every one of those is a message storm — worse, if a
+   *  player ever answers a command with a message, an unbounded loop. Measured:
+   *  without these two limits a stub that echoes its commands took 23,638
+   *  messages in four seconds. So: no more than one command per gap, and only
+   *  a handful per request. The budget is refilled whenever a mode changes, and
+   *  it is spent only when the player actually speaks — so a player that is
+   *  slow to load does not burn it while we wait. */
+  var HERO_STOP_GAP = 700;      // ms between commands
+  var HERO_STOP_TRIES = 8;      // commands per "stop it" request
+  var heroStopAt = 0;
+  var heroStopLeft = 0;
+
   /* ------------------------------------------------------------- icons --- */
 
   var ICONS = {
@@ -117,6 +145,14 @@
   function motionLocked() { return motionQuery.matches; }
   function motionOff() { return state.motion || motionLocked(); }
 
+  /** Two modes want the hero's footage stopped, for two different reasons.
+   *  "עצירת אנימציות" is the obligation: continuously moving footage behind the
+   *  main heading is precisely what that control exists for. High contrast is
+   *  housekeeping: the CSS repaints the scrim opaque and takes .hero__yt out of
+   *  the paint tree, so the player is left spending someone's battery and data
+   *  on pictures nobody can see. */
+  function heroOff() { return motionOff() || state.contrast; }
+
   /* ------------------------------------------------------- apply modes --- */
 
   var root = document.documentElement;
@@ -127,7 +163,15 @@
       var on = m.key === 'motion' ? motionOff() : state[m.key];
       root.classList.toggle(m.cls, on);
     }
-    if (motionOff()) pauseMedia();
+    enforceStopped();
+  }
+
+  /** Called after every change of mode, and again once the DOM exists. Both
+   *  halves are cheap and idempotent, so it is safe to run on any doubt. */
+  function enforceStopped() {
+    heroStopLeft = heroOff() ? HERO_STOP_TRIES : 0;
+    if (motionOff()) pauseMedia();     // pauseMedia covers the hero as well
+    else if (heroOff()) pauseHeroFrames();
   }
 
   function pauseMedia() {
@@ -136,6 +180,31 @@
     for (var i = 0; i < vids.length; i++) {
       try { vids[i].pause(); } catch (e) {}
     }
+    pauseHeroFrames();
+  }
+
+  function heroFrames() {
+    if (!document.body || !document.querySelectorAll) return [];
+    return document.querySelectorAll(HERO_FRAME_SEL);
+  }
+
+  /** The literal below is the player's own vocabulary and carries nothing about
+   *  the visitor. '*' as the target origin rather than a fixed one: the embed
+   *  may sit on either YouTube origin, and postMessage silently drops a message
+   *  whose target does not match — a fixed guess would fail closed and leave
+   *  the footage playing. The message can still only reach this one frame. */
+  function pauseFrame(frame) {
+    var win = frame && frame.contentWindow;
+    if (!win) return;
+    try {
+      win.postMessage(JSON.stringify(
+        { event: 'command', func: 'pauseVideo', args: [], id: 1, channel: 'widget' }), '*');
+    } catch (e) {}
+  }
+
+  function pauseHeroFrames() {
+    var frames = heroFrames();
+    for (var i = 0; i < frames.length; i++) pauseFrame(frames[i]);
   }
 
   // main.js re-plays the hero loop whenever it scrolls back into view or the
@@ -146,6 +215,34 @@
     var t = e.target;
     if (t && t.tagName === 'VIDEO' && t.pause) t.pause();
   }, true);
+
+  // The same defence, for the frame. A <video> can be paused the instant it
+  // dares to play; a player inside a frame cannot, because a command sent
+  // before it has finished loading is dropped on the floor and it then starts
+  // by itself anyway. The only reliable moment is when it speaks to us — which
+  // it does as soon as it is ready, and again on every state change. So each
+  // time it does, while a mode that wants it stopped is on, it is told again.
+  //
+  // That closes the one window main.js cannot: a visitor who presses "stop
+  // animations" while the frame is still loading. main.js pauses a player that
+  // does not exist yet, and its reveal path only decides whether to show the
+  // frame, not whether to re-stop it. Without this the footage would play on,
+  // invisible, for as long as the page stayed open.
+  window.addEventListener('message', function (e) {
+    if (!e || !heroOff() || heroStopLeft <= 0) return;
+    if (YT_ORIGINS.indexOf(e.origin) < 0) return;   // never trust a stray sender
+    var now = +new Date();
+    if (now - heroStopAt < HERO_STOP_GAP) return;
+    var frames = heroFrames();
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].contentWindow === e.source) {
+        heroStopAt = now;
+        heroStopLeft--;
+        pauseFrame(frames[i]);
+        return;
+      }
+    }
+  });
 
   // Modes are on <html> before the first paint; the text pass needs layout.
   applyModes();
@@ -481,7 +578,9 @@
   function start() {
     if (!embedded()) buildUI();
     applyTextScale();
-    if (motionOff()) pauseMedia();
+    // applyModes() ran during head parse, before <body> existed, so its own
+    // call to this could not reach anything. This is the one that lands.
+    enforceStopped();
   }
 
   if (document.readyState === 'loading') {

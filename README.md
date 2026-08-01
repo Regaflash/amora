@@ -65,8 +65,8 @@ Two encodes, chosen at runtime by viewport shape — a phone held upright gets a
 
 | | |
 | --- | --- |
-| `hero-wide.mp4 / .webm` | 1920×1080, 8.5s |
-| `hero-vertical.mp4 / .webm` | 1080×1920, 8.5s |
+| `hero-wide-poster.jpg / .webp` | 1280×720 — the hero still, and the fallback whenever the video cannot load |
+| `hero-vertical-poster.jpg / .webp` | art-directed portrait cut of the same |
 
 `<source media>` is only evaluated when a `<video>` loads, never on resize, so
 the choice is made in JS (`initHero` in `main.js`) and redone if the viewport

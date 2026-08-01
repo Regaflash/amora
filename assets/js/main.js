@@ -159,76 +159,268 @@
 
   /* --------------------------------------------------------------- hero --- */
 
-  // Two encodes: a 16:9 loop for landscape viewports and a 9:16 one for phones
-  // held upright, so neither orientation is a centre-crop of the other.
-  // <source media> is only evaluated when the element loads, never on resize —
-  // so the choice is made here in JS and redone if the viewport crosses over.
-  var HERO = {
-    wide:     { webm: 'assets/video/hero-wide.webm',     mp4: 'assets/video/hero-wide.mp4' },
-    vertical: { webm: 'assets/video/hero-vertical.webm', mp4: 'assets/video/hero-vertical.mp4' }
-  };
+  // The hero plays the studio's own footage from YouTube. Two cuts, picked by
+  // the viewport's orientation so neither is a centre-crop of the other: the
+  // 16:9 showreel on landscape screens, the 9:16 Short on a phone held upright.
+  //
+  // What this costs, decided by the owner with the trade-offs on the table:
+  // every visitor's browser now contacts Google the moment the page settles,
+  // where the film section further down still asks first. privacy.html says so
+  // in as many words — keep the two in step if this ever changes back.
+  var HERO_YT = { wide: '2DHdORDXVmo', vertical: '3O13FGO_f08' };
 
-  function initHero() {
-    var video = $('[data-hero-video]');
-    if (!video) return;
+  // Origins the embed may legitimately speak from. frame-src in vercel.json
+  // already allows both; nocookie is what we ask for, youtube.com is where it
+  // is free to redirect.
+  var YT_ORIGINS = ['https://www.youtube-nocookie.com', 'https://www.youtube.com'];
 
-    // Never spend someone's data plan on decoration, and honour the OS
-    // reduced-motion setting — the poster alone is a complete hero.
-    // The connection check below is Chromium-only, so it never fired on iOS or
-    // Firefox and those phones fetched ~1MB of loop anyway. Gate on width first.
-    if (window.matchMedia(MOBILE_QUERY).matches) return;
-    var conn = navigator.connection || {};
-    if (reducedMotion || conn.saveData === true ||
-        /^(slow-2g|2g)$/.test(conn.effectiveType || '')) return;
+  var YT_PROOF_TIMEOUT = 12000;  // ms a frame gets to prove it is alive
+  var YT_SWAP_DELAY = 400;       // debounce across the orientation crossover
+  var YT_PING_EVERY = 500;
+  var YT_PING_MAX = 12;
+  var YT_MAX_FAILS = 2;          // give up asking after this many silent frames
 
-    var portrait = window.matchMedia('(max-aspect-ratio: 1/1)');
-    var current = null;
-
-    function load() {
-      var want = portrait.matches ? 'vertical' : 'wide';
-      if (want === current) return;
-      current = want;
-      video.classList.remove('is-ready');
-      video.innerHTML = '';
-      [['video/webm', HERO[want].webm], ['video/mp4', HERO[want].mp4]].forEach(function (pair) {
-        var srcEl = document.createElement('source');
-        srcEl.type = pair[0];
-        srcEl.src = pair[1];
-        video.appendChild(srcEl);
-      });
-      video.load();
-      var p = video.play();
-      // Autoplay can still be refused (iOS Low Power Mode); the poster stays.
-      if (p && p.catch) p.catch(function () {});
+  /** Everything the player needs, in the URL. Loading YouTube's IFrame API
+   *  script would put a third-party bundle on the critical path of a page that
+   *  has none, and widen a CSP that currently names no external script at all.
+   *  Every parameter below is doing a job — the player's defaults are all
+   *  wrong for a background: controls, keyboard, related videos, annotations. */
+  function heroSrc(id) {
+    var params = [
+      'autoplay=1',
+      'mute=1',           // no browser autoplays with sound. Muted is the price.
+      'loop=1',
+      'playlist=' + id,   // loop is a playlist feature: a video must be its own
+      'controls=0',
+      'disablekb=1',
+      'fs=0',
+      'rel=0',            // since 2018 this only restricts suggestions to this
+                          // channel, it does not remove them. What actually
+                          // keeps the end-of-video grid off the hero is
+                          // loop=1 + playlist above: the film never ends.
+      'iv_load_policy=3', // no annotation cards over the headline
+      'cc_load_policy=0', // and no captions either
+      'modestbranding=1', // YouTube cut most of this parameter's effect in 2023;
+                          // controls=0 is what actually removes the chrome
+      'playsinline=1',    // iOS: play in place, do not take over the screen
+      'enablejsapi=1',    // the postMessage channel only — no API script
+      'widgetid=1',
+      'hl=he'
+    ];
+    // The player uses this to address its messages back to us. location.origin
+    // is absent on older browsers and meaningless off http(s).
+    if (location.protocol === 'http:' || location.protocol === 'https:') {
+      params.push('origin=' + encodeURIComponent(
+        location.origin || (location.protocol + '//' + location.host)));
     }
-
-    video.addEventListener('canplay', function () { video.classList.add('is-ready'); });
-    portrait.addEventListener('change', load);
-
-    // Hold off until the page has settled so the loop never competes with the
-    // poster for LCP.
-    var start = function () { setTimeout(load, 200); };
-    if (document.readyState === 'complete') start();
-    else window.addEventListener('load', start, { once: true });
-
-    // Stop decoding when it cannot be seen — saves battery on phones.
-    document.addEventListener('visibilitychange', function () {
-      if (!current) return;
-      if (document.hidden) video.pause();
-      else video.play().catch(function () {});
-    });
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (!current) return;
-          if (en.isIntersecting) video.play().catch(function () {});
-          else video.pause();
-        });
-      }, { threshold: 0.01 }).observe(video);
-    }
+    return 'https://www.youtube-nocookie.com/embed/' + id + '?' + params.join('&');
   }
 
-  initHero();
+  function initHero() {
+    var media = $('[data-hero]');
+    if (!media) return;
+
+    // Never spend someone's data plan on decoration. What is gone from this
+    // guard is the phone-width skip: a phone now gets the vertical cut, which
+    // is the entire reason a vertical cut exists, and YouTube hands it a stream
+    // sized for the screen instead of the 1MB file we used to ship.
+    var conn = navigator.connection || {};
+    if (conn.saveData === true || /^(slow-2g|2g)$/.test(conn.effectiveType || '')) return;
+
+    var portrait = window.matchMedia('(max-aspect-ratio: 1/1)');
+    var root = document.documentElement;
+
+    var wrap = null;      // .hero__yt — the clipping box
+    var frame = null;     // the iframe inside it
+    var current = null;   // 'wide' | 'vertical' — which cut is loaded
+    var proven = false;   // has this frame ever spoken to us?
+    var started = false;  // has the page finished loading?
+    var visible = true;   // is the hero on screen?
+    var fails = 0;
+    var proofTimer = null, pingTimer = null, pings = 0, swapTimer = null;
+
+    /** Three ways a visitor can say "not this". The OS setting; the floating
+     *  widget's "stop animations"; the widget's high-contrast mode, which
+     *  repaints the scrim opaque black over the hero anyway. The widget stops
+     *  moving pictures by pausing <video> elements, and there is no longer a
+     *  <video> here for it to reach — so the hero watches the class the widget
+     *  writes on <html> instead. WCAG 2.2.2 asks that the stop actually stop. */
+    function suppressed() {
+      return reducedMotion ||
+        root.classList.contains('a11y-no-motion') ||
+        root.classList.contains('a11y-contrast');
+    }
+
+    function shouldPlay() { return started && visible && !document.hidden && !suppressed(); }
+
+    function want() { return portrait.matches ? 'vertical' : 'wide'; }
+
+    /** Nothing private travels in these: they are the two words the player
+     *  itself listens for. '*' rather than a fixed origin because the embed may
+     *  redirect between nocookie and youtube.com, and a mismatched target
+     *  origin is silently dropped. The message can only reach the frame we
+     *  hand it to. */
+    function post(message) {
+      if (!frame || !frame.contentWindow) return;
+      try { frame.contentWindow.postMessage(JSON.stringify(message), '*'); } catch (e) {}
+    }
+
+    function command(func) {
+      post({ event: 'command', func: func, args: [], id: 1, channel: 'widget' });
+    }
+
+    function stopTimers() {
+      if (proofTimer) { clearTimeout(proofTimer); proofTimer = null; }
+      if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+    }
+
+    function destroy() {
+      stopTimers();
+      if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      wrap = null; frame = null; current = null; proven = false;
+    }
+
+    /** The one thing that must never happen is a black or empty hero, so the
+     *  frame is faded in only on positive proof that the player is alive behind
+     *  it. The iframe's `load` event is no such proof — measured, not assumed:
+     *  a cross-origin iframe fires `load` for the browser's own error page too,
+     *  63ms after a refused connection. A message from a YouTube origin can
+     *  only have come from YouTube's own player code running in that frame. */
+    function reveal() {
+      if (proven || !wrap) return;
+      proven = true;
+      fails = 0;
+      stopTimers();
+      wrap.setAttribute('data-hero-yt', 'playing');
+      if (shouldPlay()) wrap.classList.add('is-ready');
+    }
+
+    window.addEventListener('message', function (e) {
+      if (!frame || !e || YT_ORIGINS.indexOf(e.origin) < 0) return;
+      if (frame.contentWindow && e.source !== frame.contentWindow) return;
+      reveal();
+    });
+
+    function build(which) {
+      destroy();
+      current = which;
+
+      wrap = document.createElement('div');
+      wrap.className = 'hero__yt hero__yt--' + which;
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.setAttribute('data-hero-yt', 'loading');
+      // inert keeps focus out of the frame's *document*, not merely off the
+      // frame element. Both, plus pointer-events:none, plus the scrim on top.
+      if ('inert' in wrap) wrap.inert = true;
+
+      frame = document.createElement('iframe');
+      frame.className = 'hero__yt-frame';
+      frame.title = 'רקע וידאו — Amora Studio';
+      frame.setAttribute('tabindex', '-1');
+      frame.setAttribute('aria-hidden', 'true');
+      // Only what the player needs. Note picture-in-picture defaults to * and
+      // reaches the frame regardless; it is unreachable here anyway because the
+      // frame is inert, controls-free and pointer-events:none. No fullscreen, no
+      // motion sensors — a decorative background has no business asking.
+      frame.setAttribute('allow', 'autoplay; encrypted-media');
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.src = heroSrc(HERO_YT[which]);
+
+      wrap.appendChild(frame);
+      media.appendChild(wrap);
+
+      // The IFrame API pings the player until it answers. This is that ping and
+      // nothing else — if the player announces itself unprompted, the first
+      // message wins and the pinging stops.
+      pings = 0;
+      pingTimer = setInterval(function () {
+        pings++;
+        // Only the pinging stops here. The proof timeout below is what decides
+        // the frame's fate and must outlive it.
+        if (proven || pings > YT_PING_MAX) {
+          clearInterval(pingTimer); pingTimer = null; return;
+        }
+        post({ event: 'listening', id: 1, channel: 'widget' });
+      }, YT_PING_EVERY);
+
+      proofTimer = setTimeout(function () {
+        // Silence. Either YouTube never arrived — a blocker, a corporate proxy,
+        // a country that restricts it — or it arrived and never said so. Both
+        // are better served by dropping the frame than by leaving an unseen
+        // player spending someone's data, and the poster is a complete hero.
+        fails++;
+        destroy();
+      }, YT_PROOF_TIMEOUT);
+    }
+
+    function suspend() {
+      if (!wrap) return;
+      // The poster is underneath, untouched, so the hero simply stops moving.
+      // The frame is kept rather than removed: rebuilding it on every scroll
+      // past would restart the film from the top and re-fetch it.
+      wrap.classList.remove('is-ready');
+      command('pauseVideo');
+    }
+
+    function resume() {
+      if (!wrap) return;
+      if (proven) wrap.classList.add('is-ready');
+      command('playVideo');
+    }
+
+    function sync() {
+      if (!shouldPlay()) { suspend(); return; }
+      if (wrap && current === want()) { resume(); return; }
+      if (fails >= YT_MAX_FAILS) return;   // YouTube is not coming. Stop asking.
+      build(want());
+    }
+
+    // A MediaQueryList fires on the crossing, not on every resized pixel; the
+    // debounce covers a slow window drag that wobbles over the square.
+    function onCross() {
+      if (swapTimer) clearTimeout(swapTimer);
+      swapTimer = setTimeout(sync, YT_SWAP_DELAY);
+    }
+    if (portrait.addEventListener) portrait.addEventListener('change', onCross);
+    else if (portrait.addListener) portrait.addListener(onCross);   // Safari < 14
+
+    // The accessibility widget writes its modes onto <html>. Only a change in
+    // the answer is acted on — <html> also picks up reveal-ready and the text
+    // scaler's class, and neither is any business of the hero's.
+    if ('MutationObserver' in window) {
+      var wasSuppressed = suppressed();
+      new MutationObserver(function () {
+        var now = suppressed();
+        if (now === wasSuppressed) return;
+        wasSuppressed = now;
+        sync();
+      }).observe(root, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    document.addEventListener('visibilitychange', sync);
+
+    // Nothing loads for a hero nobody is looking at — a deep link to #contact
+    // lands the visitor well past it — and playback stops once it scrolls away.
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) visible = entries[i].isIntersecting;
+        sync();
+      }, { threshold: 0.01 }).observe(media);
+    }
+
+    // Hold off until the page has settled: the poster is the key above-the-fold
+    // paint (Chromium reports the <h1> as LCP) and
+    // must not compete with a third-party player for bandwidth or main thread.
+    var start = function () {
+      setTimeout(function () { started = true; sync(); }, 200);
+    };
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+  }
+
+  // A hero is decoration. Whatever it does, the gallery, the lightbox and the
+  // lead form below it still have to work.
+  try { initHero(); } catch (e) {}
 
   /* -------------------------------------------------- gallery + lightbox --- */
 

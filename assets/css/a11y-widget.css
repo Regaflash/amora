@@ -321,9 +321,11 @@ html.a11y-contrast body textarea { border: 1px solid #FFF !important; }
 html.a11y-contrast body input::placeholder,
 html.a11y-contrast body textarea::placeholder { color: #D0D0D0 !important; }
 /* The hero's scrim is repainted opaque black by the rule above, which is what
-   hides the loop behind it; stopping the decode as well saves the battery it
-   would otherwise spend painting nothing. */
-html.a11y-contrast .hero__video { display: none !important; }
+   hides the footage behind it; taking the frame out of the paint tree as well
+   saves the battery it would otherwise spend painting nothing. The rule above
+   cannot reach inside a cross-origin frame, so this one is not cosmetic —
+   main.js pauses the player on this class for the same reason. */
+html.a11y-contrast .hero__yt { display: none !important; }
 
 /* --- 3. מצב כהה / היפוך צבעים -------------------------------------------
    One inversion, on the root element. A filter normally turns an element into
