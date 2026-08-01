@@ -64,6 +64,12 @@ summary::-webkit-details-marker { display: none; }
 .film :focus-visible,
 .contact :focus-visible,
 .lightbox :focus-visible { outline-color: var(--ivory); }
+/* ...except where a light panel sits inside one of those dark sections. The
+   lead form is ivory on the ivory-on-charcoal contact block, so the rule above
+   was painting an ivory ring on an ivory card: measured 1.00:1, i.e. no visible
+   focus indicator at all on the site's only conversion path. */
+.contact .form:focus-visible,
+.contact .form :focus-visible { outline-color: var(--charcoal); }
 
 @keyframes amFloat {
   0%, 100% { transform: translateY(0); opacity: .85; }
@@ -107,6 +113,10 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .2em;
   color: var(--champagne);
   margin: 0 0 12px;
+  /* Nine eyebrows read "Behind the lens — 01" without this: the leading number
+     is a neutral run and bidi reorders it to the far side. */
+  direction: ltr;
+  text-align: right;
 }
 
 .h2 {
@@ -488,7 +498,7 @@ summary::-webkit-details-marker { display: none; }
 
 .about__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: clamp(34px, 6vw, 90px);
   align-items: center;
 }
@@ -682,7 +692,9 @@ summary::-webkit-details-marker { display: none; }
   cursor: pointer;
   border-radius: 2px;
 }
-.lightbox__count { font-family: var(--script); font-size: 16px; color: var(--sand); }
+/* "1 / 18" renders as "18 / 1" inside the RTL document without this. */
+.lightbox__count { font-family: var(--script); font-size: 16px; color: var(--sand);
+  direction: ltr; unicode-bidi: isolate; }
 
 /* --------------------------------------------------------------- film --- */
 
@@ -951,7 +963,7 @@ summary::-webkit-details-marker { display: none; }
   margin: 0 auto;
   padding: clamp(84px, 11vw, 150px) var(--gutter);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: clamp(34px, 5vw, 80px);
   align-items: center;
 }
@@ -988,6 +1000,7 @@ summary::-webkit-details-marker { display: none; }
 .field { display: grid; gap: 7px; }
 .field__label { font-size: 12px; letter-spacing: .14em; color: var(--mocha); }
 .field__opt { opacity: .7; letter-spacing: normal; }
+.field__control::placeholder { color: var(--mocha); opacity: 1; }  /* Firefox dims it without opacity:1 */
 .field__control {
   width: 100%;
   padding: 13px 14px;
@@ -1103,7 +1116,10 @@ textarea.field__control { resize: vertical; }
 .site-footer__bottom {
   max-width: var(--shell);
   margin: 0 auto;
-  padding: 20px var(--gutter) 40px;
+  /* Clear the floating controls: WhatsApp, the assistant launcher and the
+     accessibility button. 132px is the tallest outer edge (assistant:
+     bottom 84 + 48 high). Without this they cover the legal links. */
+  padding: 20px var(--gutter) calc(40px + 132px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line);
   display: flex;
   flex-wrap: wrap;

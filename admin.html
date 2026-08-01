@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ניהול פניות | Amora Studio</title>
+
+<!-- Private tool. Never indexed, never followed, never in the sitemap. -->
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+<meta name="referrer" content="same-origin" />
+<meta name="theme-color" content="#F7F2EA" />
+
+<link rel="icon" href="assets/img/logo.jpg" />
+<link rel="stylesheet" href="assets/css/fonts.css" />
+<link rel="stylesheet" href="assets/css/styles.css" />
+<link rel="stylesheet" href="assets/css/admin.css" />
+</head>
+<body class="crm">
+
+<a class="skip-link" href="#crm-main">דילוג לתוכן</a>
+
+<header class="crm__header">
+  <div class="crm__header-inner">
+    <div class="crm__id">
+      <p class="crm__brand">Amora Studio</p>
+      <h1 class="crm__title">ניהול פניות</h1>
+    </div>
+    <div class="crm__header-actions">
+      <button class="crm__ghost" type="button" data-refresh hidden>רענון</button>
+      <button class="crm__ghost" type="button" data-signout hidden>יציאה</button>
+    </div>
+  </div>
+</header>
+
+<main class="crm__main" id="crm-main">
+
+  <!-- ===== שער כניסה ===== -->
+  <section class="crm__gate" data-gate hidden>
+    <form class="form crm__login" data-login novalidate>
+      <div class="form__fields">
+        <p class="form__title">כניסה לניהול</p>
+        <p class="crm__login-note">
+          האזור הזה פרטי. הפניות של הלקוחות נקראות רק אחרי כניסה עם החשבון של הסטודיו.
+        </p>
+
+        <label class="field">
+          <span class="field__label">אימייל</span>
+          <input class="field__control" type="email" name="email" autocomplete="username"
+                 inputmode="email" data-login-email aria-describedby="crm-login-error" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">סיסמה</span>
+          <input class="field__control" type="password" name="password" autocomplete="current-password"
+                 data-login-password aria-describedby="crm-login-error" />
+        </label>
+
+        <button class="form__submit" type="submit" data-login-submit>כניסה</button>
+        <p class="form__failure" id="crm-login-error" data-login-error role="alert" hidden></p>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===== האפליקציה ===== -->
+  <section class="crm__app" data-app hidden>
+
+    <ul class="crm__stats">
+      <li class="crm-stat">
+        <span class="crm-stat__num" data-stat="total">—</span>
+        <span class="crm-stat__label">פניות בסך הכול</span>
+      </li>
+      <li class="crm-stat crm-stat--alert">
+        <span class="crm-stat__num" data-stat="open">—</span>
+        <span class="crm-stat__label">ממתינות לטיפול</span>
+      </li>
+      <li class="crm-stat">
+        <span class="crm-stat__num" data-stat="week">—</span>
+        <span class="crm-stat__label">התקבלו בשבוע האחרון</span>
+      </li>
+      <li class="crm-stat">
+        <span class="crm-stat__num" data-stat="soon">—</span>
+        <span class="crm-stat__label">אירועים ב־30 הימים הקרובים</span>
+      </li>
+    </ul>
+
+    <div class="crm__toolbar">
+      <label class="field crm__search">
+        <span class="field__label">חיפוש</span>
+        <input class="field__control" type="search" data-search
+               placeholder="שם או טלפון" autocomplete="off" />
+      </label>
+
+      <label class="field crm__select">
+        <span class="field__label">סוג אירוע</span>
+        <select class="field__control" data-filter-type>
+          <option value="all">הכול</option>
+        </select>
+      </label>
+
+      <label class="field crm__select">
+        <span class="field__label">סדר</span>
+        <select class="field__control" data-sort>
+          <option value="newest">החדשות ביותר</option>
+          <option value="event">לפי קרבת האירוע</option>
+        </select>
+      </label>
+
+      <div class="crm__chips" role="group" aria-label="סינון לפי סטטוס טיפול">
+        <button class="chip" type="button" data-filter-handled="open" aria-pressed="true">ממתינות</button>
+        <button class="chip" type="button" data-filter-handled="done" aria-pressed="false">טופלו</button>
+        <button class="chip" type="button" data-filter-handled="all" aria-pressed="false">הכול</button>
+      </div>
+    </div>
+
+    <p class="crm__meta" data-meta aria-live="polite"></p>
+
+    <p class="crm__state" data-loading hidden>טוענים את הפניות…</p>
+
+    <div class="crm__state crm__state--error" data-error hidden role="alert">
+      <p class="crm__state-text" data-error-text></p>
+      <button class="crm__ghost" type="button" data-retry>נסו שוב</button>
+    </div>
+
+    <p class="crm__state" data-empty hidden></p>
+
+    <ul class="crm__list" data-list></ul>
+  </section>
+</main>
+
+<p class="crm__toast" data-toast role="status" aria-live="polite" hidden></p>
+
+<script src="assets/js/admin.js" defer></script>
+</body>
+</html>

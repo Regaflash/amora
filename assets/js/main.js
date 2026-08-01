@@ -174,6 +174,9 @@
 
     // Never spend someone's data plan on decoration, and honour the OS
     // reduced-motion setting — the poster alone is a complete hero.
+    // The connection check below is Chromium-only, so it never fired on iOS or
+    // Firefox and those phones fetched ~1MB of loop anyway. Gate on width first.
+    if (window.matchMedia(MOBILE_QUERY).matches) return;
     var conn = navigator.connection || {};
     if (reducedMotion || conn.saveData === true ||
         /^(slow-2g|2g)$/.test(conn.effectiveType || '')) return;
@@ -312,7 +315,14 @@
     lightbox.hidden = true;
     lbIndex = -1;
     if (menu && menu.hidden) document.body.style.overflow = '';
-    if (lastFocused && lastFocused.focus) lastFocused.focus();
+    // The opener can be filtered out from under us, and focusing a hidden
+    // element silently drops focus to <body>.
+    if (lastFocused && lastFocused.focus && lastFocused.offsetParent !== null) {
+      lastFocused.focus();
+    } else {
+      var first = $('.masonry__item:not([hidden]) .masonry__btn');
+      if (first) first.focus();
+    }
     lastFocused = null;
   }
 
@@ -496,12 +506,17 @@
       }
     }
 
-    ['name', 'phone', 'date', 'type'].forEach(function (name) {
-      var input = $('[data-field="' + name + '"]', form);
-      if (input) {
-        input.addEventListener('input', function () { showError(name, ''); });
-        input.addEventListener('change', function () { showError(name, ''); });
+    // Every field, not just the four validated ones: any edit must also drop the
+    // failure panel, whose WhatsApp link was built once from the old values and
+    // would otherwise keep sending details the visitor has already corrected.
+    $$('[data-field]', form).forEach(function (input) {
+      var name = input.getAttribute('data-field');
+      function clear() {
+        showError(name, '');
+        if (failure) { failure.hidden = true; failure.textContent = ''; }
       }
+      input.addEventListener('input', clear);
+      input.addEventListener('change', clear);
     });
 
     function validate(values) {
@@ -512,10 +527,18 @@
       // Strip the separators people actually type. Only spaces and hyphens were
       // stripped before, so a perfectly valid "(050) 366-2699" was rejected and
       // the lead bounced off its own contact form.
-      if (!/^0\d{1,2}\d{7}$|^\+?\d{9,15}$/.test(values.phone.replace(/[\s\-().]/g, ''))) {
+      if (!values.phone.trim()) {
+        errors.phone = 'צריך מספר טלפון כדי לחזור אליכם';
+      } else if (!/^0\d{1,2}\d{7}$|^\+?\d{9,15}$/.test(values.phone.replace(/[\s\-().]/g, ''))) {
         errors.phone = 'מספר טלפון לא תקין';
       }
-      if (!values.date) errors.date = 'איזה תאריך אנחנו בודקים?';
+      // The min attribute is decorative while the form carries novalidate, so a
+      // past date sailed through to the studio. ISO yyyy-mm-dd compares exactly.
+      if (!values.date) {
+        errors.date = 'איזה תאריך אנחנו בודקים?';
+      } else if (dateInput && dateInput.min && values.date < dateInput.min) {
+        errors.date = 'התאריך כבר עבר — בחרו תאריך עתידי';
+      }
       if (!values.type) errors.type = 'בחרו סוג אירוע';
       return errors;
     }

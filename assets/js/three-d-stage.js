@@ -232,7 +232,9 @@
       });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // PCFSoftShadowMap is deprecated in the vendored build: three logs a
+      // warning on every gear view and falls back to this anyway.
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       this._renderer = renderer;
       this.shadowRoot.insertBefore(renderer.domElement, this._err);
 

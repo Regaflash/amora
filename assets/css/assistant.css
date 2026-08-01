@@ -1,0 +1,268 @@
+/* ==========================================================================
+   Amora Studio — עוזר האתר / site assistant
+   Uses the palette, type and easing already declared in styles.css. No new
+   custom properties, no second palette, no external font.
+
+   Placement, and the assumption behind it:
+   the WhatsApp float is `position:fixed; bottom:20px; left:20px; z-index:70`
+   — physical left, so the visual bottom-left corner even in this RTL page.
+   The launcher stacks directly above it in the same column (bottom:84px, the
+   float's own height plus a gap) and sits *below* it in z-order, so it can
+   never cover the primary CTA. The whole right-hand side is left free for a
+   third-party accessibility widget, which is where Israeli a11y toolbars
+   (Nagish, Enable, Vee) dock by default — this build ships no such widget, so
+   the right side is reserved rather than shared.
+   The open panel is z-index 75: above the WhatsApp float, below the mobile
+   menu (80) and the lightbox (90), both of which are full-screen and own the
+   screen while they are open.
+   ========================================================================== */
+
+/* ---------------------------------------------------------- launcher --- */
+
+.am-launcher {
+  position: fixed;
+  bottom: 84px;
+  left: 20px;
+  z-index: 69;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 18px;
+  background: var(--ivory);
+  color: var(--charcoal);
+  border: 1px solid var(--champagne);
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(28, 26, 24, 0.14);
+  transition: background 320ms var(--ease), transform 320ms var(--ease);
+}
+.am-launcher:hover { background: var(--cream); transform: translateY(-2px); }
+.am-launcher.is-open { background: var(--champagne); }
+.am-launcher__label { font-size: 13px; letter-spacing: .08em; }
+.am-launcher__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--champagne);
+  flex: none;
+}
+.am-launcher.is-open .am-launcher__dot { background: var(--charcoal); }
+
+/* ------------------------------------------------------------- panel --- */
+
+.am-panel {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 75;
+  display: flex;
+  flex-direction: column;
+  width: min(384px, calc(100vw - 40px));
+  height: min(560px, calc(100vh - 120px));
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  box-shadow: 0 18px 50px rgba(28, 26, 24, 0.22);
+  overflow: hidden;
+}
+/* display:flex outranks the hidden attribute's UA display:none — same trap
+   the lead form hits in styles.css. */
+.am-panel[hidden] { display: none; }
+
+.am-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  background: var(--ivory);
+  border-bottom: 1px solid var(--line);
+}
+.am-panel__titles { min-width: 0; }
+.am-panel__title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 17px;
+  margin: 0;
+  line-height: 1.3;
+}
+.am-panel__sub {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--mocha);
+  margin: 3px 0 0;
+}
+.am-panel__close {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--charcoal);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 300ms;
+}
+.am-panel__close:hover { border-color: var(--champagne); }
+
+/* --------------------------------------------------------------- log --- */
+
+.am-log {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 18px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.am-msg { display: flex; flex-direction: column; gap: 8px; max-width: 88%; }
+/* RTL page: flex-start is the right edge, which is where a reply starts. */
+.am-msg--bot { align-self: flex-start; }
+.am-msg--user { align-self: flex-end; }
+
+.am-bubble {
+  padding: 11px 14px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  background: var(--ivory);
+  font-size: 15px;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+.am-msg--user .am-bubble {
+  background: var(--champagne);
+  /* Charcoal on champagne is 8.2:1; ivory on champagne is 2.1:1. */
+  color: var(--charcoal);
+  border-color: var(--champagne);
+}
+.am-bubble__p { margin: 0; }
+.am-bubble__p + .am-bubble__p { margin-top: 8px; }
+
+.am-msg__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.am-action {
+  display: inline-block;
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 12px;
+  letter-spacing: .12em;
+  padding: 10px 16px;
+  border: 1px solid var(--champagne);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--charcoal);
+  cursor: pointer;
+  text-align: center;
+  transition: background 300ms, color 300ms;
+}
+.am-action:hover { background: var(--champagne); color: var(--charcoal); }
+.am-action--wa { background: var(--champagne); }
+.am-action--wa:hover { background: var(--sand); }
+
+/* Typing indicator — decorative only; the live status text is announced
+   instead, so the dots are aria-hidden in the markup. */
+.am-bubble--typing { display: flex; gap: 5px; align-items: center; padding: 15px 14px; }
+.am-typing__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--mocha);
+  opacity: .45;
+  animation: amTyping 1.2s ease-in-out infinite;
+}
+.am-typing__dot:nth-child(2) { animation-delay: .15s; }
+.am-typing__dot:nth-child(3) { animation-delay: .3s; }
+@keyframes amTyping {
+  0%, 100% { opacity: .25; transform: translateY(0); }
+  50% { opacity: .9; transform: translateY(-3px); }
+}
+
+/* ------------------------------------------------------------- chips --- */
+
+.am-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 10px 18px 4px;
+}
+.am-chip {
+  font-size: 12px;
+  letter-spacing: .04em;
+  line-height: 1.5;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--ivory);
+  color: var(--mocha);
+  cursor: pointer;
+  text-align: start;
+  transition: border-color 300ms, color 300ms;
+}
+.am-chip:hover { border-color: var(--champagne); color: var(--charcoal); }
+.am-chip[disabled] { opacity: .5; cursor: default; }
+
+/* -------------------------------------------------------------- form --- */
+
+.am-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+}
+.am-form__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 12px 13px;
+  font-size: 15px;
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+.am-form__input::placeholder { color: var(--mocha); opacity: .7; }
+.am-form__input[disabled] { opacity: .6; }
+.am-form__send {
+  flex: none;
+  padding: 12px 18px;
+  font-size: 12px;
+  letter-spacing: .12em;
+  background: var(--champagne);
+  color: #1C1A18;
+  border: 1px solid var(--champagne);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 300ms;
+}
+.am-form__send:hover { background: var(--sand); }
+.am-form__send[disabled] { opacity: .6; cursor: wait; }
+
+/* -------------------------------------------------------------- foot --- */
+
+.am-foot {
+  display: flex;
+  gap: 8px;
+  padding: 0 18px 14px;
+}
+.am-foot .am-action { flex: 1 1 0; }
+
+/* -------------------------------------------------------- responsive --- */
+
+/* Below the site's own mobile breakpoint the panel becomes a full-screen
+   sheet, and the JS switches it to aria-modal + a focus trap to match. */
+@media (max-width: 760px) {
+  .am-panel {
+    inset: 0;
+    width: auto;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+  }
+  .am-launcher__label { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-typing__dot { animation: none; }
+}
