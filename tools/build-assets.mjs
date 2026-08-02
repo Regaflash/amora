@@ -1,10 +1,18 @@
 import sharp from 'sharp';
 import { readFileSync, mkdirSync, writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
-const idx = JSON.parse(readFileSync('index.json', 'utf8'));
+// Anchored to the repo, not to the shell's CWD, so `node tools/build-assets.mjs`
+// works from anywhere. The sources are the untracked photo library at the repo
+// root — see .gitignore.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, '..');
+
+const idx = JSON.parse(readFileSync(resolve(HERE, 'index.json'), 'utf8'));
 const byNum = new Map(idx.map(o => [o.n, o.f]));
-const SRC = './amora-media';
-const OUT = '/home/claude/repo/assets/img';
+const SRC = ROOT;
+const OUT = resolve(ROOT, 'assets/img');
 mkdirSync(OUT, { recursive: true });
 
 // slot → source image number. Wide slots get scenes that survive a horizontal crop.
@@ -57,15 +65,30 @@ for (const s of SLOTS) {
     const h = Math.round(w * rh / rw);
     if (w > meta.width * 1.15) continue;           // never upscale meaningfully
     const base = s.w.length > 1 ? `${s.id}-${w}` : s.id;
-    for (const fmt of ['webp', 'jpg']) {
-      const p = `${OUT}/${base}.${fmt}`;
-      let pipe = sharp(src).resize(w, h, { fit: 'cover', position: sharp.strategy.attention });
-      pipe = fmt === 'webp' ? pipe.webp({ quality: 78 }) : pipe.jpeg({ quality: 80, mozjpeg: true });
-      await pipe.toFile(p);
+    const cut = () => sharp(src).resize(w, h, { fit: 'cover', position: sharp.strategy.attention });
+
+    // JPEG first: it is the fallback every browser can read, and it sets the
+    // budget the WebP has to beat. Shipping a WebP that is larger than the
+    // JPEG beside it means <picture> picks the heavier file on the newer
+    // browser — tools/check.sh fails on exactly that.
+    const jpg = await cut().jpeg({ quality: 80, mozjpeg: true }).toBuffer();
+    writeFileSync(`${OUT}/${base}.jpg`, jpg);
+
+    // Photographic frames with fine grain occasionally lose to mozjpeg at
+    // q78. Step down rather than pick one global quality: only the handful of
+    // slots that need it pay for it.
+    let webp = null;
+    for (const q of [78, 74, 70, 66, 62]) {
+      webp = await cut().webp({ quality: q }).toBuffer();
+      if (webp.length < jpg.length) break;
     }
+    if (webp.length >= jpg.length) {
+      console.log(`!! ${base}.webp ${webp.length} B >= ${base}.jpg ${jpg.length} B`);
+    }
+    writeFileSync(`${OUT}/${base}.webp`, webp);
     out.push({ w, h, base });
   }
   manifest.push({ ...s, src: file, srcW: meta.width, srcH: meta.height, out });
   console.log(`${s.id.padEnd(14)} #${String(s.n).padStart(2)}  ${meta.width}x${meta.height} → ${out.map(o => o.w + 'x' + o.h).join(', ')}`);
 }
-writeFileSync('manifest.json', JSON.stringify(manifest, null, 1));
+writeFileSync(resolve(HERE, 'manifest.json'), JSON.stringify(manifest, null, 1));

@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Amora Studio | המצלמה שלנו — תלת מימד</title>
 <meta name="description" content="דגם תלת־ממדי של המצלמה שמלווה את Amora Studio — גררו לסיבוב, גלגלו לזום, והורידו ב-OBJ או GLB." />
-<link rel="icon" href="assets/img/logo.jpg" />
+<link rel="icon" href="favicon.ico" sizes="48x48" />
+<link rel="icon" href="assets/img/icon-96.png" type="image/png" sizes="96x96" />
+<link rel="icon" href="assets/img/icon-192.png" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
 <!-- The homepage iframes this page as camera-3d.html?embed=1, which serves
      identical bytes with its heading hidden. Without a canonical, that
      parameterised twin is a second crawlable URL competing with this one. -->
@@ -18,6 +21,42 @@
 <meta property="og:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
 <meta property="og:site_name" content="Amora Studio" />
 <meta property="og:locale" content="he_IL" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
+<!-- This page had og:* but no twitter:*. X falls back to Open Graph, but only
+     after guessing the card size; without twitter:card it renders the small
+     square summary and crops a 1200x630 image to a thumbnail. Same image and
+     same words as the og tags above — nothing new is claimed here. -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Amora Studio | המצלמה שלנו — תלת מימד" />
+<meta name="twitter:description" content="דגם תלת־ממדי של המצלמה שמלווה את Amora Studio — גררו לסיבוב, גלגלו לזום." />
+<meta name="twitter:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
+<meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
+<!-- The only structured data this page earns. It mirrors a path the visitor
+     can actually see and walk: the homepage's gear section links here, and
+     this page's "← חזרה לאתר" link goes back. The last crumb carries no
+     "item" — per Google's guidance the current page is not self-linked. -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "Amora Studio",
+   "item": "https://www.amora-studios.com/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "המצלמה שלנו — תלת מימד"
+  }
+ ]
+}
+</script>
 <!-- Pinned import map required by <three-d-stage>. Must sit in <head>, before any module. -->
 <script type="importmap">
 {

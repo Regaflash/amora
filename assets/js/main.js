@@ -431,6 +431,7 @@
   var lbLabel = $('[data-lightbox-label]');
   var lbImage = $('[data-lightbox-img]');
   var lbCount = $('[data-lightbox-count]');
+  var galleryStatus = $('[data-gallery-status]');
 
   var filter = 'all';
   var lbIndex = -1;
@@ -451,6 +452,17 @@
       c.setAttribute('aria-pressed', String(c.dataset.filter === filter));
     });
     closeLightbox();
+    announceCount();
+  }
+
+  // A chip press silently rewrites the grid from 18 tiles to 3 or 4. aria-pressed
+  // says which chip is on; nothing said how much of the gallery survived it.
+  function announceCount() {
+    if (!galleryStatus) return;
+    var shown = visibleItems().length;
+    galleryStatus.textContent = shown === 1
+      ? 'מוצגת תמונה אחת מתוך ' + items.length
+      : 'מוצגות ' + shown + ' תמונות מתוך ' + items.length;
   }
 
   chips.forEach(function (chip) {
@@ -485,8 +497,6 @@
     lbImage.src = largestSource(btn);
     lbImage.alt = alt;
     lbFigure.style.setProperty('--ratio', btn.dataset.ratio);
-    lbFigure.setAttribute('aria-label', alt);
-    lbLabel.textContent = alt;
     lbCount.textContent = (lbIndex + 1) + ' / ' + list.length;
 
     if (lightbox.hidden) {
@@ -495,6 +505,11 @@
       document.body.style.overflow = 'hidden';
       $('[data-lightbox-close]').focus();
     }
+
+    // Written last, and deliberately after the dialog is on screen: a live
+    // region inside a hidden subtree is not announced. Stepping keeps focus on
+    // the arrow button, so without this the photo changes in silence.
+    lbLabel.textContent = alt + ' · תמונה ' + (lbIndex + 1) + ' מתוך ' + list.length;
   }
 
   function step(delta) {
@@ -506,6 +521,9 @@
     if (!lightbox || lightbox.hidden) return;
     lightbox.hidden = true;
     lbIndex = -1;
+    // Cleared so that reopening the same photo is still a change the live
+    // region can announce.
+    if (lbLabel) lbLabel.textContent = '';
     if (menu && menu.hidden) document.body.style.overflow = '';
     // The opener can be filtered out from under us, and focusing a hidden
     // element silently drops focus to <body>.
@@ -679,6 +697,25 @@
     var dateInput = $('[data-field="date"]', form);
     if (dateInput) dateInput.min = new Date().toISOString().slice(0, 10);
 
+    // "בדיקת זמינות" is exactly the question a couple asks before the venue is
+    // booked, and the coverage select already lets them say "עוד לא בטוחים".
+    // Without this the date is a required field they have no honest way to fill.
+    var dateTbd = $('[data-date-tbd]', form);
+    function syncDateTbd() {
+      if (!dateTbd || !dateInput) return;
+      var tbd = dateTbd.checked;
+      dateInput.disabled = tbd;
+      dateInput.setAttribute('aria-required', String(!tbd));
+      if (tbd) {
+        dateInput.value = '';
+        showError('date', '');
+      }
+    }
+    if (dateTbd) {
+      dateTbd.addEventListener('change', syncDateTbd);
+      syncDateTbd();   // a reload can restore a checked box
+    }
+
     var submitBtn = $('[data-submit]', form);
     var failure = $('[data-form-failure]', form);
     var fields = $('[data-form-fields]', form);
@@ -726,7 +763,9 @@
       }
       // The min attribute is decorative while the form carries novalidate, so a
       // past date sailed through to the studio. ISO yyyy-mm-dd compares exactly.
-      if (!values.date) {
+      if (values.dateTbd) {
+        // Nothing to check — they have told us there is no date yet.
+      } else if (!values.date) {
         errors.date = 'איזה תאריך אנחנו בודקים?';
       } else if (dateInput && dateInput.min && values.date < dateInput.min) {
         errors.date = 'התאריך כבר עבר — בחרו תאריך עתידי';
@@ -747,7 +786,8 @@
         message: $('[data-field="message"]', form).value,
         area: $('[data-field="area"]', form).value,
         coverage: $('[data-field="coverage"]', form).value,
-        company: $('[data-field="company"]', form).value
+        company: $('[data-field="company"]', form).value,
+        dateTbd: Boolean(dateTbd && dateTbd.checked)
       };
 
       // Honeypot: a filled hidden field means a bot — drop it silently.
@@ -767,7 +807,7 @@
         'פנייה חדשה מהאתר — Amora Studio',
         'שם: ' + values.name,
         'טלפון: ' + values.phone,
-        'תאריך: ' + values.date,
+        'תאריך: ' + (values.dateTbd ? 'עוד לא נקבע' : values.date),
         'סוג אירוע: ' + (TYPE_LABEL[values.type] || values.type),
         values.coverage ? 'מה מצלמים: ' + (COVERAGE_LABEL[values.coverage] || values.coverage) : '',
         values.area ? 'אזור: ' + values.area : '',
@@ -837,7 +877,7 @@
         hand.rel = 'noopener';
         hand.className = 'form__done-cta';
         hand.style.marginTop = '12px';
-        hand.textContent = 'פתיחת וואטסאפ עם הפרטים →';
+        hand.textContent = 'פתיחת וואטסאפ עם הפרטים ←';
         failure.appendChild(document.createElement('br'));
         failure.appendChild(hand);
         return;
@@ -873,7 +913,7 @@
         alt.rel = 'noopener';
         alt.className = 'form__done-cta';
         alt.style.marginTop = '12px';
-        alt.textContent = 'שליחה בוואטסאפ →';
+        alt.textContent = 'שליחה בוואטסאפ ←';
         failure.appendChild(document.createElement('br'));
         failure.appendChild(alt);
       });

@@ -3,14 +3,25 @@ node_modules/
 Thumbs.db
 *.log
 
-# The studio's raw photo library, uploaded straight to the repo root. The
-# processed derivatives that the site actually serves live in assets/img/ and
-# are unaffected — the leading slash anchors these to the root only.
-# .gitignore has no effect on files already tracked, so this pairs with a
-# one-time `git rm --cached` (the load-bearing half). .vercelignore keeps the
-# same set out of the deployment as a second line of defence.
+# ---------------------------------------------------------------------------
+# The studio's raw photo library, uploaded straight to the repo root: 86 files,
+# ~30 MB, plus the stray `תמונות`. It is source material for tools/*.mjs — the
+# slot -> filename map is tools/manifest.json — and every derivative the site
+# actually serves is committed under assets/img/. A leading slash anchors each
+# pattern to the root, so assets/img/*.jpg and assets/img/*.webp are untouched.
+#
+# .vercelignore carries the same list and is what keeps these off the CDN.
+# This file is the other half: it keeps them out of HEAD, so a future edit to
+# .vercelignore cannot turn the repo into a public archive of the studio's
+# work, and the deploy tarball stops carrying 30 MB nobody requests.
+#
+# Adding a pattern here does NOTHING to a file git already tracks. The
+# load-bearing step is `git rm --cached` — see DEPLOY.md.
 /*.jpg
 /*.jpeg
 /*.png
 /*.heic
 /תמונות
+
+# Scratch worktrees from agent sessions.
+.claude/worktrees/

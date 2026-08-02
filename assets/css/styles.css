@@ -1497,6 +1497,26 @@ summary::-webkit-details-marker { display: none; }
 .field { display: grid; gap: var(--sp-2); }
 .field__label { font-size: var(--t-micro); letter-spacing: .16em; color: var(--mocha); }
 .field__opt { opacity: .7; letter-spacing: normal; }
+/* The "no date yet" opt-out. Sits in the date field's own grid cell so the
+   two read as one control; the shared :focus-visible rule already gives the
+   box the charcoal ring the rest of this form uses. */
+.field__opt-in {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--mocha);
+  cursor: pointer;
+}
+.field__opt-in input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--champagne);
+  cursor: pointer;
+}
+.field__control:disabled { opacity: .5; cursor: not-allowed; }
 .field__control::placeholder { color: var(--mocha); opacity: 1; }
 /* An unanswered select was drawn at full charcoal, so it looked answered next
    to an untouched input. An engine without :has() simply keeps today's look. */
@@ -1527,6 +1547,10 @@ textarea.field__control { resize: vertical; }
      one place on the site where friction costs a lead. */
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 16px;
+  /* The date cell is a row taller than its neighbour now that it carries the
+     "no date yet" opt-out. Without this the shorter cell stretches and its
+     control drifts below the one beside it. */
+  align-items: start;
 }
 .visually-hidden {
   position: absolute;

@@ -1,6 +1,11 @@
 import sharp from 'sharp';
 import { readdirSync } from 'fs';
-const DIR = './amora-media';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+// The untracked photo library at the repo root — see .gitignore. Anchored to
+// the repo rather than the shell's CWD so the script runs from anywhere.
+const DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const files = readdirSync(DIR).filter(f => f.toLowerCase().endsWith('.jpg')).sort();
 
 const hashes = [];

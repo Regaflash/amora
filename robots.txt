@@ -5,8 +5,11 @@
 #
 # These paths are already excluded from the deployment by .vercelignore, so
 # nothing is served at them today and this is a second line of defence rather
-# than the only one. It matters the day a path becomes servable: project/ is a
-# near-duplicate of the homepage and would compete with it in search.
+# than the only one. It matters the day a path becomes servable.
+#
+# Kept terse on purpose: robots.txt is public, and a comment describing what
+# is behind a path is an invitation. The Disallow lines name the paths because
+# they must; they do not need to say what is worth finding there.
 User-agent: *
 Disallow: /project/
 Disallow: /chats/
