@@ -18,9 +18,13 @@
 
   var STORE_KEY = 'amora-a11y-v1';
 
-  /** Every page of this site lives at the root, so a bare filename resolves
-   *  from index.html, accessibility.html and privacy.html alike. */
-  var STATEMENT_URL = 'accessibility.html';
+  /** Root-absolute, not a bare filename. Every page of this site does live at
+   *  the root — but 404.html is served AT the address that was not found, so on
+   *  /old/link/that/died a relative href resolved to
+   *  /old/link/that/accessibility.html and the statement link died with it.
+   *  The accessibility statement is the one link on this site that must never
+   *  404. */
+  var STATEMENT_URL = '/accessibility.html';
 
   /** Steps, not a slider: a slider is hard to hit with a tremor or a
    *  keyboard, and 5 stops cover -10% to +50%. */

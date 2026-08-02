@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>הדף לא נמצא | Amora Studio</title>
+<!-- noindex, follow: a 404 must never enter the index, but the links out of it
+     should still pass. Vercel serves this file for any unmatched path in a
+     static deployment and returns a real 404 status with it, so this is not a
+     soft 404. Without the file, Vercel's own generic error page is what a
+     visitor lands on after a stale WhatsApp share or a mistyped URL. -->
+<meta name="robots" content="noindex, follow" />
+<meta name="theme-color" content="#F7F2EA" />
+<!-- Every asset below is referenced ROOT-ABSOLUTE (/assets/...), not relative.
+     Vercel serves this file's bytes AT the URL that was not found - the address
+     bar still says /old/link/that/died - so a relative "assets/css/..." would
+     resolve to /old/link/that/assets/css/... and the page would arrive
+     unstyled, unfonted and without the accessibility widget. Only a top-level
+     typo would have worked. Do not make these relative again. -->
+<link rel="icon" href="/favicon.ico" sizes="48x48" />
+<link rel="icon" href="/assets/img/icon-96.png" type="image/png" sizes="96x96" />
+<link rel="icon" href="/assets/img/icon-192.png" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png" />
+<link rel="preload" href="/assets/fonts/frank-ruhl-libre-hebrew-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/assets/css/fonts.css" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    padding: 40px clamp(18px, 5vw, 56px);
+    background: #F7F2EA;
+    color: #1C1A18;
+    font-family: Heebo, system-ui, sans-serif;
+    font-weight: 300;
+    text-align: center;
+  }
+  .nf { max-width: 46ch; }
+  .nf__mark { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+  .nf__kicker {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: .2em;
+    color: #C9AE8C;
+    margin: 22px 0 10px;
+  }
+  .nf__title {
+    font-family: 'Frank Ruhl Libre', serif;
+    font-weight: 600;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    line-height: 1.25;
+    margin: 0 0 14px;
+  }
+  .nf__text { font-size: 16px; line-height: 1.75; color: #4A3F35; margin: 0 0 30px; }
+  .nf__actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .nf__btn {
+    font-size: 12px;
+    letter-spacing: .16em;
+    padding: 15px 28px;
+    text-decoration: none;
+    border: 1px solid #C9AE8C;
+    color: #1C1A18;
+    transition: background 320ms, color 320ms;
+  }
+  .nf__btn--solid { background: #1C1A18; border-color: #1C1A18; color: #FFFDF9; }
+  .nf__btn:hover { background: #C9AE8C; border-color: #C9AE8C; color: #FFFDF9; }
+  .nf__btn:focus-visible { outline: 3px solid #1C1A18; outline-offset: 3px; }
+  .nf__links { margin: 26px 0 0; font-size: 14px; }
+  .nf__links a { color: #4A3F35; margin: 0 8px; }
+</style>
+<link rel="stylesheet" href="/assets/css/a11y-widget.css" />
+<script src="/assets/js/a11y-widget.js"></script>
+</head>
+<body>
+  <main class="nf">
+    <img class="nf__mark" src="/assets/img/logo.jpg" alt="Amora Studio" width="72" height="72" />
+    <p class="nf__kicker">404</p>
+    <h1 class="nf__title">הדף הזה כבר לא כאן</h1>
+    <p class="nf__text">
+      יכול להיות שהקישור ישן, או שנפלה טעות בכתובת.
+      אפשר לחזור לעמוד הבית, לעבור ישר לגלריה, או פשוט לכתוב לנו.
+    </p>
+    <div class="nf__actions">
+      <a class="nf__btn nf__btn--solid" href="/">לעמוד הבית</a>
+      <a class="nf__btn" href="/#gallery">לגלריה</a>
+      <a class="nf__btn" href="/#contact">לבדיקת זמינות</a>
+    </div>
+    <p class="nf__links">
+      <a href="tel:+972503662699">050-3662699</a>
+      <a href="/#faq">שאלות נפוצות</a>
+    </p>
+  </main>
+</body>
+</html>

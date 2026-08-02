@@ -4,8 +4,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
 fail=0
 say() { printf '%-46s %s\n' "$1" "$2"; }
 
+# The page list was written out by hand in six places. A seventh page therefore
+# shipped with no asset check, no CSP-hash check, no id-reference check and no
+# [[OWNER: check -- silently, with every existing check still green. Derive it
+# once from what is actually on disk instead.
+PAGES=$(ls -1 *.html | sort)
+
 # every src/srcset target actually exists
-missing=$(grep -oE '(src|srcset)="[^"]*"' index.html accessibility.html privacy.html terms.html camera-3d.html admin.html 2>/dev/null \
+missing=$(grep -oE '(src|srcset)="[^"]*"' $PAGES 2>/dev/null \
   | sed 's/.*="//;s/"$//' | tr ',' '\n' | sed 's/ [0-9]*w$//' | tr -d ' ' \
   | grep -E '^assets/' | sort -u | while read -r f; do [ -f "$f" ] || echo "$f"; done)
 if [ -n "$missing" ]; then say "קבצים חסרים" "✗"; echo "$missing" | sed 's/^/    /'; fail=1; else say "כל הנכסים קיימים" "✓"; fi
@@ -39,7 +45,7 @@ print(f'{"JSON-LD תקין":<46} ✓ ({len(blocks)} בלוקים)')
 PY
 
 # no external runtime dependency crept back in
-ext=$(grep -oE 'https://(fonts\.googleapis|fonts\.gstatic|unpkg|cdn\.jsdelivr)\.(com|net)' index.html camera-3d.html accessibility.html privacy.html terms.html admin.html 2>/dev/null | sort -u)
+ext=$(grep -oE 'https://(fonts\.googleapis|fonts\.gstatic|unpkg|cdn\.jsdelivr)\.(com|net)' $PAGES 2>/dev/null | sort -u)
 if [ -n "$ext" ]; then say "תלות חיצונית חזרה" "✗"; echo "$ext" | sed 's/^/    /'; fail=1; else say "אין תלויות חיצוניות בזמן ריצה" "✓"; fi
 
 # a service key or private token must never reach anything the browser loads
@@ -69,7 +75,7 @@ fi
 # that is how a favicon and an og:image can 404 with a green check.
 python3 - <<'PY' || fail=1
 import io, json, os, re, sys
-pages = ['index.html','accessibility.html','privacy.html','terms.html','camera-3d.html','admin.html']
+import glob as _g; pages = sorted(_g.glob('*.html'))   # derived, not hand-listed
 canon = re.search(r'<link rel="canonical" href="([^"]+)"', io.open('index.html', encoding='utf-8').read())
 origin = canon.group(1).rstrip('/') if canon and 'SITE_URL' not in canon.group(1) else None
 missing = []
@@ -122,7 +128,7 @@ PY
 # the assistant build their own DOM and wire their own ids in JS.
 python3 - <<'PY' || fail=1
 import io, re, sys
-pages = ['index.html','accessibility.html','privacy.html','terms.html','camera-3d.html','admin.html']
+import glob as _g; pages = sorted(_g.glob('*.html'))   # derived, not hand-listed
 bad = []
 for f in pages:
     s = io.open(f, encoding='utf-8').read()
@@ -211,7 +217,7 @@ for block in cfg.get('headers', []):
             policies.append((block.get('source', ''), h['value']))
 known = set()
 for _, v in policies: known.update(re.findall(r"'(sha(?:256|384|512)-[A-Za-z0-9+/=]+)'", v))
-pages = ['index.html','accessibility.html','privacy.html','terms.html','camera-3d.html','admin.html']
+import glob as _g; pages = sorted(_g.glob('*.html'))   # derived, not hand-listed
 bad, seen = [], 0
 for f in pages:
     s = io.open(f, encoding='utf-8').read()
@@ -305,7 +311,7 @@ PY
 # E-E-A-T pass carries an [[OWNER: …]] token precisely so this line can stop it.
 # The legal drafts' [להשלים] markers are NOT checked here: those pages are
 # published knowingly as drafts, behind noindex.
-owner=$(grep -rl '\[\[OWNER:' index.html camera-3d.html accessibility.html privacy.html terms.html admin.html assets/css/*.css assets/js/*.js 2>/dev/null)
+owner=$(grep -rl '\[\[OWNER:' $PAGES assets/css/*.css assets/js/*.js 2>/dev/null)
 if [ -n "$owner" ]; then say "placeholder של הבעלים בקוד" "✗"; echo "$owner" | sed 's/^/    /'; fail=1; else say "אין placeholders של הבעלים" "✓"; fi
 
 # sitemap.xml is the one file that silently goes wrong: nothing in the build
