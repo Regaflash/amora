@@ -614,7 +614,10 @@
   var track = $('[data-quotes-track]');
   var viewport = $('[data-quotes-viewport]');
   var dots = $$('[data-quotes-go]');
-  var SLIDES = 3;
+  // Derived from the DOM, not hardcoded: a testimonial can be removed by
+  // deleting its .quotes__slide and its matching [data-quotes-go] button,
+  // with no JS edit and no blank slide left behind.
+  var SLIDES = track ? track.children.length : 0;
   var slide = 0;
   var touched = false;
   var autoTimer = null;
@@ -629,6 +632,7 @@
   }
 
   function goTo(index, byUser) {
+    if (!SLIDES) return;
     slide = (index + SLIDES) % SLIDES;
     if (byUser) touched = true;
     renderSlide();

@@ -301,4 +301,16 @@ if bad:
 print(f'{"SQL: לכל policy יש GRANT, אין הרשאה חסינת-RLS":<46} ✓')
 PY
 
+# An owner placeholder must never reach production. Every patch staged by the
+# E-E-A-T pass carries an [[OWNER: …]] token precisely so this line can stop it.
+# The legal drafts' [להשלים] markers are NOT checked here: those pages are
+# published knowingly as drafts, behind noindex.
+owner=$(grep -rl '\[\[OWNER:' index.html camera-3d.html accessibility.html privacy.html terms.html admin.html assets/css/*.css assets/js/*.js 2>/dev/null)
+if [ -n "$owner" ]; then say "placeholder של הבעלים בקוד" "✗"; echo "$owner" | sed 's/^/    /'; fail=1; else say "אין placeholders של הבעלים" "✓"; fi
+
+# sitemap.xml is the one file that silently goes wrong: nothing in the build
+# reads it, so a page added or noindexed leaves it stale for months.
+if python3 tools/gen-sitemap.py --check >/dev/null 2>&1; then say "sitemap.xml מעודכן" "✓"
+else say "sitemap.xml לא מעודכן" "✗ הרץ tools/gen-sitemap.py"; fail=1; fi
+
 exit $fail

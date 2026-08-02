@@ -5,6 +5,9 @@
   "outputDirectory": ".",
   "trailingSlash": false,
   "cleanUrls": false,
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/(.*)",

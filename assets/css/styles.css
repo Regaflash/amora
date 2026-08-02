@@ -1591,6 +1591,8 @@ textarea.field__control { resize: vertical; }
 .form__submit:hover { background: var(--sand); }
 .form__submit.is-sending { background: var(--sand); cursor: wait; opacity: .75; }
 .form__alt { font-size: var(--t-small); color: var(--mocha); margin: 0; text-align: center; }
+.form__consent { font-size: var(--t-micro); color: var(--mocha); margin: 0 0 var(--sp-1); text-align: center; }
+.form__consent a { color: var(--charcoal); text-underline-offset: 3px; }
 .form__failure {
   margin: 0;
   padding: 13px 14px;
