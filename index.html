@@ -15,24 +15,44 @@
 <meta property="og:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Amora Studio | הרגעים שלכם. לנצח." />
 <meta name="twitter:description" content="צילום וידאו וסטילס לחתונות ואירועים — תל אביב, בכל הארץ." />
 <meta name="twitter:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
+<meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="theme-color" content="#F7F2EA" />
-<link rel="icon" href="assets/img/logo.jpg" />
+<link rel="icon" href="favicon.ico" sizes="48x48" />
+<link rel="icon" href="assets/img/icon-96.png" type="image/png" sizes="96x96" />
+<link rel="icon" href="assets/img/icon-192.png" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
 <link rel="preload" href="assets/fonts/heebo-hebrew-300-normal.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="assets/fonts/frank-ruhl-libre-hebrew-600-normal.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="assets/css/fonts.css" />
 <link rel="stylesheet" href="assets/css/styles.css" />
 <link rel="stylesheet" href="assets/css/assistant.css" />
 <script>document.documentElement.classList.add('js');</script>
+<!-- Organization, not LocalBusiness. LocalBusiness is a subtype of Place: it
+     asserts a physical premises a client can be sent to, and Google's Local
+     Business guidance expects a full street address, with geo and
+     openingHours as the properties that make the node worth anything. This
+     studio has published none of them — no street, no postal code, no hours,
+     no map, no Google Business Profile, and no address anywhere in the
+     visible page. Marking one up is a claim the site does not back, and an
+     address without streetAddress does not earn the rich result anyway; it
+     earns a Search Console warning. Organization is the correct type for a
+     mobile service business, and areaServed below carries the geography
+     honestly. ProfessionalService was considered and rejected — schema.org
+     has treated it as a superseded mistake since v3.0. Nothing is lost in the
+     move: telephone, address, areaServed, sameAs, knowsLanguage,
+     hasOfferCatalog, logo and image are all defined on Organization. The @id
+     keeps its #business slug so nothing that already points at it breaks. -->
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
- "@type": "LocalBusiness",
+ "@type": "Organization",
  "@id": "https://www.amora-studios.com/#business",
  "name": "Amora Studio",
  "url": "https://www.amora-studios.com/",
@@ -43,7 +63,6 @@
  "address": {
   "@type": "PostalAddress",
   "addressLocality": "תל אביב",
-  "addressRegion": "תל אביב",
   "addressCountry": "IL"
  },
  "areaServed": {
@@ -57,6 +76,13 @@
  "sameAs": [
   "https://www.instagram.com/amora___studio/"
  ],
+ "contactPoint": {
+  "@type": "ContactPoint",
+  "contactType": "customer service",
+  "telephone": "+972503662699",
+  "url": "https://wa.me/972503662699",
+  "availableLanguage": "he"
+ },
  "hasOfferCatalog": {
   "@type": "OfferCatalog",
   "name": "שירותי צילום",
@@ -104,6 +130,11 @@
 {
  "@context": "https://schema.org",
  "@type": "FAQPage",
+ "@id": "https://www.amora-studios.com/#faq",
+ "inLanguage": "he",
+ "isPartOf": {
+  "@id": "https://www.amora-studios.com/#website"
+ },
  "mainEntity": [
   {
    "@type": "Question",
@@ -164,12 +195,29 @@
  ]
 }
 </script>
+<!-- Ties the two nodes above together: the FAQPage is part of this WebSite,
+     which is published by the Organization. No potentialAction/SearchAction —
+     the site has no search box, and declaring a search endpoint that does not
+     exist is the single most common piece of fictional JSON-LD on the web. -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "WebSite",
+ "@id": "https://www.amora-studios.com/#website",
+ "url": "https://www.amora-studios.com/",
+ "name": "Amora Studio",
+ "inLanguage": "he",
+ "publisher": {
+  "@id": "https://www.amora-studios.com/#business"
+ }
+}
+</script>
 <link rel="stylesheet" href="assets/css/a11y-widget.css" />
 <script src="assets/js/a11y-widget.js"></script>
 </head>
 <body>
 
-<a class="skip-link" href="#top">דילוג לתוכן</a>
+<a class="skip-link" href="#main">דילוג לתוכן</a>
 
 <!-- ===== כותרת דביקה ===== -->
 <header class="site-header" data-header>
@@ -217,7 +265,10 @@
   <a class="menu__phone" href="tel:0503662699">050-3662699</a>
 </div>
 
-<main>
+<!-- tabindex="-1" is what makes the skip link work: without it the
+     fragment jump scrolls but leaves focus on <body>, so the next Tab
+     walks back into the header the visitor just asked to skip. -->
+<main id="main" tabindex="-1">
 
   <!-- ===== 01 · Hero ===== -->
   <section class="hero" id="top">
@@ -257,7 +308,7 @@
   </section>
 
   <!-- ===== 02 · פס אמון ===== -->
-  <section class="trust section" id="trust">
+  <section class="trust section" id="trust" aria-label="בקצרה">
     <div class="trust__row">
       <span class="trust__item">+500 זוגות מאושרים</span>
       <span class="trust__dot" aria-hidden="true"></span>
@@ -287,7 +338,7 @@
         <p class="about__lead">אנחנו לא באים לביים לכם את החתונה. אנחנו באים להיות שם — כדי שבעוד עשרים שנה תוכלו להרגיש שוב בדיוק את מה שהרגשתם.</p>
         <p class="about__body">שנינו מצלמים ביחד, סטילס ווידאו, מהבוקר של ההכנות ועד השיר האחרון. בלי הפרעות, בלי "תעמדו רגע ככה" — רק העין שיודעת מתי להיות קרובה ומתי לתת מרחב.</p>
         <p class="about__body">אנחנו מתל אביב, ומגיעים לכל הארץ.</p>
-        <a class="link-underline" href="#gallery">לצפייה בעבודות שלנו →</a>
+        <a class="link-underline" href="#gallery">לצפייה בעבודות שלנו ←</a>
       </div>
     </div>
   </section>
@@ -315,7 +366,7 @@
           <span class="card__kicker">Our Couples</span>
           <span class="card__title">חתונה מלאה</span>
           <span class="card__text">מהבוקר ועד השיר האחרון — סטילס ווידאו, שני צלמים.</span>
-          <span class="card__more">לבדיקת זמינות →</span>
+          <span class="card__more">לבדיקת זמינות ←</span>
         </span>
       </a>
 
@@ -331,7 +382,7 @@
           <span class="card__kicker">Save the Date</span>
           <span class="card__title">צילומי זוגיות</span>
           <span class="card__text">שעה וחצי בלוקיישן שאתם אוהבים, לפני היום הגדול.</span>
-          <span class="card__more">לבדיקת זמינות →</span>
+          <span class="card__more">לבדיקת זמינות ←</span>
         </span>
       </a>
 
@@ -347,7 +398,7 @@
           <span class="card__kicker">Touch Up</span>
           <span class="card__title">הכנות בבוקר</span>
           <span class="card__text">איפור, שיער, השמלה על הקולב — הרגעים השקטים.</span>
-          <span class="card__more">לבדיקת זמינות →</span>
+          <span class="card__more">לבדיקת זמינות ←</span>
         </span>
       </a>
 
@@ -363,7 +414,7 @@
           <span class="card__kicker">Your Event</span>
           <span class="card__title">אירועים</span>
           <span class="card__text">חינה, אירוסין, בר ובת מצווה, ימי הולדת.</span>
-          <span class="card__more">לבדיקת זמינות →</span>
+          <span class="card__more">לבדיקת זמינות ←</span>
         </span>
       </a>
 
@@ -379,7 +430,7 @@
           <span class="card__kicker">Attendants</span>
           <span class="card__title">האנשים שלכם</span>
           <span class="card__text">משפחה, סבתות, שושבינות — הפורטרטים שנשארים.</span>
-          <span class="card__more">לבדיקת זמינות →</span>
+          <span class="card__more">לבדיקת זמינות ←</span>
         </span>
       </a>
     </div>
@@ -403,6 +454,11 @@
         <button class="chip" type="button" data-filter="prep" aria-pressed="false">הכנות</button>
         <button class="chip" type="button" data-filter="events" aria-pressed="false">אירועים</button>
       </div>
+
+      <!-- Changing a chip rewrites the grid underneath with nothing to see or
+           hear. main.js writes the new count here; it stays empty on load so
+           nothing is announced before the visitor has asked for anything. -->
+      <p class="visually-hidden" role="status" aria-live="polite" data-gallery-status></p>
     </div>
 
       <!-- כל תמונה היא placeholder מסומן — החלף ב-<img> אמיתי (ratio נשמר דרך --ratio) -->
@@ -573,7 +629,7 @@
 
       <div class="shell">
         <div class="gallery__footer">
-          <a class="btn btn--outline" href="#contact">לקבלת גלריה מלאה של חתונה →</a>
+          <a class="btn btn--outline" href="#contact">לקבלת גלריה מלאה של חתונה ←</a>
         </div>
       </div>
   </section>
@@ -611,7 +667,7 @@
         </div>
         <p class="gear__lead">גוף פול־פריים, עדשות פריים מהירות, ותאורה שמכבדת את האור שיש בחדר. בלי פלאשים שמסמאים את האורחים.</p>
         <p class="gear__hint">סובבו את הדגם — זה הכלי שמלווה אותנו מהבוקר של ההכנות ועד השיר האחרון.</p>
-        <a class="gear__cta" href="camera-3d.html">לתצוגה מלאה במסך גדול →</a>
+        <a class="gear__cta" href="camera-3d.html">לתצוגה מלאה במסך גדול ←</a>
       </div>
       <div class="gear__stage">
         <iframe src="camera-3d.html?embed=1" title="דגם תלת־מימד של המצלמה" loading="lazy"></iframe>
@@ -654,6 +710,7 @@
     <div class="quotes__inner">
       <div class="chapter chapter--center">
         <p class="eyebrow">07 — Our couples say</p>
+      <h2 class="h2">מה אומרים עלינו</h2>
       </div>
 
       <div class="quotes__viewport" data-quotes-viewport>
@@ -747,31 +804,42 @@
         <a class="contact__phone" href="tel:0503662699">050-3662699</a>
       </div>
 
-      <form class="form" data-form novalidate>
+      <!-- method="dialog" on a form with no <dialog> ancestor is a defined
+           no-op: the submit event still fires (main.js hears it) but the
+           browser aborts the submission instead of GET-navigating the
+           visitor's name and phone into the URL and wiping the form. It is
+           parsed with the markup, so it holds even if main.js throws first. -->
+      <form class="form" data-form method="dialog" novalidate>
         <div class="form__fields" data-form-fields>
           <p class="form__title">בדיקת זמינות</p>
 
           <label class="field">
             <span class="field__label">שם מלא</span>
-            <input class="field__control" name="name" type="text" autocomplete="name" data-field="name" aria-describedby="err-name" />
+            <input class="field__control" name="name" type="text" autocomplete="name" data-field="name" aria-required="true" aria-describedby="err-name" />
             <span class="field__error" id="err-name" data-error="name"></span>
           </label>
 
           <label class="field">
             <span class="field__label">טלפון</span>
-            <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-describedby="err-phone" />
+            <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
             <span class="field__error" id="err-phone" data-error="phone"></span>
           </label>
 
           <div class="field-row">
-            <label class="field">
-              <span class="field__label">תאריך האירוע</span>
-              <input class="field__control" name="date" type="date" data-field="date" aria-describedby="err-date" />
+            <!-- A <div> rather than a <label>: the opt-out below needs a label
+                 of its own, and nesting one label inside another is invalid. -->
+            <div class="field">
+              <label class="field__label" for="lead-date">תאריך האירוע</label>
+              <input class="field__control" id="lead-date" name="date" type="date" data-field="date" aria-required="true" aria-describedby="err-date" />
+              <label class="field__opt-in">
+                <input type="checkbox" name="date_tbd" value="1" data-field="date_tbd" data-date-tbd />
+                <span>עוד לא קבענו תאריך</span>
+              </label>
               <span class="field__error" id="err-date" data-error="date"></span>
-            </label>
+            </div>
             <label class="field">
               <span class="field__label">סוג האירוע</span>
-              <select class="field__control" name="type" data-field="type" aria-describedby="err-type">
+              <select class="field__control" name="type" data-field="type" aria-required="true" aria-describedby="err-type">
                 <option value="">בחרו</option>
                 <option value="wedding">חתונה</option>
                 <option value="std">Save the Date</option>
@@ -810,14 +878,14 @@
 
           <button class="form__submit" type="submit" data-submit>שלחו — נחזור אליכם היום</button>
           <p class="form__failure" data-form-failure role="alert" hidden></p>
-          <p class="form__alt">או בוואטסאפ ישירות → <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
+          <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
         </div>
 
         <div class="form__done" data-form-done hidden>
           <p class="form__done-kicker">Thank you</p>
           <h3 class="form__done-title">קיבלנו. נחזור אליכם היום.</h3>
           <p class="form__done-text">בינתיים, אפשר לכתוב לנו ישירות בוואטסאפ.</p>
-          <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener">לוואטסאפ →</a>
+          <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener">לוואטסאפ ←</a>
         </div>
       </form>
     </div>
@@ -862,9 +930,14 @@
 
 <!-- Lightbox -->
 <div class="lightbox" data-lightbox role="dialog" aria-modal="true" aria-label="תצוגת תמונה" hidden>
-  <div class="lightbox__figure" data-lightbox-figure role="img" aria-label="">
+  <!-- No role="img" here. It made the <img> inside presentational and
+       replaced its alt with this box's own label, so the photo was announced
+       twice under one name and the caption span was swallowed. The span is now
+       a live region: stepping never moves focus, so it is the only thing that
+       tells a screen-reader user which photo is on screen. -->
+  <div class="lightbox__figure" data-lightbox-figure>
     <img class="lightbox__img" data-lightbox-img alt="" />
-    <span class="visually-hidden" data-lightbox-label></span>
+    <span class="visually-hidden" role="status" aria-live="polite" data-lightbox-label></span>
   </div>
   <button class="lightbox__close" type="button" data-lightbox-close aria-label="סגירה">✕</button>
   <div class="lightbox__nav">

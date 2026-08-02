@@ -2,25 +2,19 @@
 
 ## ⚑ Fresh session? Read this first
 
-The site is **finished and verified**. It has never been deployed. The one
-remaining job is to put it live on Vercel.
+The site is **live at https://www.amora-studios.com**, on Vercel, on the
+owner's domain. SITE_URL has been replaced everywhere it appears (canonical,
+og:url, JSON-LD, sitemap.xml). The lead form is wired to Supabase and the
+private CRM at `admin.html` reads it back.
 
 ```
-1. Confirm the Vercel connector's tools are loaded (deploy_to_vercel etc.).
-2. Deploy this directory. vercel.json and .vercelignore are already correct —
-   do not add a build step, this is a static site with no dependencies.
-3. Report the live URL, then FETCH IT and check it actually renders: images
-   load, the hero loop plays, the gallery filters, the form validates.
-4. Once there is a permanent domain:
-      tools/set-site-url.sh https://<domain>
-      tools/check.sh            # must exit 0
-   then redeploy. SITE_URL sits in canonical, og:url, JSON-LD and sitemap.xml;
-   until it is replaced, WhatsApp shares show no image and Google cannot read
-   the FAQ schema.
-5. Optional, if the Supabase connector is also loaded: run
-   docs/supabase-leads.sql, then set supabaseUrl / supabaseKey in the CONFIG
-   block at the top of assets/js/main.js, redeploy, and submit a real test
-   lead to confirm it lands in the `leads` table.
+Before any change goes out:
+1. tools/check.sh          # must exit 0 — 14 checks, see tools/README.md
+2. Deploy this directory to Vercel. vercel.json and .vercelignore are already
+   correct — do not add a build step, this is a static site with no
+   dependencies.
+3. Fetch the live URL and look at it: images load, the hero plays, the gallery
+   filters, the form validates, the accessibility menu opens.
 ```
 
 Do not re-audit or re-verify the build. That work is done and documented below.
@@ -30,8 +24,11 @@ Do not re-audit or re-verify the build. That work is done and documented below.
 
 The owner's accounts are already wired together:
 
-- **GitHub** — `Regaflash/amora` (private). Holds the studio's photo library at
-  the repo root (86 files, Instagram-style filenames).
+- **GitHub** — `Regaflash/amora` (private). The studio's photo library sits on
+  disk at the repo root (86 files, Instagram-style filenames) and `tools/`
+  reads it from there — `tools/manifest.json` maps every slot to a filename.
+  It is **not tracked**: `.gitignore` holds the patterns, `.vercelignore`
+  repeats them, and `tools/check.sh` fails if any of it returns to HEAD.
 - **Vercel** — connected to that GitHub account, **and holds the domain**.
   This is where the site is hosted. Deploys should target Vercel.
 - **Supabase** — connected to the same GitHub account. Available as the
@@ -61,17 +58,26 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   to the contact form.
 - Testimonial portraits were deliberately removed: they showed real people who
   had not said the quoted words. Do not re-add without written permission.
-- The hero loops are stand-ins generated from stills. Real footage exists on
-  YouTube (`3O13FGO_f08` — vertical Short, `2DHdORDXVmo` — the showreel, already
-  embedded in the film section) but could not be downloaded from here.
+- The hero streams the studio's real footage from YouTube — `2DHdORDXVmo`
+  (showreel, landscape) and `3O13FGO_f08` (vertical Short), chosen by viewport
+  orientation. There is no local hero video and no `assets/video/`. This is the
+  only third-party request the site makes on load; it was the owner's call,
+  `privacy.html` states it, and `frame-src` in `vercel.json` names the two
+  origins. The film section further down still asks before it loads.
+- There are six pages, not two: `index.html`, `camera-3d.html`,
+  `accessibility.html`, `privacy.html`, `terms.html` and `admin.html` (the
+  private lead CRM — noindex, no-store, its own enforcing CSP, absent from
+  both sitemap.xml and robots.txt on purpose). The accessibility widget and
+  the site assistant load on every public page.
 
 ## Still outstanding, owner-supplied only
 
-- Real hero footage (vertical + landscape).
 - A photo of the team at work — the `about` slot is a stand-in, and the section
   text talks about "the two of us" with no name or face anywhere on the site.
-- Legal review of `accessibility.html` and `privacy.html` (both are drafts with
-  `[להשלים]` markers).
+- Legal review of `accessibility.html`, `privacy.html` and `terms.html` (all
+  three are drafts with `[להשלים]` markers and a visible banner).
+- A logo master of 512px or more. `assets/img/logo.jpg` is 150×150, so the
+  180 and 192 icons `tools/make-icons.mjs` produces are upscaled from it.
 - A Google Business Profile.
 
 ## Before any deploy

@@ -1,7 +1,10 @@
 import sharp from 'sharp';
 import { readdirSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
-const DIR = './amora-media';
+// The untracked photo library at the repo root — see .gitignore.
+const DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const files = readdirSync(DIR).filter(f => f.toLowerCase().endsWith('.jpg')).sort();
 
 // group by orientation so each sheet is visually consistent
