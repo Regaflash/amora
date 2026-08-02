@@ -32,6 +32,9 @@
      light ground uses --champagne-ink. On the dark sections the original is
      already 8.19:1 on charcoal and stays. */
   --champagne-ink: #806142;
+  /* The gallery ground. Deeper than --charcoal so the photographs sit in a
+     room rather than on a page. */
+  --ink: #151311;
   /* Warm ivory for type over photography. --sand measured 4.11:1 on the hero
      poster; this is the same warmth carried up to 5.69:1. */
   --ivory-warm: #F1E6D7;
@@ -119,6 +122,7 @@ summary::-webkit-details-marker { display: none; }
 .hero :focus-visible,
 .film :focus-visible,
 .contact :focus-visible,
+.gallery :focus-visible,
 .lightbox :focus-visible { outline-color: var(--ivory); }
 /* ...except where a light panel sits inside one of those dark sections. The
    lead form is ivory on the ivory-on-charcoal contact block, so the rule above
@@ -126,6 +130,11 @@ summary::-webkit-details-marker { display: none; }
    focus indicator at all on the site's only conversion path. */
 .contact .form:focus-visible,
 .contact .form :focus-visible { outline-color: var(--charcoal); }
+/* The header overlays the hero, so at scroll 0 its focus rings are charcoal on
+   a dark photograph — measured 1.87:1 on the nav links, against a 3:1
+   requirement. The header's own copy already flips on .is-scrolled; the ring
+   now follows it. */
+.site-header:not(.is-scrolled) :focus-visible { outline-color: var(--ivory); }
 
 @keyframes amFloat {
   0%, 100% { transform: translateY(0); opacity: .85; }
@@ -172,6 +181,10 @@ summary::-webkit-details-marker { display: none; }
   /* Nine eyebrows read "Behind the lens — 01" without this: the leading number
      is a neutral run and bidi reorders it to the far side. */
   direction: ltr;
+  /* Cormorant Garamond defaults to old-style figures, so "06" was rendering
+     with a descending 6. .step__num and .lightbox__count already pin this. */
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum" 1;
   text-align: right;
 }
 
@@ -855,11 +868,35 @@ summary::-webkit-details-marker { display: none; }
 /* ------------------------------------------------------------ gallery --- */
 
 .gallery {
-  background: var(--ivory);
+  /* Ink, not ivory. The gallery is the section this audience actually came
+     for, and photographs read better in a dark room. Set as a flat colour and
+     NOT as a gradient: html.a11y-contrast blanks every background-image, which
+     would strip a gradient ground and leave the re-inked copy below stranded. */
+  background-color: var(--ink);
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
+  padding-block: var(--section-y);
 }
-.gallery .chapter { margin-bottom: clamp(30px, 3.6vw, 52px); }
+.gallery__head { margin-bottom: clamp(30px, 3.6vw, 52px); }
+.gallery .chapter { margin-bottom: clamp(26px, 3vw, 40px); }
+
+/* --- the head, re-inked for the dark ground ------------------------------
+   Editorial's chapter is coloured for light sections. Dropped onto ink it
+   fails: --champagne-ink #806142 on #151311 measures 3.27:1. Nobody's guard
+   caught this because nobody built this combination — the wall and the
+   chapter came from different directions. Measured targets below. */
+.gallery .chapter { border-top-color: var(--rule-dark); }
+.gallery .eyebrow { color: var(--sand); }        /* ~10.9:1 on ink */
+.gallery .h2 { color: var(--ivory); }
+/* The filter words were mocha 6.4:1 / charcoal 16:1 on cream. On ink those are
+   2.83:1 and about 1.1:1 — the selected word would be invisible. */
+.gallery .chip { color: rgba(255, 253, 249, .72); }   /* ~9.9:1 */
+.gallery .chip:hover,
+.gallery .chip[aria-pressed="true"] { color: var(--ivory); }
+.gallery .chip::after { background: var(--rule-dark); }
+.gallery .chip[aria-pressed="true"]::after { background: var(--ivory); height: 2px; }
+.gallery .btn--outline { color: var(--ivory); border-color: rgba(255, 253, 249, .5); }
+.gallery .btn--outline:hover { background: var(--champagne); color: var(--charcoal); }
 
 /* Five champagne-filled pills became five words with a rule under them —
    a masthead, not a toolbar. Ink is mocha at 6.4:1, the selected word is
@@ -902,30 +939,60 @@ summary::-webkit-details-marker { display: none; }
 
 /* Columns are 300px wide at their narrowest; the browser fits as many as
    the 1320px shell allows, so a column is never much wider than ~330px. */
+/* --- the wall ------------------------------------------------------------
+   A justified contact sheet rather than CSS columns. Every row is one --row
+   tall and each frame takes width in proportion to its own aspect ratio, so
+   the row edges line up and the pictures keep their shape. The ratio comes
+   from data-ratio on the <li>, mirrored there from the button inside.
+   No JS: filtering still works because a hidden item leaves the flex flow,
+   and .masonry__item[hidden] { display: none } already handles that. */
 .masonry {
-  --masonry-gap: clamp(16px, 1.7vw, 26px);
-  columns: 300px;
-  column-gap: var(--masonry-gap);
+  --masonry-gap: clamp(10px, 1vw, 16px);
+  --row: clamp(200px, 16.7vw, 250px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--masonry-gap);
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding-inline: var(--masonry-gap);
 }
-.masonry__item { break-inside: avoid; }
+.masonry__item {
+  --ar: 0.8;                                   /* 4/5, the common case */
+  flex: var(--ar) 1 calc(var(--ar) * var(--row));
+  height: var(--row);
+  /* Stops one landscape frame stretching across a sparse final row. */
+  max-width: calc(var(--ar) * var(--row) * 1.9);
+}
+.masonry__item[data-ratio="16/9"] { --ar: 1.778; }
+.masonry__item[data-ratio="21/9"] { --ar: 2.333; }
 .masonry__item[hidden] { display: none; }
 .masonry__btn {
   display: block;
   width: 100%;
+  height: 100%;
   padding: 0;
-  margin: 0 0 var(--masonry-gap);
+  margin: 0;
   border: 0;
   background: transparent;
   cursor: zoom-in;
   overflow: hidden;
   border-radius: 0;
 }
-.masonry__btn picture { display: block; }
-.masonry__photo { width: 100%; height: auto; display: block; transition: transform 900ms var(--ease); }
+.masonry__btn picture { display: block; width: 100%; height: 100%; }
+/* object-fit is what lets a frame fill its slot without distorting: the row
+   height is fixed, so the picture crops rather than squashes. */
+.masonry__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 900ms var(--ease);
+}
 .masonry__btn:hover .masonry__photo { transform: scale(1.03); }
+
+@media (max-width: 900px) { .masonry { --row: clamp(150px, 22vw, 200px); } }
+@media (max-width: 560px) { .masonry { --row: 150px; } }
 
 .gallery__footer { display: flex; justify-content: center; margin-top: clamp(44px, 5vw, 76px); }
 
@@ -943,16 +1010,19 @@ summary::-webkit-details-marker { display: none; }
 .lightbox__figure {
   display: grid;
   place-items: center;
-  width: min(1100px, 90vw);
-  aspect-ratio: var(--ratio, 4 / 5);
+  /* Shrink to the image instead of being a fixed --ratio box that max-height
+     then clips: a 590px portrait was floating inside 1100px of stripes. */
+  width: auto;
+  max-width: min(1100px, 90vw);
   max-height: 82vh;
   background: repeating-linear-gradient(135deg, #26221C 0 8px, #1C1A18 8px 18px);
   border: 1px solid rgba(201, 174, 140, 0.35);
 }
 .lightbox__img {
   display: block;
-  max-width: min(1100px, 92vw);
-  max-height: 82vh;
+  aspect-ratio: var(--ratio, 4 / 5);
+  max-width: 100%;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -1018,6 +1088,11 @@ summary::-webkit-details-marker { display: none; }
   border-radius: 0;
   overflow: hidden;
 }
+/* The showreel button had no visible focus ring in ANY build, including the
+   live site: the ring is painted at a 3px outward offset and .film__frame's
+   overflow: hidden clips every pixel of it. Drawing it inward keeps it inside
+   the clip. Three independent guards measured 0 changed ring pixels here. */
+.film__play:focus-visible { outline-offset: -4px; }
 .film__play {
   display: block;
   position: relative;
@@ -1030,6 +1105,9 @@ summary::-webkit-details-marker { display: none; }
 .film__poster {
   display: block;
   width: 100%;
+  /* Without height:auto the element's height="900" attribute wins and
+     aspect-ratio is silently inert. */
+  height: auto;
   aspect-ratio: 16 / 9;
   object-fit: cover;
   transition: opacity 400ms, transform 700ms var(--ease);
@@ -1419,7 +1497,13 @@ summary::-webkit-details-marker { display: none; }
 .field { display: grid; gap: var(--sp-2); }
 .field__label { font-size: var(--t-micro); letter-spacing: .16em; color: var(--mocha); }
 .field__opt { opacity: .7; letter-spacing: normal; }
-.field__control::placeholder { color: var(--mocha); opacity: 1; }  /* Firefox dims it without opacity:1 */
+.field__control::placeholder { color: var(--mocha); opacity: 1; }
+/* An unanswered select was drawn at full charcoal, so it looked answered next
+   to an untouched input. An engine without :has() simply keeps today's look. */
+select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
+/* There was no :focus rule on the controls at all — a mouse click produced no
+   border change whatsoever. */
+.field__control:focus { border-color: var(--champagne-ink); background: var(--ivory); }  /* Firefox dims it without opacity:1 */
 .field__control {
   width: 100%;
   padding: 15px 14px;
@@ -1439,7 +1523,9 @@ textarea.field__control { resize: vertical; }
 .field__error.is-shown { display: block; min-height: 18px; }
 .field-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  /* 140px paired the date and event-type controls two-across at 390px, in the
+     one place on the site where friction costs a lead. */
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 16px;
 }
 .visually-hidden {

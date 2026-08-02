@@ -387,7 +387,10 @@
 
   <!-- ===== 05 · גלריה ===== -->
   <section class="gallery section" id="gallery" data-reveal>
-    <div class="shell section--pad">
+    <!-- Editorial's chapter block, in cinematic's container: the head stays in
+         the shell so it lines up with every other section, while the wall below
+         sits outside it and runs edge to edge. -->
+    <div class="shell gallery__head">
       <div class="chapter">
         <p class="eyebrow">03 — The gallery</p>
         <h2 class="h2">רגעים מהעבודות שלנו</h2>
@@ -400,10 +403,11 @@
         <button class="chip" type="button" data-filter="prep" aria-pressed="false">הכנות</button>
         <button class="chip" type="button" data-filter="events" aria-pressed="false">אירועים</button>
       </div>
+    </div>
 
       <!-- כל תמונה היא placeholder מסומן — החלף ב-<img> אמיתי (ratio נשמר דרך --ratio) -->
       <ul class="masonry" data-masonry>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="רגע החופה" data-ratio="4/5" data-img="g01" aria-label="הגדלה: רגע החופה">
             <picture>
             <source type="image/webp" srcset="assets/img/g01-500.webp 500w, assets/img/g01-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -412,7 +416,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="פורטרט כלה" data-ratio="4/5" data-img="g02" aria-label="הגדלה: פורטרט כלה">
             <picture>
             <source type="image/webp" srcset="assets/img/g02-500.webp 500w, assets/img/g02-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -421,7 +425,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="16/9">
           <button class="masonry__btn" type="button" data-alt="הזוג אחרי הטקס" data-ratio="16/9" data-img="g03" aria-label="הגדלה: הזוג אחרי הטקס">
             <picture>
             <source type="image/webp" srcset="assets/img/g03-600.webp 600w, assets/img/g03-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -430,7 +434,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="std">
+        <li class="masonry__item" data-cat="std" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="צילומי זוגיות בלוקיישן" data-ratio="4/5" data-img="g04" aria-label="הגדלה: צילומי זוגיות בלוקיישן">
             <picture>
             <source type="image/webp" srcset="assets/img/g04-500.webp 500w, assets/img/g04-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -439,7 +443,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="השמלה והצעדים הראשונים" data-ratio="4/5" data-img="g05" aria-label="הגדלה: השמלה והצעדים הראשונים">
             <picture>
             <source type="image/webp" srcset="assets/img/g05-500.webp 500w, assets/img/g05-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -448,7 +452,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="std">
+        <li class="masonry__item" data-cat="std" data-ratio="16/9">
           <button class="masonry__btn" type="button" data-alt="Save the Date בשקיעה" data-ratio="16/9" data-img="g06" aria-label="הגדלה: Save the Date בשקיעה">
             <picture>
             <source type="image/webp" srcset="assets/img/g06-600.webp 600w, assets/img/g06-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -457,7 +461,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="ריקודים" data-ratio="4/5" data-img="g07" aria-label="הגדלה: ריקודים">
             <picture>
             <source type="image/webp" srcset="assets/img/g07-500.webp 500w, assets/img/g07-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -466,7 +470,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="21/9">
           <button class="masonry__btn" type="button" data-alt="חופה בשקיעה" data-ratio="21/9" data-img="g08" aria-label="הגדלה: חופה בשקיעה">
             <picture>
             <source type="image/webp" srcset="assets/img/g08-700.webp 700w, assets/img/g08-1300.webp 1300w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -475,7 +479,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="prep">
+        <li class="masonry__item" data-cat="prep" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="איפור בבוקר האירוע" data-ratio="4/5" data-img="g09" aria-label="הגדלה: איפור בבוקר האירוע">
             <picture>
             <source type="image/webp" srcset="assets/img/g09-500.webp 500w, assets/img/g09-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -484,7 +488,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="prep">
+        <li class="masonry__item" data-cat="prep" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="עיצוב שיער לכלה" data-ratio="4/5" data-img="g10" aria-label="הגדלה: עיצוב שיער לכלה">
             <picture>
             <source type="image/webp" srcset="assets/img/g10-500.webp 500w, assets/img/g10-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -493,7 +497,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="prep">
+        <li class="masonry__item" data-cat="prep" data-ratio="16/9">
           <button class="masonry__btn" type="button" data-alt="פרטי השמלה" data-ratio="16/9" data-img="g11" aria-label="הגדלה: פרטי השמלה">
             <picture>
             <source type="image/webp" srcset="assets/img/g11-600.webp 600w, assets/img/g11-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -502,7 +506,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="events">
+        <li class="masonry__item" data-cat="events" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="עיצוב שולחנות באירוע" data-ratio="4/5" data-img="g12" aria-label="הגדלה: עיצוב שולחנות באירוע">
             <picture>
             <source type="image/webp" srcset="assets/img/g12-500.webp 500w, assets/img/g12-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -511,7 +515,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="events">
+        <li class="masonry__item" data-cat="events" data-ratio="16/9">
           <button class="masonry__btn" type="button" data-alt="חגיגה עם האורחים" data-ratio="16/9" data-img="g13" aria-label="הגדלה: חגיגה עם האורחים">
             <picture>
             <source type="image/webp" srcset="assets/img/g13-600.webp 600w, assets/img/g13-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -520,7 +524,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="events">
+        <li class="masonry__item" data-cat="events" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="שושבינות" data-ratio="4/5" data-img="g14" aria-label="הגדלה: שושבינות">
             <picture>
             <source type="image/webp" srcset="assets/img/g14-500.webp 500w, assets/img/g14-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -529,7 +533,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="std">
+        <li class="masonry__item" data-cat="std" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="זוג בעיר" data-ratio="4/5" data-img="g15" aria-label="הגדלה: זוג בעיר">
             <picture>
             <source type="image/webp" srcset="assets/img/g15-500.webp 500w, assets/img/g15-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -538,7 +542,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="רגע שקט בין השניים" data-ratio="4/5" data-img="g16" aria-label="הגדלה: רגע שקט בין השניים">
             <picture>
             <source type="image/webp" srcset="assets/img/g16-500.webp 500w, assets/img/g16-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -547,7 +551,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="weddings">
+        <li class="masonry__item" data-cat="weddings" data-ratio="16/9">
           <button class="masonry__btn" type="button" data-alt="ההליכה אל החופה" data-ratio="16/9" data-img="g17" aria-label="הגדלה: ההליכה אל החופה">
             <picture>
             <source type="image/webp" srcset="assets/img/g17-600.webp 600w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -556,7 +560,7 @@
           </picture>
           </button>
         </li>
-        <li class="masonry__item" data-cat="std">
+        <li class="masonry__item" data-cat="std" data-ratio="4/5">
           <button class="masonry__btn" type="button" data-alt="פורטרט זוגי" data-ratio="4/5" data-img="g18" aria-label="הגדלה: פורטרט זוגי">
             <picture>
             <source type="image/webp" srcset="assets/img/g18-500.webp 500w, assets/img/g18-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
@@ -567,10 +571,11 @@
         </li>
       </ul>
 
-      <div class="gallery__footer">
-        <a class="btn btn--outline" href="#contact">לקבלת גלריה מלאה של חתונה →</a>
+      <div class="shell">
+        <div class="gallery__footer">
+          <a class="btn btn--outline" href="#contact">לקבלת גלריה מלאה של חתונה →</a>
+        </div>
       </div>
-    </div>
   </section>
 
   <!-- ===== 06 · סרטון תדמית ===== -->
