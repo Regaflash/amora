@@ -693,6 +693,13 @@ summary::-webkit-details-marker { display: none; }
   display: grid;
   justify-items: center;
   gap: 8px;
+  /* The visible mark is a 1px rule and a small chevron, which gave it an 8px
+     hit area — under the 24px WCAG 2.2 SC 2.5.8 minimum, and genuinely hard to
+     hit with a thumb. Padding alone widens the target: the element is absolutely
+     positioned and centred with translateX(-50%), so -50% of the new width still
+     lands on the same axis. A negative margin to "cancel" the padding was tried
+     and pushed it 12px off-centre — there is nothing to cancel. */
+  padding-inline: 12px;
 }
 .hero__cue-line {
   display: block;
@@ -1510,8 +1517,11 @@ summary::-webkit-details-marker { display: none; }
 }
 .field__opt-in input {
   flex: none;
-  width: 16px;
-  height: 16px;
+  /* 24px is the WCAG 2.2 SC 2.5.8 floor. A 16px box in the one form on the
+     site that turns a visitor into an enquiry is the wrong place to save
+     8 pixels. */
+  width: 24px;
+  height: 24px;
   margin: 0;
   accent-color: var(--champagne);
   cursor: pointer;
@@ -1672,7 +1682,17 @@ textarea.field__control { resize: vertical; }
 }
 .site-footer__copy { font-size: var(--t-micro); letter-spacing: .1em; color: var(--mocha); margin: 0; }
 .site-footer__legal { display: flex; flex-wrap: wrap; gap: var(--sp-5); }
-.site-footer__legal a { font-size: var(--t-micro); letter-spacing: .04em; color: var(--mocha); }
+.site-footer__legal a {
+  font-size: var(--t-micro);
+  letter-spacing: .04em;
+  color: var(--mocha);
+  /* Standalone links in a row, so the SC 2.5.8 inline exception does not apply
+     to them the way it does to the consent line inside the form. Padding takes
+     them past 24px without changing where they sit. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
 
 /* --------------------------------------------------------- whatsapp --- */
 
