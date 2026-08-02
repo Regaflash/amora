@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 20 checks, see tools/README.md
+1. tools/check.sh          # must exit 0 — 19 checks + a phone-format count
 2. Deploy this directory to Vercel. vercel.json and .vercelignore are already
    correct — do not add a build step, this is a static site with no
    dependencies.
