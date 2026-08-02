@@ -47,10 +47,20 @@
 
   /** Build an element. Text always goes in via textContent — lead fields are
    *  attacker-controllable input and must never be parsed as HTML. */
+  /** Unicode bidi controls a lead can type into any free-text field. The
+   *  overrides and isolates (U+202A-202E, U+2066-2069) reverse how a name or a
+   *  message reads in the card and ride along into whatever the owner pastes
+   *  the details into. Written as \u escapes on purpose: the literal
+   *  characters are invisible in a diff, which is the same problem this
+   *  function exists to solve. */
+  function stripBidi(s) {
+    return String(s).replace(/[\u202A-\u202E\u2066-\u2069\u200E\u200F\u061C]/g, '');
+  }
+
   function el(tag, className, text) {
     var node = document.createElement(tag);
     if (className) node.className = className;
-    if (text !== undefined && text !== null && text !== '') node.textContent = String(text);
+    if (text !== undefined && text !== null && text !== '') node.textContent = stripBidi(text);
     return node;
   }
 
@@ -128,12 +138,16 @@
 
   function typeLabel(value) {
     if (!value) return '';
-    return TYPE_LABEL[value] || value;
+    // Own-property test: a lead posted straight to the REST API can set
+    // event_type to 'constructor' or 'toString', and a bare TYPE_LABEL[value]
+    // would then return an inherited function that renders as
+    // "function Object() { [native code] }" in the card and the filter menu.
+    return Object.prototype.hasOwnProperty.call(TYPE_LABEL, value) ? TYPE_LABEL[value] : value;
   }
 
   function coverageLabel(value) {
     if (!value) return '';
-    return COVERAGE_LABEL[value] || value;
+    return Object.prototype.hasOwnProperty.call(COVERAGE_LABEL, value) ? COVERAGE_LABEL[value] : value;
   }
 
   /* ------------------------------------------------------------ elements --- */
@@ -373,7 +387,7 @@
     if (day) line += ' בתאריך ' + formatDay(day);
     parts.push(line + '.');
     parts.push('נשמח לבדוק זמינות ולחזור אליכם עם כל הפרטים — מתי נוח לכם לדבר?');
-    return parts.join(' ');
+    return stripBidi(parts.join(' '));
   }
 
   function detailsFor(lead) {
@@ -388,7 +402,7 @@
       lead.message ? 'הודעה: ' + lead.message : '',
       'התקבלה: ' + formatDay(new Date(lead.created_at))
     ];
-    return rows.filter(Boolean).join('\n');
+    return stripBidi(rows.filter(Boolean).join('\n'));
   }
 
   function copyText(text) {
