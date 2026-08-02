@@ -313,4 +313,22 @@ if [ -n "$owner" ]; then say "placeholder של הבעלים בקוד" "✗"; ech
 if python3 tools/gen-sitemap.py --check >/dev/null 2>&1; then say "sitemap.xml מעודכן" "✓"
 else say "sitemap.xml לא מעודכן" "✗ הרץ tools/gen-sitemap.py"; fail=1; fi
 
+# llms.txt closes with the claim that this check exists. It describes the site to
+# assistants that quote it, so a page it never heard of is a page they will
+# answer about wrongly — or not at all.
+missing_llms=$(python3 - <<'PY'
+import re
+sm = open('sitemap.xml', encoding='utf-8').read()
+try:
+    llms = open('llms.txt', encoding='utf-8').read()
+except FileNotFoundError:
+    print('llms.txt missing'); raise SystemExit
+for loc in re.findall(r'<loc>([^<]+)</loc>', sm):
+    if loc not in llms:
+        print(loc)
+PY
+)
+if [ -n "$missing_llms" ]; then say "llms.txt מכסה את sitemap" "✗"; echo "$missing_llms" | sed 's/^/    /'; fail=1
+else say "llms.txt מכסה את sitemap" "✓"; fi
+
 exit $fail

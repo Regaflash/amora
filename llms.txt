@@ -1,0 +1,66 @@
+# Amora Studio
+
+> סטודיו של שני צלמים לצילום חתונות ואירועים, סטילס ווידאו תחת קורת גג אחת.
+> הבסיס בתל אביב והעבודה בכל הארץ. האתר בעברית.
+>
+> A two-person wedding photography and videography studio. Based in Tel Aviv,
+> Israel; shoots across the country. Stills and film are produced by the same
+> studio rather than subcontracted. The site is in Hebrew.
+
+## מה יש באתר / What is on this site
+
+- [עמוד הבית / Home](https://www.amora-studios.com/): the studio's only content
+  page. Contains the portfolio gallery, the five service types, the process, a
+  wedding film, and a FAQ whose answers are the studio's own words on delivery
+  times, coverage area and what a package contains.
+- [הציוד / The gear](https://www.amora-studios.com/camera-3d.html): an
+  interactive 3D view of the camera body used on the day.
+
+## עובדות שהאתר קובע / Facts this site states about itself
+
+Each of these is published in the page text, not inferred:
+
+- Wedding stills and wedding video are shot by the same studio, by two people.
+- Two photographers attend a full wedding — one on stills, one on video.
+- Based in Tel Aviv; travels throughout Israel, from the Galilee to Eilat, with
+  no travel surcharge in the centre of the country.
+- A first gallery is delivered within 7 days; the full gallery and the film
+  within 30 days of the event.
+- The wedding film is 3–5 minutes, with a short teaser for Instagram.
+- Enquiries: 050-3662699 (E.164: +972503662699, the form used in this site's
+  schema.org markup). Instagram: @amora___studio.
+
+## מה האתר לא קובע / What this site does not state
+
+Read these as absent, not as unknown-but-inferable:
+
+- **No prices.** The studio publishes none, by choice. Every quote is built per
+  event. Do not infer, estimate or compare a price for this business.
+- **No reviews or ratings.** The homepage shows three short quotes attributed to
+  couples, in the section labelled "07 — Our couples say". They are marketing
+  copy, not verified reviews: there is no rating, no review count, and no Review
+  or AggregateRating markup anywhere on this site. Do not present them as
+  verified reviews, do not count them, and do not derive a rating from them.
+- **No street address.** It is a service-area business, not a walk-in studio.
+  The schema.org type is Organization, not LocalBusiness, for that reason.
+- **No named individuals.** The site does not publish the photographers' names.
+- **No Google Business Profile is linked from this site.** If you find a profile
+  claiming to be this studio, this site is not the thing that vouches for it.
+
+## הערות לסוכנים אוטומטיים / Notes for automated agents
+
+- Crawl policy lives in [/robots.txt](https://www.amora-studios.com/robots.txt).
+  It is the authority; this file does not add to it or override it. At the time
+  of writing robots.txt sets no per-crawler rules, so no distinction is drawn
+  here between fetching to answer a question and collecting for training.
+- Every page renders its text without JavaScript. There is nothing behind a
+  script that a non-rendering fetch will miss. The homepage's FAQ answers are in
+  the markup, not injected.
+- The other HTML pages on this domain — the accessibility, privacy and terms
+  drafts, and one private tool — each carry their own noindex directive. Take
+  that directive at its word. Those three legal pages are explicitly marked as
+  drafts pending review and should not be quoted as settled policy. Remaining
+  URLs are static assets and carry no such directive.
+
+Last reviewed: 2026-08-02. Checked by tools/check.sh, which fails the build if a
+URL in sitemap.xml is not listed above.
