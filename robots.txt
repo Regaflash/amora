@@ -1,11 +1,17 @@
+# Order matters: a robots.txt parser stops at the first matching rule, so a
+# blanket "Allow: /" written above these would swallow them and the Disallows
+# would never be reached. Verified with urllib.robotparser — with Allow first,
+# can_fetch('*', '/project/x.html') returned True.
+#
+# These paths are already excluded from the deployment by .vercelignore, so
+# nothing is served at them today and this is a second line of defence rather
+# than the only one. It matters the day a path becomes servable: project/ is a
+# near-duplicate of the homepage and would compete with it in search.
 User-agent: *
-Allow: /
-
-# Reference material that ships in the repo but must never be indexed —
-# project/ is a near-duplicate of the homepage and would compete with it.
 Disallow: /project/
 Disallow: /chats/
 Disallow: /docs/
 Disallow: /tools/
+Allow: /
 
 Sitemap: https://www.amora-studios.com/sitemap.xml
