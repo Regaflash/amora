@@ -2,3 +2,15 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+
+# The studio's raw photo library, uploaded straight to the repo root. The
+# processed derivatives that the site actually serves live in assets/img/ and
+# are unaffected — the leading slash anchors these to the root only.
+# .gitignore has no effect on files already tracked, so this pairs with a
+# one-time `git rm --cached` (the load-bearing half). .vercelignore keeps the
+# same set out of the deployment as a second line of defence.
+/*.jpg
+/*.jpeg
+/*.png
+/*.heic
+/תמונות
