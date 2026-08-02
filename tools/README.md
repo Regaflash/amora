@@ -14,7 +14,7 @@ replaces the other — the focus ring once went invisible at 1.00:1 with entirel
 valid CSS, and no amount of reading the stylesheet would have found it.
 
     tools/check.sh          # 19 static assertions, must exit 0
-    node tools/verify.mjs   # 24 runtime assertions, must exit 0
+    node tools/verify.mjs   # 28 runtime assertions, must exit 0
 
 | file | what it does |
 | --- | --- |
@@ -27,7 +27,7 @@ valid CSS, and no amount of reading the stylesheet would have found it.
 | `sheet.mjs` | Contact sheets, for choosing photos. |
 | `set-site-url.sh` | Replaces the `SITE_URL` placeholder. **Run once before going live.** |
 | `check.sh` | Static consistency checks. Run before deploying — must exit 0. |
-| `verify.mjs` | Runtime checks in Chromium: keyboard and focus behaviour, live regions, the form with JS disabled, WCAG 2.2 target sizes, Core Web Vitals, composited-pixel contrast, and the 404. Must exit 0. |
+| `verify.mjs` | Runtime checks in Chromium: keyboard and focus behaviour, live regions, the form with JS disabled, WCAG 2.2 target sizes, Core Web Vitals, composited-pixel contrast, the 404, and the CRM's escaping of hostile lead data. Supabase is stood in for with route fulfilment, so it runs offline and touches no real data. Must exit 0. |
 | `gen-sitemap.py` | Regenerates `sitemap.xml` from each page's own robots meta, git dates and the homepage's alt-bearing photographs. `--check` fails if stale. |
 | `gen-image-schema.py` | Regenerates the `ImageGallery` JSON-LD in `index.html` from the gallery markup. `--check` fails if stale. |
 | `make-icons.mjs` | Regenerates `favicon.ico` and the PNG icon set from `assets/img/logo.jpg`. |

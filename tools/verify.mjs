@@ -377,6 +377,82 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ------------------------------------------------------- the private CRM --
+// Every field in admin.html is attacker-controlled: anyone on the internet can
+// submit the lead form, and the studio then reads the result in a browser. So
+// the escaping is a security property, not a nicety. Supabase is stood in for
+// with route fulfilment, so this runs offline and touches no real data.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const fired = [];
+  const errs = [];
+  p.on('pageerror', (e) => errs.push(e.message));
+  p.on('dialog', (d) => { fired.push(d.message); d.dismiss(); });
+
+  await p.route('**/auth/v1/token**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ access_token: 'fake.jwt.token', refresh_token: 'r', expires_in: 3600,
+                           token_type: 'bearer', user: { id: 'u1', email: 't@example.com' } }),
+  }));
+  await p.route('**/rest/v1/leads**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify([{
+      id: '00000000-0000-0000-0000-000000000001',
+      created_at: '2026-08-02T10:00:00Z',
+      name: '<img src=x onerror="window.__X1=1">',
+      phone: '<script>window.__X2=1<\/script>',
+      event_date: '2026-12-01',
+      event_type: '"><svg onload="window.__X3=1">',
+      area: '‮gnitset-idb‬',
+      message: '<iframe src="javascript:window.__X4=1"></iframe>',
+      status: 'new',
+    }]),
+  }));
+
+  await p.goto(BASE + '/admin.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const gate = await p.evaluate(() => ({
+    password: !!document.querySelector('input[type=password]'),
+    robots: document.querySelector('meta[name=robots]')?.content || '',
+  }));
+  ok('the CRM is gated by a password field and is noindex,nofollow',
+     gate.password && /noindex/.test(gate.robots) && /nofollow/.test(gate.robots), gate, 'gated and noindex');
+
+  await p.fill('input[type=email]', 't@example.com').catch(() => {});
+  await p.fill('input[type=password]', 'whatever').catch(() => {});
+  await p.locator('button[type=submit]').first().click().catch(() => {});
+  await p.waitForTimeout(1800);
+
+  const r = await p.evaluate(() => ({
+    executed: [window.__X1, window.__X2, window.__X3, window.__X4].filter(Boolean).length,
+    elements: document.querySelectorAll('img[onerror], svg[onload], iframe').length,
+  }));
+  ok('hostile lead data executes nothing in the CRM',
+     r.executed === 0 && fired.length === 0 && r.elements === 0,
+     { payloadsFired: r.executed, dialogs: fired.length, elementsCreated: r.elements },
+     'zero of each');
+  ok('the CRM renders hostile data without throwing', errs.length === 0, errs, 'no JS errors');
+  await p.close();
+}
+
+// -------------------------------------------------- the CRM offline path --
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await p.route('**/auth/v1/token**', (route) => route.abort('failed'));
+  await p.goto(BASE + '/admin.html', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.fill('input[type=email]', 't@example.com').catch(() => {});
+  await p.fill('input[type=password]', 'whatever').catch(() => {});
+  await p.locator('button[type=submit]').first().click().catch(() => {});
+  await p.waitForTimeout(2000);
+  const m = await p.evaluate(() => {
+    const e = document.querySelector('[data-login-error]');
+    return { shown: !!(e && !e.hidden && e.textContent.trim()), text: (e?.textContent || '').trim().slice(0, 70) };
+  });
+  ok('a failed sign-in says so rather than hanging', m.shown, m, 'a visible message');
+  await p.close();
+}
+
 // ------------------------------------------------------------------- report --
 const failed = results.filter((r) => !r.pass);
 for (const r of results) {
