@@ -319,6 +319,12 @@ if [ -n "$owner" ]; then say "placeholder של הבעלים בקוד" "✗"; ech
 if python3 tools/gen-sitemap.py --check >/dev/null 2>&1; then say "sitemap.xml מעודכן" "✓"
 else say "sitemap.xml לא מעודכן" "✗ הרץ tools/gen-sitemap.py"; fail=1; fi
 
+# The ImageGallery block is derived from the gallery markup. A swapped
+# photograph leaves a caption naming an image that is no longer there, which is
+# worse than shipping no image markup at all.
+if python3 tools/gen-image-schema.py --check >/dev/null 2>&1; then say "ImageGallery מסונכרן לגלריה" "✓"
+else say "ImageGallery לא מסונכרן" "✗ הרץ tools/gen-image-schema.py"; fail=1; fi
+
 # llms.txt closes with the claim that this check exists. It describes the site to
 # assistants that quote it, so a page it never heard of is a page they will
 # answer about wrongly — or not at all.
@@ -336,5 +342,37 @@ PY
 )
 if [ -n "$missing_llms" ]; then say "llms.txt מכסה את sitemap" "✗"; echo "$missing_llms" | sed 's/^/    /'; fail=1
 else say "llms.txt מכסה את sitemap" "✓"; fi
+
+# robots.txt now carries a policy with a legal commitment behind it: terms.html
+# undertakes that this content is not used to train models, to protect the
+# couples in the photographs. A crawler that finds a group naming it ignores the
+# "*" group entirely, so the Disallow lines are repeated per group — and a
+# careless edit that drops one silently opens /tools/ to an AI crawler while
+# every other check stays green. Assert the behaviour, not the text.
+python3 - <<'PY' || fail=1
+from urllib.robotparser import RobotFileParser
+import sys
+rp = RobotFileParser(); rp.parse(open('robots.txt', encoding='utf-8').read().splitlines())
+SITE = 'https://www.amora-studios.com'
+CASES = [
+    ('GPTBot','/',False), ('ClaudeBot','/',False), ('Google-Extended','/',False),
+    ('Applebot-Extended','/',False), ('CCBot','/',False), ('Bytespider','/',False),
+    ('meta-externalagent','/',False),
+    ('OAI-SearchBot','/',True), ('ChatGPT-User','/',True), ('Claude-SearchBot','/',True),
+    ('Claude-User','/',True), ('PerplexityBot','/',True),
+    ('Googlebot','/',True), ('Googlebot','/camera-3d.html',True),
+    ('OAI-SearchBot','/tools/x',False), ('OAI-SearchBot','/project/x',False),
+    ('Claude-SearchBot','/docs/x',False),
+    ('Googlebot','/project/x',False), ('Googlebot','/chats/x',False),
+    ('Googlebot','/docs/x',False), ('Googlebot','/tools/x',False),
+]
+bad = [f'{a} {p} -> {rp.can_fetch(a, SITE+p)}, expected {w}'
+       for a, p, w in CASES if rp.can_fetch(a, SITE + p) != w]
+if bad:
+    print('    ' + '\n    '.join(bad)); sys.exit(1)
+if not rp.site_maps():
+    print('    robots.txt לא מפנה ל-sitemap'); sys.exit(1)
+print(f'{"robots.txt: אימון חסום, ציטוט מותר":<46} ✓ ({len(CASES)} מקרים)')
+PY
 
 exit $fail

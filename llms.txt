@@ -50,9 +50,17 @@ Read these as absent, not as unknown-but-inferable:
 ## הערות לסוכנים אוטומטיים / Notes for automated agents
 
 - Crawl policy lives in [/robots.txt](https://www.amora-studios.com/robots.txt).
-  It is the authority; this file does not add to it or override it. At the time
-  of writing robots.txt sets no per-crawler rules, so no distinction is drawn
-  here between fetching to answer a question and collecting for training.
+  It is the authority; this file does not add to it or override it. It draws one
+  distinction, and it is deliberate: **fetching a page to answer someone's
+  question and cite it is welcome; collecting this site into a training corpus
+  is not.** OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User and
+  PerplexityBot are allowed. GPTBot, ClaudeBot, Google-Extended,
+  Applebot-Extended, CCBot, Bytespider and meta-externalagent are not.
+  The reason is in [terms.html](https://www.amora-studios.com/terms.html): these
+  are photographs of real couples, and the studio undertook not to let them be
+  used for model training. Read that as a commitment to the people in the
+  pictures, not as hostility to assistants — answering with a citation is the
+  use this site is published for.
 - Every page renders its text without JavaScript. There is nothing behind a
   script that a non-rendering fetch will miss. The homepage's FAQ answers are in
   the markup, not injected.
