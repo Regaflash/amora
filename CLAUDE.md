@@ -137,9 +137,13 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 
 ### Three contradictions live on the site — the owner must pick
 
-- **The album.** `index.html:711` says inside 30 days. The FAQ, the FAQPage
-  JSON-LD and `assistant.js` all say two weeks after the selection is approved.
-  Three against one, but it is a customer promise, so it is not ours to change.
+- **The album.** `index.html:928` says inside 30 days (line 711 is `<picture>` —
+  the citation this file carried was wrong). The FAQ at `index.html:987`, the
+  FAQPage JSON-LD at `index.html:165` and `assistant.js:75` and `:189` all say
+  two weeks after the selection is approved — but `assistant.js:173` restates
+  the 30-day version, so the widget contradicts itself inside one session and
+  a resolver has three strings to edit in that file, not one. It is a customer
+  promise, so it is not ours to change.
 - **The film length.** `index.html:650` says שלוש דקות; the FAQ and the JSON-LD
   say 3–5 דקות.
 - **`+500 זוגות מאושרים`** (`index.html:321`). Nothing in the repo supports it,

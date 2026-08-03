@@ -31,6 +31,10 @@
     // --- Escape hatches to a human ----------------------------------------
     whatsapp: '972503662699',
     phone: '050-3662699',
+    // Dial string, kept apart from the label. CONFIG.phone is what a visitor
+    // reads; this is what a phone actually dials, and the leading trunk 0 does
+    // not connect from a foreign network.
+    tel: '+972503662699',
     formHash: '#contact'
   };
 
@@ -110,14 +114,14 @@
     {
       id: 'postpone',
       chip: 'ומה אם התאריך זז?',
-      keys: ['התאריך זז', 'תאריך זז', 'לדחות', 'דחייה', 'לשנות תאריך', 'לשנות את התאריך', 'מקדמה', 'ביטול', 'לבטל'],
+      keys: ['התאריך זז', 'תאריך זז', 'התאריך שלנו זז', 'תאריך שלנו זז', 'לדחות', 'דחייה', 'לשנות תאריך', 'לשנות את התאריך', 'מקדמה', 'ביטול', 'לבטל'],
       a: 'התאריך עובר איתכם ללא עלות, בכפוף לזמינות. אם אנחנו תפוסים בתאריך החדש — נחזיר את המקדמה במלואה.',
       next: ['availability', 'price']
     },
     {
       id: 'availability',
       chip: 'התאריך שלנו פנוי?',
-      keys: ['זמינות', 'פנוי', 'פנויים', 'תפוסים', 'תאריך שלנו', 'יש לכם מקום', 'להזמין', 'לסגור תאריך', 'לתפוס תאריך'],
+      keys: ['זמינות', 'פנוי', 'פנויים', 'תפוסים', 'שלנו פנוי', 'יש לכם מקום', 'להזמין', 'לסגור תאריך', 'לתפוס תאריך'],
       a: 'זמינות אני לא יכול לבדוק מכאן — היומן לא אצלי.\n' +
          'השאירו תאריך ופרטים בטופס ונחזור אליכם היום עם תשובה, או כתבו לנו בוואטסאפ.',
       actions: ['form', 'wa'],
@@ -126,7 +130,7 @@
     {
       id: 'film',
       chip: 'איך נראה סרט החתונה?',
-      keys: ['סרט', 'סרטון', 'וידאו', 'קליפ', 'טיזר', 'הפקה', 'צילום וידאו', 'שלוש דקות'],
+      keys: ['סרט', 'סרטון', 'וידאו', 'קליפ', 'טיזר', 'הפקה', 'צילום וידאו', 'שלוש דקות', 'נראה סרט'],
       a: 'סרט חתונה של 3–5 דקות, ועוד טיזר קצר לאינסטגרם.\n' +
          'יש באתר סרט אחד שלם שאנחנו הכי אוהבים להראות — בקטע "חתונה אחת, שלוש דקות". שווה אוזניות.',
       actions: ['film', 'form'],
@@ -143,14 +147,14 @@
     {
       id: 'prep',
       chip: 'אתם מצלמים גם את ההכנות?',
-      keys: ['הכנות', 'בוקר', 'איפור', 'שיער', 'השמלה', 'מלתחה', 'לפני החופה'],
+      keys: ['הכנות', 'בבוקר', 'הבוקר', 'איפור', 'שיער', 'השמלה', 'מלתחה', 'לפני החופה'],
       a: 'כן — איפור, שיער, השמלה על הקולב, הרגעים השקטים של הבוקר. בחתונה מלאה אנחנו איתכם מההכנות ועד השיר האחרון.',
       next: ['package', 'photographers', 'process']
     },
     {
       id: 'events',
       chip: 'ואירועים שהם לא חתונה?',
-      keys: ['חינה', 'אירוסין', 'בר מצווה', 'בת מצווה', 'מצווה', 'יום הולדת', 'אירוע אחר', 'ברית', 'מסיבה'],
+      keys: ['חינה', 'אירוסין', 'בר מצווה', 'בת מצווה', 'מצווה', 'יום הולדת', 'אירוע אחר', 'ברית מילה', 'מסיבה', 'שהם לא חתונה', 'מצלמים אירועים'],
       a: 'כן — חינה, אירוסין, בר ובת מצווה וימי הולדת. אותה עין, אותו צוות.',
       actions: ['form'],
       next: ['package', 'area', 'price']
@@ -177,7 +181,7 @@
     {
       id: 'gear',
       chip: 'עם מה אתם מצלמים?',
-      keys: ['ציוד', 'מצלמה', 'עדשות', 'עדשה', 'פלאש', 'תאורה', 'פול פריים', 'מצלמות'],
+      keys: ['ציוד', 'מצלמה', 'עדשות', 'עדשה', 'פלאש', 'תאורה', 'פול פריים', 'מצלמות', 'עם מה אתם מצלמים'],
       a: 'גוף פול־פריים, עדשות פריים מהירות, ותאורה שמכבדת את האור שיש בחדר — בלי פלאשים שמסמאים את האורחים.\n' +
          'יש באתר דגם תלת־מימד של המצלמה, אפשר לסובב אותו.',
       next: ['photographers', 'package']
@@ -203,7 +207,7 @@
       // 'עונים להודעה' must be here: without it "תוך כמה זמן עונים להודעה
       // בוואטסאפ" matched the delivery entry and answered with photo turnaround
       // times. Longer keys win, so this outranks the shorter delivery match.
-      keys: ['ליצור קשר', 'טלפון', 'וואטסאפ', 'להתקשר', 'מייל', 'אינסטגרם', 'לדבר איתכם', 'לדבר עם בן אדם', 'נציג', 'עונים להודעה'],
+      keys: ['ליצור קשר', 'טלפון', 'וואטסאפ', 'להתקשר', 'מייל', 'אינסטגרם', 'לדבר איתכם', 'לדבר עם בן אדם', 'נציג', 'עונים להודעה', 'אתכם קשר'],
       a: 'בטלפון 050-3662699, בוואטסאפ, או דרך טופס בדיקת הזמינות באתר — ונחזור אליכם היום.\n' +
          'גם באינסטגרם, @amora___studio.',
       actions: ['wa', 'tel', 'form'],
@@ -280,7 +284,8 @@
   function askRemote(question, history) {
     return new Promise(function (resolve) {
       var abort = new AbortController();
-      var timer = setTimeout(function () { abort.abort(); }, CONFIG.remoteTimeout);
+      var timedOut = false;
+      var timer = setTimeout(function () { timedOut = true; abort.abort(); }, CONFIG.remoteTimeout);
       var url = CONFIG.supabaseUrl.replace(/\/+$/, '') + CONFIG.assistantPath;
 
       fetch(url, {
@@ -308,6 +313,13 @@
         resolve(reply.slice(0, MAX_REPLY));
       }).catch(function () {
         clearTimeout(timer);
+        // A hang is not a blip. remoteDown was latched only for 5xx/429, so a
+        // timeout left it false and the next free-text question froze the
+        // widget for another full remoteTimeout — measured at 14.0s, twice in
+        // a row, input, send button and all five chips disabled, with closing
+        // and reopening the panel no help. A one-off transport error is NOT
+        // latched: that may recover on the next question.
+        if (timedOut) remoteDown = true;
         resolve(null);
       });
     });
@@ -457,7 +469,7 @@
     }
     if (kind === 'tel') {
       node = el('a', 'am-action', CONFIG.phone);
-      node.href = 'tel:' + CONFIG.phone.replace(/[^0-9+]/g, '');
+      node.href = 'tel:' + CONFIG.tel;
       return node;
     }
     if (kind === 'gallery' || kind === 'film') {

@@ -486,6 +486,8 @@
     return best || (img && (img.currentSrc || img.src)) || '';
   }
 
+  var lbGen = 0;   // guards against preloads resolving out of order
+
   function openLightbox(index) {
     var list = visibleItems();
     if (!list.length || !lightbox) return;
@@ -493,11 +495,32 @@
 
     var btn = $('.masonry__btn', list[lbIndex]);
     var alt = btn.dataset.alt;
+    var url = largestSource(btn);
+    var ratio = btn.dataset.ratio;
+    var count = (lbIndex + 1) + ' / ' + list.length;
+    var label = alt + ' · תמונה ' + (lbIndex + 1) + ' מתוך ' + list.length;
+    var gen = ++lbGen;
 
-    lbImage.src = largestSource(btn);
-    lbImage.alt = alt;
-    lbFigure.style.setProperty('--ratio', btn.dataset.ratio);
-    lbCount.textContent = (lbIndex + 1) + ' / ' + list.length;
+    // The pixels and the words have to arrive together. An <img> keeps painting
+    // the photograph it already holds until the next one has decoded, so
+    // assigning .src and then writing the caption left the PREVIOUS wedding on
+    // screen underneath the next one's alt text, counter and live-region
+    // announcement. Measured on a throttled 900w variant: 400ms after pressing
+    // next, the figure was 0.00% different from the previous photograph and
+    // 96.85% different from the one it claimed to be showing. So the swap is
+    // atomic — decode first, then change everything at once.
+    function paint() {
+      if (gen !== lbGen || lbIndex < 0) return;   // stepped past, or closed
+      lbImage.src = url;
+      lbImage.alt = alt;
+      lbFigure.style.setProperty('--ratio', ratio);
+      lbCount.textContent = count;
+      lbFigure.removeAttribute('data-loading');
+      // Written last, and deliberately after the dialog is on screen: a live
+      // region inside a hidden subtree is not announced. Stepping keeps focus on
+      // the arrow button, so without this the photo changes in silence.
+      lbLabel.textContent = label;
+    }
 
     if (lightbox.hidden) {
       lastFocused = document.activeElement;
@@ -506,10 +529,13 @@
       $('[data-lightbox-close]').focus();
     }
 
-    // Written last, and deliberately after the dialog is on screen: a live
-    // region inside a hidden subtree is not announced. Stepping keeps focus on
-    // the arrow button, so without this the photo changes in silence.
-    lbLabel.textContent = alt + ' · תמונה ' + (lbIndex + 1) + ' מתוך ' + list.length;
+    var pre = new Image();
+    pre.onload = paint;
+    pre.onerror = paint;    // a broken URL must still swap — alt text and all
+    pre.src = url;
+    // Cached, which is the common case: no wait, no flicker, no loading state.
+    if (pre.complete) paint();
+    else lbFigure.setAttribute('data-loading', '');
   }
 
   function step(delta) {
@@ -575,8 +601,33 @@
       frame.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
       frame.allowFullscreen = true;
       frame.referrerPolicy = 'strict-origin-when-cross-origin';
-      filmBtn.replaceWith(frame);
+
+      // The poster is hidden, never destroyed. replaceWith() took the poster
+      // <img> out of the document along with the button wrapping it, so a
+      // visitor behind a corporate proxy, a national block or a content blocker
+      // with a YouTube filter was left with a 1078x606 grey browser error page,
+      // keyboard focus parked inside a dead cross-origin document, and no way
+      // back short of guessing that a reload would help. The hero above already
+      // refuses to trust a cross-origin iframe for exactly this reason.
+      filmBtn.hidden = true;
+      filmBtn.parentNode.insertBefore(frame, filmBtn.nextSibling);
       frame.focus();
+
+      // Deliberately not a timeout that removes the frame on silence: this
+      // embed has no enablejsapi handshake, so silence is not proof of failure
+      // and a false negative would kill a film someone is watching. A control
+      // the visitor presses cannot be wrong.
+      var back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'film__back';
+      back.textContent = 'סגירת הסרטון';
+      back.addEventListener('click', function () {
+        if (frame.parentNode) frame.parentNode.removeChild(frame);
+        if (back.parentNode) back.parentNode.removeChild(back);
+        filmBtn.hidden = false;
+        filmBtn.focus();
+      });
+      frame.parentNode.insertBefore(back, frame.nextSibling);
     });
   }
 
@@ -649,9 +700,16 @@
 
     if (viewport) {
       var startX = null;
+      // Only a recognised swipe claims control, and the goTo(…, true) in the
+      // pointerup handler below already sets `touched` for it. Setting the flag
+      // here, before any distance is known, meant an ordinary tap — or a
+      // vertical page scroll whose finger merely landed on the quote block,
+      // which touch-action: pan-y turns into a pointercancel that never reaches
+      // pointerup — permanently stopped the 7s auto-advance for the rest of the
+      // visit. Measured: a pan starting on the viewport froze the track at 0%;
+      // the identical pan starting 30px higher advanced to 100%.
       viewport.addEventListener('pointerdown', function (e) {
         startX = e.clientX;
-        touched = true;
       });
       viewport.addEventListener('pointerup', function (e) {
         if (startX === null) return;
@@ -699,7 +757,17 @@
 
   if (form) {
     var dateInput = $('[data-field="date"]', form);
-    if (dateInput) dateInput.min = new Date().toISOString().slice(0, 10);
+    // Local calendar date, not the UTC instant. In Israel (UTC+3 summer, +2
+    // winter) toISOString() still says yesterday between local midnight and the
+    // offset, so the picker offered a past date, validate() below — which
+    // compares against this same .min — accepted it, and it was POSTed as
+    // event_date. Measured at 01:30 Jerusalem, summer and winter alike.
+    if (dateInput) {
+      var today = new Date();
+      dateInput.min = today.getFullYear() + '-' +
+        ('0' + (today.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + today.getDate()).slice(-2);
+    }
 
     // "בדיקת זמינות" is exactly the question a couple asks before the venue is
     // booked, and the coverage select already lets them say "עוד לא בטוחים".
@@ -782,15 +850,29 @@
       e.preventDefault();
       if (sending) return;
 
+      // Read through a helper. Every one of these eight reads dereferenced a
+      // node with no null guard, after preventDefault() had already suppressed
+      // the native submit — so deleting any one question from the contact
+      // section turned שלחו into a silently dead button: no error text, no
+      // failure panel, no navigation, and the label never even reaching
+      // "שולחים…". Both tools/check.sh and tools/verify.mjs pass green on it.
+      function val(name) {
+        var el = $('[data-field="' + name + '"]', form);
+        return el ? el.value : '';
+      }
+
       var values = {
-        name: $('[data-field="name"]', form).value,
-        phone: $('[data-field="phone"]', form).value,
-        date: $('[data-field="date"]', form).value,
-        type: $('[data-field="type"]', form).value,
-        message: $('[data-field="message"]', form).value,
-        area: $('[data-field="area"]', form).value,
-        coverage: $('[data-field="coverage"]', form).value,
-        company: $('[data-field="company"]', form).value,
+        name: val('name'),
+        phone: val('phone'),
+        date: val('date'),
+        type: val('type'),
+        message: val('message'),
+        area: val('area'),
+        coverage: val('coverage'),
+        // Honeypot. If the field is ever removed this reads '' and the bot
+        // filter below simply stops filtering, which is the safe direction: it
+        // must never block a real submission.
+        company: val('company'),
         dateTbd: Boolean(dateTbd && dateTbd.checked)
       };
 
@@ -801,7 +883,18 @@
       ['name', 'phone', 'date', 'type'].forEach(function (k) {
         showError(k, errors[k]);
       });
-      if (Object.keys(errors).length) {
+      var badKeys = Object.keys(errors);
+      if (badKeys.length) {
+        // If the question that failed has been removed from the markup, its
+        // [data-error] span went with it (they share the .field label), so
+        // showError() had nowhere to write and there is no [aria-invalid] node
+        // to focus. Say it in the failure panel rather than dying quietly —
+        // without this, guarding the reads above only converts a loud crash
+        // into a silent one.
+        if (!$('[data-error="' + badKeys[0] + '"]', form) && failure) {
+          failure.hidden = false;
+          failure.textContent = errors[badKeys[0]];
+        }
         var firstBad = $('[aria-invalid="true"]', form);
         if (firstBad) firstBad.focus();
         return;

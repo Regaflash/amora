@@ -1025,6 +1025,10 @@ summary::-webkit-details-marker { display: none; }
   background: repeating-linear-gradient(135deg, #26221C 0 8px, #1C1A18 8px 18px);
   border: 1px solid rgba(201, 174, 140, 0.35);
 }
+/* While the next photograph decodes, the one on screen is dimmed rather than
+   swapped underneath its caption — see openLightbox() in main.js. opacity only:
+   no physical side, nothing to mirror under dir="rtl". */
+.lightbox__figure[data-loading] { opacity: 0.55; }
 .lightbox__img {
   display: block;
   aspect-ratio: var(--ratio, 4 / 5);
@@ -1157,6 +1161,26 @@ summary::-webkit-details-marker { display: none; }
   aspect-ratio: 16 / 9;
   border: 0;
 }
+/* .film__play sets display:block, which beats the UA sheet's [hidden] rule —
+   measured: setting .hidden left the button 1078x606 and fully visible. */
+.film__play[hidden] { display: none; }
+/* Centred with auto margins, so there is no physical side to mirror in RTL.
+   The bottom margin is not decoration: .film__frame is overflow:hidden and the
+   shared :focus-visible ring is drawn at a 3px OUTWARD offset, the same clip
+   that already ate the play button ring and forced outline-offset:-4px above. */
+.film__back {
+  display: block;
+  margin: 14px auto 8px;
+  padding: 10px 20px;
+  min-height: 24px;
+  border: 1px solid rgba(201, 174, 140, 0.55);
+  background: transparent;
+  color: var(--sand);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.film__back:hover { border-color: var(--champagne); }
 .film__note { bottom: 14px; right: 16px; color: rgba(217, 195, 165, 0.55); }
 
 /* --------------------------------------------------------------- gear --- */
