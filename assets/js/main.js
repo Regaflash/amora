@@ -10,7 +10,7 @@
   /** The prototype exposed these as editor props. Same defaults, same effect. */
   var CONFIG = {
     accent: null,   // e.g. '#B99B77' — overrides --champagne (and --line at 30%)
-    showFilm: true, // false hides the "חתונה אחת, שלוש דקות" section
+    showFilm: true, // false hides the "חתונה אחת, סרט אחד" section
     reveal: true,   // false disables the scroll-in animation
 
     // --- Where the lead form delivers -------------------------------------
@@ -101,9 +101,18 @@
   window.addEventListener('resize', measure, { passive: true });
   if ('ResizeObserver' in window) new ResizeObserver(measure).observe(document.body);
 
+  // The header is transparent with ivory text until it scrolls, because on the
+  // home page it sits over the hero film. A page with no hero starts on the
+  // sand background, where ivory text on ivory is invisible — so such a page
+  // marks itself [data-header-solid] and keeps the scrolled treatment
+  // throughout. Checked once: the attribute cannot change under us.
+  var headerAlwaysSolid = Boolean(header && header.hasAttribute('data-header-solid'));
+
   function onScroll() {
     var y = window.scrollY;
-    if (header) header.classList.toggle('is-scrolled', y > SCROLL_THRESHOLD);
+    if (header && !headerAlwaysSolid) {
+      header.classList.toggle('is-scrolled', y > SCROLL_THRESHOLD);
+    }
 
     var pct = y / scrollable;
     if (progress) {
@@ -802,6 +811,46 @@
   var COVERAGE_LABEL = { both: 'סטילס + וידאו', stills: 'סטילס בלבד',
                          video: 'וידאו בלבד', unsure: 'עוד לא בטוחים' };
 
+  // Where this enquiry came from, written onto the lead's own row.
+  //
+  // The `source` column has existed since the table was created, the CRM even
+  // selects it, and nothing ever set it — so every row read 'website' and the
+  // studio had no way to tell an Instagram enquiry from a Google one, or to
+  // know whether cost.html earns its keep.
+  //
+  // This is not analytics and deliberately does not behave like it. It runs
+  // once, at submit, on a visitor who is already handing over their name and
+  // phone; it reads only the referrer's HOST (never the full URL, which can
+  // carry someone else's search terms) and any utm_* tags on the address they
+  // arrived at. Nothing is stored in the browser, nothing is sent for visitors
+  // who do not submit, and no third party is contacted. privacy.html lists it
+  // with the rest of the form fields, because that is what it is.
+  function leadSource() {
+    var parts = [];
+    try {
+      var q = new URLSearchParams(window.location.search);
+      ['utm_source', 'utm_medium', 'utm_campaign'].forEach(function (k) {
+        var v = q.get(k);
+        if (v) parts.push(k.slice(4) + '=' + v.slice(0, 40));
+      });
+    } catch (err) { /* no URLSearchParams: fall through to the referrer */ }
+
+    if (!parts.length && document.referrer) {
+      try {
+        var ref = new URL(document.referrer);
+        // A same-origin referrer is just our own navigation and says nothing
+        // about where the couple came from. Leave it out rather than record
+        // the site as its own source.
+        if (ref.host && ref.host !== window.location.host) parts.push(ref.host);
+      } catch (err) { /* opaque or malformed referrer: nothing to record */ }
+    }
+
+    // Which page the form was submitted from — the one thing always knowable,
+    // and the answer to "is cost.html actually converting anyone".
+    parts.push(window.location.pathname);
+    return parts.join(' · ').slice(0, 200);
+  }
+
   var form = $('[data-form]');
 
   if (form) {
@@ -882,6 +931,14 @@
       } else if (!/^0\d{1,2}\d{7}$|^\+?\d{9,15}$/.test(values.phone.replace(/[\s\-().]/g, ''))) {
         errors.phone = 'מספר טלפון לא תקין';
       }
+      // Optional — the studio works by phone and WhatsApp, and making this
+      // required would cost submissions. But the column carries a shape check
+      // in Postgres, so a typo'd address does not arrive as a slightly-wrong
+      // lead: it fails the whole INSERT and the couple gets the generic failure
+      // panel. Catch it here, where we can say which field is wrong.
+      if (values.email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(values.email.trim())) {
+        errors.email = 'כתובת האימייל לא נראית תקינה';
+      }
       // The min attribute is decorative while the form carries novalidate, so a
       // past date sailed through to the studio. ISO yyyy-mm-dd compares exactly.
       if (values.dateTbd) {
@@ -913,6 +970,7 @@
       var values = {
         name: val('name'),
         phone: val('phone'),
+        email: val('email'),
         date: val('date'),
         type: val('type'),
         message: val('message'),
@@ -929,7 +987,7 @@
       if (values.company) return;
 
       var errors = validate(values);
-      ['name', 'phone', 'date', 'type'].forEach(function (k) {
+      ['name', 'phone', 'email', 'date', 'type'].forEach(function (k) {
         showError(k, errors[k]);
       });
       var badKeys = Object.keys(errors);
@@ -953,6 +1011,7 @@
         'פנייה חדשה מהאתר — Amora Studio',
         'שם: ' + values.name,
         'טלפון: ' + values.phone,
+        values.email ? 'אימייל: ' + values.email : '',
         'תאריך: ' + (values.dateTbd ? 'עוד לא נקבע' : values.date),
         'סוג אירוע: ' + (TYPE_LABEL[values.type] || values.type),
         values.coverage ? 'מה מצלמים: ' + (COVERAGE_LABEL[values.coverage] || values.coverage) : '',
@@ -995,11 +1054,18 @@
         payload = {
           name: values.name.trim(),
           phone: values.phone.trim(),
-          event_date: values.date || null,
+          email: values.email.trim() || null,
+          event_date: values.dateTbd ? null : (values.date || null),
+          // The checkbox has always existed and its answer has always been
+          // thrown away: the row said event_date: null either way, so a couple
+          // who has not booked a venue yet was indistinguishable from a blank
+          // field. They are not the same lead.
+          date_tbd: values.dateTbd,
           event_type: values.type || null,
           area: values.area || null,
           coverage: values.coverage || null,
-          message: values.message || null
+          message: values.message || null,
+          source: leadSource()
         };
       }
 

@@ -11,7 +11,9 @@ create table if not exists public.leads (
   created_at  timestamptz not null default now(),
   name        text not null,
   phone       text not null,
+  email       text,
   event_date  date,
+  date_tbd    boolean not null default false,
   event_type  text,
   area        text,
   coverage    text,
@@ -19,6 +21,22 @@ create table if not exists public.leads (
   source      text default 'website',
   handled     boolean not null default false
 );
+
+-- Added after the table was already live, so these run as no-ops on a fresh
+-- create and as the migration on an existing one.
+--
+-- email      — optional. The studio's working channel is the phone and
+--              WhatsApp, so requiring an address would cost submissions for a
+--              field most couples will fill in anyway. But without it there is
+--              no way to send a quote, a sample gallery or a contract, and
+--              until now the site collected no address anywhere.
+-- date_tbd   — the form has always had a "עוד לא קבענו תאריך" checkbox and has
+--              always thrown the answer away, sending event_date: null. A blank
+--              date and a couple who has not booked a venue yet then look
+--              identical, and they are not: the second one is earlier in the
+--              funnel and more winnable.
+alter table public.leads add column if not exists email    text;
+alter table public.leads add column if not exists date_tbd boolean not null default false;
 
 alter table public.leads enable row level security;
 
@@ -46,12 +64,33 @@ alter table public.leads
   drop constraint if exists leads_phone_len,
   add constraint leads_phone_len check (char_length(trim(phone)) between 9 and 20);
 
+-- Optional, so null passes. When it is filled it has to look like an address:
+-- a typo'd one is worse than none, because the studio then believes it has a
+-- way to reach the couple and it silently does not.
+alter table public.leads
+  drop constraint if exists leads_email_shape,
+  add constraint leads_email_shape check (
+    email is null or (char_length(email) between 6 and 254 and email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$')
+  );
+
+-- source is written by the browser, so it is attacker-controlled like every
+-- other field. Cap it; it is a channel label, not a free-text field.
+alter table public.leads
+  drop constraint if exists leads_source_len,
+  add constraint leads_source_len check (source is null or char_length(source) <= 200);
+
 create index if not exists leads_created_at_idx on public.leads (created_at desc);
 
 -- Read your leads in the private CRM at /admin.html, or in the Supabase
 -- dashboard (Table Editor → leads).
 --
--- An INSERT here also fires the lead-alert Database Webhook, which emails the
--- studio immediately — see docs/lead-alerts.md. That is not decoration: the
--- site promises "נחזור אליכם היום" in six places, and before the webhook
--- existed nothing told anyone a lead had arrived.
+-- An INSERT here also fires the lead-alert webhook, which emails the studio
+-- immediately — see docs/lead-alerts.md. That is not decoration: the site
+-- promises "נחזור אליכם היום" in six places, and without the webhook nothing
+-- tells anyone a lead has arrived.
+--
+-- The webhook is a trigger on this table, created by
+-- docs/supabase-lead-alert-webhook.sql. Writing the Edge Function is not the
+-- same as deploying it: this project ran for weeks with the function committed
+-- to the repo, no trigger on this table, and every enquiry landing unannounced.
+-- Verify, do not assume — the query that proves it is at the bottom of that file.

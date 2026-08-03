@@ -121,14 +121,44 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   published on the homepage. Its own `check.sh` guard is indirect: `llms.txt`
   must list it and `sitemap.xml` must be regenerated, and both fail the build
   when they drift.
+
+  It is a **landing page, not an article**: site header, footer, floating
+  WhatsApp button and its own copy of the lead form, all reusing the homepage's
+  markup so `main.js` needs no page-specific branch. It used to render in the
+  legal-drafts shell with one text link out — the highest-intent page on the
+  site with no way to enquire from it. Its nav links are `index.html#…`, not
+  bare fragments: `check.sh` fails any in-page fragment that resolves to
+  nothing. It carries `data-header-solid` because it has no hero, and without
+  it the header spends its first 80px as ivory text on the sand background.
+
+- **The lead form's fields are enumerated in `privacy.html`.** Adding or
+  removing one means editing that list in the same change — the page states in
+  as many words what is collected and what is not. `email` (optional) and
+  `date_tbd` are stored, and `source` records the referrer host, any `utm_*`
+  tags and the submitting page. `source` is not analytics and must not become
+  it: it is read once, at submit, only for someone already handing over their
+  name and phone. Nothing measures a visitor who does not submit, and
+  `privacy.html` promises exactly that.
 - **The FAQ answers on the homepage are byte-identical to the FAQPage JSON-LD**
   and a script checks it one-for-one. Do not put a link, or anything else,
   inside a `.faq__a`. That broke the invariant once; the link out to `cost.html`
   lives after the `<details>` list as `.faq__more` for exactly that reason.
-- **Lead alerts are wired, not aspirational.** A Database Webhook on INSERT into
-  `public.leads` calls the `lead-alert` Edge Function, which emails the studio.
-  See `docs/lead-alerts.md`. Before it existed the site promised
-  "נחזור אליכם היום" in six places and nothing told anyone a lead had arrived.
+- **Lead alerts: deployed, and still one owner step from sending.** A trigger on
+  INSERT into `public.leads` (`docs/supabase-lead-alert-webhook.sql`) calls the
+  `lead-alert` Edge Function, which emails the studio. Both are live on
+  `dkejuaildigikufrdiru` and verified end to end. `RESEND_API_KEY`,
+  `LEAD_ALERT_TO` and `LEAD_ALERT_SECRET` are **not set**, so the function
+  answers `500 alert not configured` and no mail goes out yet. Status table and
+  the remaining steps: `docs/lead-alerts.md`.
+
+  This entry used to read "wired, not aspirational" and it was wrong, for
+  months. The function was in the repo; `public.leads` had no trigger and the
+  project had no Edge Functions deployed at all, while the site promised
+  "נחזור אליכם היום" in six places. **Repo state is not deploy state.** Do not
+  restate anything here as live without running the two verification queries at
+  the bottom of `docs/supabase-lead-alert-webhook.sql`, or
+  `mcp__Supabase__list_edge_functions`. `tools/check.sh` cannot see any of this
+  — it reads files, and the files were fine.
 
 ## Still outstanding, owner-supplied only
 
@@ -145,26 +175,35 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - **Google Search Console**, verified by DNS TXT in the Vercel dashboard —
   zero repo change, zero deploy. Until it exists nobody can measure whether any
   of the search work is working.
-- **A business email.** There is no `mailto:` anywhere in the six HTML pages.
+- **A business email.** There is no `mailto:` anywhere in the eight HTML pages.
+  Now also blocking `LEAD_ALERT_TO`: the lead-alert pipeline is deployed and
+  waiting on an address to send to.
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
 
-### Three contradictions live on the site — the owner must pick
+### The three contradictions — resolved, and one needs the owner's word
 
-- **The album.** `index.html:928` says inside 30 days (line 711 is `<picture>` —
-  the citation this file carried was wrong). The FAQ at `index.html:987`, the
-  FAQPage JSON-LD at `index.html:165` and `assistant.js:75` and `:189` all say
-  two weeks after the selection is approved — but `assistant.js:173` restates
-  the 30-day version, so the widget contradicts itself inside one session and
-  a resolver has three strings to edit in that file, not one. It is a customer
-  promise, so it is not ours to change.
-- **The film length.** `index.html:650` says שלוש דקות; the FAQ and the JSON-LD
-  say 3–5 דקות.
-- **`+500 זוגות מאושרים`** (`index.html:321`). Nothing in the repo supports it,
-  and `assistant.js:54-57` carries a no-counts policy that contradicts it. Same
-  class of problem as the testimonial portraits that were removed for showing
-  people who had not said the quoted words.
+All three were aligned to what the site already said elsewhere, rather than to
+a new promise. Each carries an HTML/JS comment at the site of the change saying
+what it used to say and why it moved.
+
+- **The album.** Process step 04 and `assistant.js` both put the printed album
+  inside 30 days, while the FAQ, the FAQPage JSON-LD and `cost.html` put it two
+  weeks after the selection is approved. The two outliers were changed, not the
+  FAQ: the FAQ answers are byte-locked to the JSON-LD by `check.sh`, and the
+  JSON-LD is what Google surfaces.
+- **The film length.** The film section was titled "חתונה אחת, שלוש דקות" while
+  four other places say 3–5 דקות. Retitled "חתונה אחת, סרט אחד". `assistant.js`
+  names the section in its answer and changed with it; "שלוש דקות" stays in its
+  keyword list, because that is still what a visitor might type.
+- **`+500 זוגות מאושרים`** → **`שני צלמים בחתונה מלאה`**, in the trust bar.
+  Nothing in the repo supported the count, and `assistant.js` carries a
+  no-counts policy that contradicted it — the same objection that removed the
+  testimonial portraits. The replacement is backed by the FAQ and `cost.html`
+  and is a sharper differentiator anyway, since most studios sell the second
+  shooter as an upgrade. **If the studio can stand behind the number, putting
+  it back is one line** — the old text is in the comment above it.
 
 ## Before any deploy
 

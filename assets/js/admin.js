@@ -395,11 +395,14 @@
     var rows = [
       'שם: ' + (lead.name || ''),
       'טלפון: ' + (lead.phone || ''),
-      day ? 'תאריך האירוע: ' + formatDay(day) + ' (יום ' + WEEKDAYS[day.getDay()] + ')' : '',
+      lead.email ? 'אימייל: ' + lead.email : '',
+      day ? 'תאריך האירוע: ' + formatDay(day) + ' (יום ' + WEEKDAYS[day.getDay()] + ')'
+          : lead.date_tbd ? 'תאריך האירוע: עוד לא קבעו' : '',
       lead.event_type ? 'סוג אירוע: ' + typeLabel(lead.event_type) : '',
       lead.area ? 'אזור: ' + lead.area : '',
       lead.coverage ? 'מה מצלמים: ' + coverageLabel(lead.coverage) : '',
       lead.message ? 'הודעה: ' + lead.message : '',
+      lead.source ? 'הגיעו מ: ' + lead.source : '',
       'התקבלה: ' + formatDay(new Date(lead.created_at))
     ];
     return stripBidi(rows.filter(Boolean).join('\n'));
@@ -474,13 +477,30 @@
       dd.appendChild(tel);
       dl.appendChild(dd);
     }
+    if (lead.email) {
+      dl.appendChild(el('dt', 'crm-card__dt', 'אימייל'));
+      var ddMail = el('dd', 'crm-card__dd');
+      var mail = el('a', 'crm-card__tel', lead.email);
+      // Every field here was typed by a stranger. The column's shape check
+      // bars whitespace but not '?', which in a mailto: is the start of the
+      // header list — so an address could pre-fill a subject or a body on a
+      // mail the studio is about to send. Keep the address, drop the headers.
+      mail.href = 'mailto:' + String(lead.email).split('?')[0];
+      ddMail.appendChild(mail);
+      dl.appendChild(ddMail);
+    }
     if (day) {
       addRow(dl, 'תאריך האירוע',
         formatDay(day) + ' · יום ' + WEEKDAYS[day.getDay()]);
+    } else if (lead.date_tbd) {
+      // Not the same as a blank date. This couple has told us they have not
+      // set one yet, which is a different — and earlier — conversation.
+      addRow(dl, 'תאריך האירוע', 'עוד לא קבעו');
     }
     addRow(dl, 'סוג אירוע', typeLabel(lead.event_type));
     addRow(dl, 'אזור', lead.area);
     addRow(dl, 'מה מצלמים', coverageLabel(lead.coverage));
+    addRow(dl, 'הגיעו מ', lead.source);
     if (dl.childNodes.length) li.appendChild(dl);
 
     if (lead.message) {
@@ -525,6 +545,8 @@
     if (!query) return true;
     var name = (lead.name || '').toLowerCase();
     if (name.indexOf(query) !== -1) return true;
+    var email = (lead.email || '').toLowerCase();
+    if (email && email.indexOf(query) !== -1) return true;
 
     var digits = query.replace(/\D/g, '');
     if (!digits) return false;
@@ -695,7 +717,7 @@
     }
 
     var path = '/rest/v1/leads' +
-      '?select=id,created_at,name,phone,event_date,event_type,area,coverage,message,source,handled' +
+      '?select=id,created_at,name,phone,email,event_date,date_tbd,event_type,area,coverage,message,source,handled' +
       '&order=created_at.desc&limit=' + PAGE_LIMIT;
 
     return api(path, { headers: { Prefer: 'count=exact' } })

@@ -130,9 +130,12 @@
     {
       id: 'film',
       chip: 'איך נראה סרט החתונה?',
+      // "שלוש דקות" stays in the keys: it is what a visitor might type, and the
+      // section used to be titled that. Only the section name in the answer had
+      // to move, and it moved because the heading did.
       keys: ['סרט', 'סרטון', 'וידאו', 'קליפ', 'טיזר', 'הפקה', 'צילום וידאו', 'שלוש דקות', 'נראה סרט'],
       a: 'סרט חתונה של 3–5 דקות, ועוד טיזר קצר לאינסטגרם.\n' +
-         'יש באתר סרט אחד שלם שאנחנו הכי אוהבים להראות — בקטע "חתונה אחת, שלוש דקות". שווה אוזניות.',
+         'יש באתר סרט אחד שלם שאנחנו הכי אוהבים להראות — בקטע "חתונה אחת, סרט אחד". שווה אוזניות.',
       actions: ['film', 'form'],
       next: ['package', 'delivery', 'gallery']
     },
@@ -174,7 +177,11 @@
          '1. שיחת היכרות — 20 דקות בטלפון או קפה.\n' +
          '2. תכנון האירוע — לוח זמנים, לוקיישנים, רגעים שאסור לפספס.\n' +
          '3. יום הצילומים — אנחנו שם מההכנות ועד הסוף.\n' +
-         '4. תוך 30 יום: גלריה מלאה, אלבום מודפס והסרט.',
+         // Was "4. תוך 30 יום: גלריה מלאה, אלבום מודפס והסרט." — which put the
+         // printed album inside 30 days while the album entry below, the FAQ
+         // and the JSON-LD all put it two weeks after the selection is
+         // approved. The widget contradicted itself inside one session.
+         '4. תוך 30 יום: הגלריה המלאה והסרט. האלבום המודפס — שבועיים אחרי אישור הבחירה.',
       actions: ['form'],
       next: ['delivery', 'package', 'availability']
     },

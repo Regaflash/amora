@@ -7,8 +7,11 @@
 // have booked someone else by Sunday lunchtime. The promise was real and the
 // plumbing behind it was not.
 //
-// Wiring: Database Webhook on public.leads, event INSERT, type "Supabase Edge
-// Functions", pointed at this function. Setup steps are in docs/lead-alerts.md.
+// Wiring: a trigger on public.leads, event INSERT, calling this function.
+// Setup steps are in docs/lead-alerts.md.
+//
+// verify_jwt is disabled: this endpoint authenticates itself with the shared
+// secret below, which the trigger sends as x-lead-alert-secret.
 //
 // This runs on Supabase's servers, not in the browser, so it is outside the
 // site's zero-dependency rule. Nothing here is ever served to a visitor, and
@@ -28,7 +31,9 @@ interface Lead {
   created_at: string;
   name: string;
   phone: string;
+  email: string | null;
   event_date: string | null;
+  date_tbd: boolean | null;
   event_type: string | null;
   area: string | null;
   coverage: string | null;
@@ -68,13 +73,22 @@ function buildEmail(lead: Lead) {
              : digits.startsWith('0') ? '+972' + digits.slice(1)
              : digits;
 
+  // A blank date and "we haven't picked one yet" are different sales
+  // conversations, so say which one this is rather than showing the same dash
+  // for both. date_tbd is the checkbox the couple actually ticked.
+  const when = lead.event_date
+    ? label(lead.event_date)
+    : lead.date_tbd ? 'עוד לא קבעו תאריך' : 'לא נמסר';
+
   const rows: Array<[string, string]> = [
     ['טלפון', phone],
-    ['תאריך האירוע', label(lead.event_date, 'עוד לא נקבע')],
+    ['אימייל', label(lead.email, '(לא נמסר)')],
+    ['תאריך האירוע', when],
     ['סוג האירוע', label(lead.event_type)],
     ['אזור', label(lead.area)],
     ['מה מצלמים', label(lead.coverage)],
     ['הודעה', label(lead.message, '(ללא)')],
+    ['הגיעו מ', label(lead.source)],
   ];
 
   const subject = `פנייה חדשה: ${name} · ${phone}`;
@@ -110,7 +124,11 @@ function buildEmail(lead: Lead) {
     <a href="https://wa.me/${esc(intl.replace('+', ''))}"
        style="display:inline-block;background:#1C1A18;color:#FFFDF9;padding:12px 22px;text-decoration:none;font-size:14px">
       לענות בוואטסאפ
-    </a>
+    </a>${lead.email ? `
+    <a href="mailto:${esc(stripBidi(lead.email).split('?')[0])}?subject=${encodeURIComponent('Amora Studio — בדיקת זמינות')}"
+       style="display:inline-block;border:1px solid #1C1A18;color:#1C1A18;padding:11px 22px;text-decoration:none;font-size:14px;margin-inline-start:8px">
+      לענות במייל
+    </a>` : ''}
   </p>
   <p style="font-size:12px;color:#8A7A68;margin:22px 0 0">
     התקבלה ${esc(lead.created_at)} · ${esc(lead.id)}
@@ -125,9 +143,9 @@ Deno.serve(async (req: Request) => {
     return new Response('method not allowed', { status: 405 });
   }
 
-  // A Database Webhook can send a shared secret as a header. If one is
-  // configured, require it — otherwise the function URL alone would let anyone
-  // send the studio arbitrary email.
+  // The trigger sends a shared secret as a header. If one is configured,
+  // require it — otherwise the function URL alone would let anyone send the
+  // studio arbitrary email.
   if (HOOK_SECRET) {
     const got = req.headers.get('x-lead-alert-secret');
     if (got !== HOOK_SECRET) return new Response('forbidden', { status: 403 });
@@ -176,8 +194,11 @@ Deno.serve(async (req: Request) => {
 
   if (!res.ok) {
     const detail = await res.text();
-    // Non-2xx tells Supabase to retry the webhook, which is what we want: a
-    // transient provider outage should not cost a booking.
+    // Non-2xx rather than a swallowed 200, so the failure is visible: it lands
+    // in net._http_response with this status and in the function logs below.
+    // Be clear about what it does NOT do — the trigger calls pg_net, which
+    // fires once and does not retry. A transient provider outage costs this
+    // one alert. The lead itself is already committed and shows in the CRM.
     console.error('lead-alert: provider rejected the send', {
       status: res.status, detail: detail.slice(0, 300), leadId: payload.record.id,
     });
