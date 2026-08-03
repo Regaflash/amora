@@ -34,7 +34,8 @@ say "פורמטי טלפון בשימוש" "$fmts"
 python3 - <<'PY' || fail=1
 import json, re, sys
 blocks = []
-for _f in ('index.html', 'camera-3d.html'):
+import glob as _g
+for _f in sorted(_g.glob('*.html')):        # derived, not hand-listed
     _s = open(_f, encoding='utf-8').read()
     for _b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', _s, re.S):
         blocks.append((_f, _b))

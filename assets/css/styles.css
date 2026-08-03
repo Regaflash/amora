@@ -1575,6 +1575,10 @@ select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
 textarea.field__control { resize: vertical; }
 .field__error { font-size: 13px; color: var(--terracotta); display: none; }
 .field__error.is-shown { display: block; min-height: 18px; }
+/* The one link out of the FAQ. It sits after the <details> list because the
+   answers themselves must stay byte-identical to the FAQPage JSON-LD. */
+.faq__more { margin: var(--sp-5) 0 0; font-size: var(--t-small); }
+
 .field-row {
   display: grid;
   /* 140px paired the date and event-type controls two-across at 390px, in the

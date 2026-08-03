@@ -48,5 +48,10 @@ alter table public.leads
 
 create index if not exists leads_created_at_idx on public.leads (created_at desc);
 
--- Read your leads in the Supabase dashboard (Table Editor → leads), or wire an
--- email notification with a Database Webhook on INSERT.
+-- Read your leads in the private CRM at /admin.html, or in the Supabase
+-- dashboard (Table Editor → leads).
+--
+-- An INSERT here also fires the lead-alert Database Webhook, which emails the
+-- studio immediately — see docs/lead-alerts.md. That is not decoration: the
+-- site promises "נחזור אליכם היום" in six places, and before the webhook
+-- existed nothing told anyone a lead had arrived.

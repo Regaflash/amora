@@ -5,6 +5,7 @@ project/
 chats/
 docs/
 tools/
+supabase/
 node_modules/
 *.md
 

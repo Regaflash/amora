@@ -65,7 +65,7 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   only third-party request the site makes on load; it was the owner's call,
   `privacy.html` states it, and `frame-src` in `vercel.json` names the two
   origins. The film section further down still asks before it loads.
-- There are seven pages, not two: `index.html`, `camera-3d.html`,
+- There are eight pages, not two: `index.html`, `cost.html`, `camera-3d.html`,
   `accessibility.html`, `privacy.html`, `terms.html`, `404.html` and
   `admin.html` (the private lead CRM — noindex, no-store, its own enforcing
   CSP, absent from both sitemap.xml and robots.txt on purpose). The
@@ -114,6 +114,21 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   siblings built from the same facts with the city swapped are the doorway
   pattern Google names in its spam policies. They need genuinely distinct
   material first — see the owner list below.
+
+- **`cost.html` states no price and must not start.** It exists because
+  "כמה עולה צלם חתונות" is a real query, and it answers with the variables —
+  hours, photographers, locations — not a number. Every fact on it is already
+  published on the homepage. Its own `check.sh` guard is indirect: `llms.txt`
+  must list it and `sitemap.xml` must be regenerated, and both fail the build
+  when they drift.
+- **The FAQ answers on the homepage are byte-identical to the FAQPage JSON-LD**
+  and a script checks it one-for-one. Do not put a link, or anything else,
+  inside a `.faq__a`. That broke the invariant once; the link out to `cost.html`
+  lives after the `<details>` list as `.faq__more` for exactly that reason.
+- **Lead alerts are wired, not aspirational.** A Database Webhook on INSERT into
+  `public.leads` calls the `lead-alert` Edge Function, which emails the studio.
+  See `docs/lead-alerts.md`. Before it existed the site promised
+  "נחזור אליכם היום" in six places and nothing told anyone a lead had arrived.
 
 ## Still outstanding, owner-supplied only
 

@@ -77,8 +77,14 @@ const browser = await chromium.launch({ executablePath: BROWSER, args: ['--no-sa
 // Every page, two viewports. Cheap, and it is what caught the pages nobody
 // looks at after the homepage is redesigned.
 {
-  const PAGES = ['/', '/camera-3d.html', '/accessibility.html', '/privacy.html',
-                 '/terms.html', '/404-probe-path-that-does-not-exist'];
+  // Derived, not hand-listed: a page added to the repo must be audited the
+  // moment it lands, not the next time somebody remembers to edit this array.
+  // admin.html is behind a password and has its own section further down.
+  const PAGES = fs.readdirSync(ROOT)
+    .filter((f) => f.endsWith('.html') && f !== 'admin.html' && f !== '404.html')
+    .sort()
+    .map((f) => (f === 'index.html' ? '/' : '/' + f))
+    .concat('/404-probe-path-that-does-not-exist');
   const problems = [];
   for (const url of PAGES) {
     for (const vp of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
