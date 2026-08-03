@@ -28,6 +28,11 @@
 <link rel="stylesheet" href="assets/css/legal.css" />
 <link rel="stylesheet" href="assets/css/a11y-widget.css" />
 <link rel="stylesheet" href="assets/css/assistant.css" />
+<!-- In <head>, blocking, exactly as the other seven pages load it: the widget
+     applies the visitor's saved display preferences, and deferring it to the
+     end of the body shows them the page in the settings they already opted out
+     of before it corrects itself. This page was the only one deferring it. -->
+<script src="assets/js/a11y-widget.js"></script>
 <!-- No price appears on this page, deliberately: the studio publishes none, by
      the owner's brief. The page exists because "כמה עולה צלם חתונות" is a real
      question a couple asks before they enquire, and answering it honestly —
@@ -62,7 +67,64 @@
 </script>
 </head>
 <body>
-<main class="legal">
+
+<a class="skip-link" href="#main">דילוג לתוכן</a>
+
+<!-- This page used to be the bare article shell the three legal drafts use:
+     no header, no footer, no WhatsApp button and no form — one text link back
+     to the home page. It is the page that answers "כמה עולה צלם חתונות", which
+     is the highest-intent search a couple makes about this business, so it was
+     the worst page on the site to leave without a way to enquire.
+
+     data-header-solid: there is no hero here, so the header must not spend the
+     first 80px transparent with ivory text on the sand background. See
+     assets/js/main.js. -->
+<header class="site-header is-scrolled" data-header data-header-solid>
+  <div class="site-header__bar">
+    <a href="index.html" class="brand" aria-label="Amora Studio — לעמוד הבית">
+      <img class="brand__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="46" height="46" />
+    </a>
+
+    <!-- Cross-page fragments, not bare "#about": no such id exists on this
+         page, and tools/check.sh fails any in-page fragment that resolves to
+         nothing. (Which it proved by catching this comment when the example
+         was written out literally.) -->
+    <nav class="nav" aria-label="ניווט ראשי">
+      <a class="nav__link" href="index.html#about">אודות</a>
+      <a class="nav__link" href="index.html#services">שירותים</a>
+      <a class="nav__link" href="index.html#gallery">גלריה</a>
+      <a class="nav__link" href="index.html#faq">שאלות</a>
+      <a class="nav__cta" href="#contact">בדיקת זמינות</a>
+    </nav>
+
+    <div class="nav-mobile">
+      <a class="nav-mobile__cta" href="#contact">בדיקת זמינות</a>
+      <button class="burger" type="button" data-menu-toggle aria-label="תפריט" aria-expanded="false" aria-controls="mobile-menu">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="progress" aria-hidden="true">
+    <div class="progress__bar" data-progress></div>
+  </div>
+</header>
+
+<div class="menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="תפריט" hidden>
+  <button class="menu__close" type="button" data-menu-close aria-label="סגירה">✕</button>
+  <p class="menu__brand">Amora Studio</p>
+  <a class="menu__link" href="index.html#about" data-menu-link>אודות</a>
+  <a class="menu__link" href="index.html#services" data-menu-link>שירותים</a>
+  <a class="menu__link" href="index.html#gallery" data-menu-link>גלריה</a>
+  <a class="menu__link" href="index.html#faq" data-menu-link>שאלות נפוצות</a>
+  <a class="menu__cta" href="#contact" data-menu-link>לבדיקת זמינות</a>
+  <a class="menu__phone" href="tel:+972503662699">050-3662699</a>
+</div>
+
+<main id="main" tabindex="-1">
+<div class="legal">
 
 <h1>מה משפיע על מחיר צילום חתונה</h1>
 <p class="legal__meta">הסבר קצר וכן. אין כאן מחירון — יש כאן מה שמזיז את המספר, כדי שתדעו מה אתם משווים.</p>
@@ -102,19 +164,158 @@
   <li><strong>דחיית תאריך.</strong> התאריך עובר איתכם ללא עלות, בכפוף לזמינות. אם אנחנו תפוסים בתאריך החדש — מחזירים את המקדמה במלואה.</li>
 </ul>
 
-<h2>איך מקבלים מספר</h2>
-<p>משאירים פרטים, ואנחנו חוזרים באותו יום עם זמינות והצעה שמתאימה למה שסיפרתם. אם עוד לא קבעתם תאריך, אפשר לסמן את זה בטופס — זו שאלה לגיטימית לשאול לפני שסוגרים אולם.</p>
-
-<p><a class="btn btn--solid" href="index.html#contact">לבדיקת זמינות</a></p>
-
 <h2>שאלה טובה לשאול כל סטודיו</h2>
 <p>לא רק אותנו: <strong>בקשו לראות אלבום שלם של חתונה אחת</strong>, מהבוקר ועד הסוף — לא רק את הפריים המושלם מכל אירוע. זה מה שמראה אם מישהו עקבי או שהיה לו מזל. אצלנו, בשיחה, שולחים 2–3 גלריות מלאות של חתונות דומות לשלכם.</p>
 
+<h2>איך מקבלים מספר</h2>
+<p>משאירים פרטים, ואנחנו חוזרים באותו יום עם זמינות והצעה שמתאימה למה שסיפרתם. אם עוד לא קבעתם תאריך, אפשר לסמן את זה בטופס — זו שאלה לגיטימית לשאול לפני שסוגרים אולם.</p>
+
 <p><a href="index.html#faq">שאלות נפוצות</a> · <a href="index.html#gallery">לגלריה</a></p>
 
-<a class="legal__back" href="index.html">← חזרה לאתר</a>
+</div>
+
+<!-- The same form as the home page, on the page that raised the question.
+     Deliberately byte-identical in structure: assets/js/main.js binds to the
+     first [data-form] and needs nothing page-specific, so this stays working
+     without a second code path. The ids repeat the home page's, which is fine
+     — they only have to be unique within one document. -->
+<section class="contact section" id="contact">
+  <picture class="contact__bg-wrap"><source type="image/webp" srcset="assets/img/cta-1200.webp" /><img class="contact__bg" src="assets/img/cta-1200.jpg" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
+  <div class="contact__scrim" aria-hidden="true"></div>
+
+  <div class="contact__grid">
+    <div>
+      <div class="chapter">
+        <p class="eyebrow" lang="en">Let's talk</p>
+        <h2 class="contact__title">רוצים את המספר שלכם?</h2>
+        <p class="contact__text">ספרו לנו על האירוע ונחזור אליכם היום עם זמינות והצעה מותאמת. אין התחייבות ואין מכירה בטלפון.</p>
+      </div>
+      <a class="contact__phone" href="tel:+972503662699">050-3662699</a>
+    </div>
+
+    <form class="form" data-form method="dialog" novalidate>
+      <div class="form__fields" data-form-fields>
+        <p class="form__title">בדיקת זמינות</p>
+
+        <label class="field">
+          <span class="field__label">שם מלא</span>
+          <input class="field__control" name="name" type="text" autocomplete="name" data-field="name" aria-required="true" aria-describedby="err-name" />
+          <span class="field__error" id="err-name" data-error="name"></span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">טלפון</span>
+          <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
+          <span class="field__error" id="err-phone" data-error="phone"></span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">אימייל <span class="field__opt">(אופציונלי — כדי לשלוח הצעה וגלריות)</span></span>
+          <input class="field__control" name="email" type="email" inputmode="email" autocomplete="email" data-field="email" aria-describedby="err-email" />
+          <span class="field__error" id="err-email" data-error="email"></span>
+        </label>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" for="lead-date">תאריך האירוע</label>
+            <input class="field__control" id="lead-date" name="date" type="date" data-field="date" aria-required="true" aria-describedby="err-date" />
+            <label class="field__opt-in">
+              <input type="checkbox" name="date_tbd" value="1" data-field="date_tbd" data-date-tbd />
+              <span>עוד לא קבענו תאריך</span>
+            </label>
+            <span class="field__error" id="err-date" data-error="date"></span>
+          </div>
+          <label class="field">
+            <span class="field__label">סוג האירוע</span>
+            <select class="field__control" name="type" data-field="type" aria-required="true" aria-describedby="err-type">
+              <option value="">בחרו</option>
+              <option value="wedding">חתונה</option>
+              <option value="std">Save the Date</option>
+              <option value="henna">חינה / אירוסין</option>
+              <option value="mitzvah">בר / בת מצווה</option>
+              <option value="other">אירוע אחר</option>
+            </select>
+            <span class="field__error" id="err-type" data-error="type"></span>
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">אזור / לוקיישן <span class="field__opt">(אם ידוע)</span></span>
+            <input class="field__control" name="area" type="text" data-field="area"
+                   placeholder="מרכז, צפון, ירושלים…" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span class="field__label">מה מצלמים</span>
+            <select class="field__control" name="coverage" data-field="coverage">
+              <option value="">שניהם</option>
+              <option value="both">סטילס + וידאו</option>
+              <option value="stills">סטילס בלבד</option>
+              <option value="video">וידאו בלבד</option>
+              <option value="unsure">עוד לא בטוחים</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">הודעה <span class="field__opt">(אופציונלי)</span></span>
+          <textarea class="field__control" name="message" rows="3" data-field="message"></textarea>
+        </label>
+
+        <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
+
+        <button class="form__submit" type="submit" data-submit>שלחו — נחזור אליכם היום</button>
+        <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
+        <p class="form__failure" data-form-failure role="alert" hidden></p>
+        <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
+      </div>
+
+      <div class="form__done" data-form-done hidden>
+        <p class="form__done-kicker">Thank you</p>
+        <h3 class="form__done-title">קיבלנו. נחזור אליכם היום.</h3>
+        <p class="form__done-text">בינתיים, אפשר לכתוב לנו ישירות בוואטסאפ.</p>
+        <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener">לוואטסאפ ←</a>
+      </div>
+    </form>
+  </div>
+</section>
+
 </main>
-<script src="assets/js/a11y-widget.js" defer></script>
-<script src="assets/js/assistant.js" defer></script>
+
+<footer class="site-footer">
+  <div class="site-footer__top">
+    <div>
+      <img class="site-footer__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="64" height="64" />
+      <p class="site-footer__blurb">צילום וידאו וסטילס לחתונות ואירועים. תל אביב — ובכל הארץ.</p>
+    </div>
+    <nav class="site-footer__col" aria-label="ניווט פוטר">
+      <a class="site-footer__link" href="index.html#about">אודות</a>
+      <a class="site-footer__link" href="index.html#services">שירותים</a>
+      <a class="site-footer__link" href="index.html#gallery">גלריה</a>
+      <a class="site-footer__link" href="index.html#faq">שאלות נפוצות</a>
+      <a class="site-footer__link" href="#contact">בדיקת זמינות</a>
+    </nav>
+    <div class="site-footer__col">
+      <a class="site-footer__link" href="tel:+972503662699">050-3662699</a>
+      <a class="site-footer__link" href="https://www.instagram.com/amora___studio/" target="_blank" rel="noopener" style="letter-spacing:.04em">Instagram — @amora___studio</a>
+      <p class="site-footer__meta">אזור פעילות: כל הארץ</p>
+    </div>
+  </div>
+  <div class="site-footer__bottom">
+    <p class="site-footer__copy">© 2026 Amora Studio · כל הזכויות שמורות</p>
+    <div class="site-footer__legal">
+      <a href="accessibility.html">הצהרת נגישות</a>
+      <a href="privacy.html">מדיניות פרטיות</a>
+      <a href="terms.html">תנאי שימוש</a>
+    </div>
+  </div>
+</footer>
+
+<a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ">
+  <span>וואטסאפ</span>
+</a>
+
+<script src="assets/js/main.js"></script>
+<script src="assets/js/assistant.js"></script>
 </body>
 </html>

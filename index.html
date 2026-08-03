@@ -535,7 +535,15 @@
   <!-- ===== 02 · פס אמון ===== -->
   <section class="trust section" id="trust" aria-label="בקצרה">
     <div class="trust__row">
-      <span class="trust__item">+500 זוגות מאושרים</span>
+      <!-- This slot used to read "+500 זוגות מאושרים". Nothing in this repo
+           supports that number, and assets/js/assistant.js:58-61 carries an
+           explicit no-counts policy that contradicts it — the same reason the
+           testimonial portraits were removed. Replaced with a claim the site
+           does back (index.html's own FAQ, and cost.html) and which is a
+           sharper differentiator anyway: most studios sell the second shooter
+           as an upgrade. Restore the count only if the studio can stand behind
+           it. -->
+      <span class="trust__item">שני צלמים בחתונה מלאה</span>
       <span class="trust__dot" aria-hidden="true"></span>
       <span class="trust__item">צילום + וידאו תחת קורת גג אחת</span>
       <span class="trust__dot" aria-hidden="true"></span>
@@ -864,7 +872,11 @@
     <div class="film__inner">
       <div class="chapter chapter--center">
         <p class="eyebrow" lang="en">04 — The film</p>
-        <h2 class="h2">חתונה אחת, שלוש דקות</h2>
+        <!-- Was "חתונה אחת, שלוש דקות". The FAQ, the FAQPage JSON-LD,
+             cost.html and the assistant all say the film is 3–5 דקות, so the
+             heading undersold it and disagreed with the schema Google reads.
+             assets/js/assistant.js names this section, and changed with it. -->
+        <h2 class="h2">חתונה אחת, סרט אחד</h2>
         <p class="chapter__deck">הסרט שאנחנו הכי אוהבים להראות. שווה אוזניות.</p>
       </div>
       <div class="film__frame">
@@ -925,7 +937,12 @@
       <div class="step">
         <p class="step__num">04</p>
         <h3 class="step__title">האלבום והסרט</h3>
-        <p class="step__text">תוך 30 יום: גלריה מלאה, אלבום מודפס והסרט. אצלכם, לתמיד.</p>
+        <!-- Said "תוך 30 יום: גלריה מלאה, אלבום מודפס והסרט", which promised
+             the printed album a fortnight earlier than the FAQ below, the
+             FAQPage JSON-LD in the head and cost.html all promise it. The FAQ
+             wording wins: it is byte-locked to the JSON-LD by tools/check.sh,
+             and the JSON-LD is what Google shows. -->
+        <p class="step__text">תוך 30 יום: הגלריה המלאה והסרט. האלבום המודפס — שבועיים אחרי שאתם מאשרים את הבחירה. אצלכם, לתמיד.</p>
       </div>
     </div>
   </section>
@@ -1056,6 +1073,16 @@
             <span class="field__label">טלפון</span>
             <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
             <span class="field__error" id="err-phone" data-error="phone"></span>
+          </label>
+
+          <!-- Optional on purpose. The studio answers on the phone and on
+               WhatsApp, so making this required would cost submissions — but
+               with no address at all there is no way to send a quote, a sample
+               gallery or a contract, and the site collected none anywhere. -->
+          <label class="field">
+            <span class="field__label">אימייל <span class="field__opt">(אופציונלי — כדי לשלוח הצעה וגלריות)</span></span>
+            <input class="field__control" name="email" type="email" inputmode="email" autocomplete="email" data-field="email" aria-describedby="err-email" />
+            <span class="field__error" id="err-email" data-error="email"></span>
           </label>
 
           <div class="field-row">
