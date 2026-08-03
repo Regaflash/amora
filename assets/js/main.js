@@ -838,6 +838,72 @@
     renderSlide();
   }
 
+  /* ------------------------------------------------- services carousel --- */
+
+  // The strip itself is pure CSS scroll-snap and works with this file deleted.
+  // This adds only the position indicator: five plates swiping past with no
+  // marker leaves no way to tell how many there are or where you are among
+  // them. The dots are built here rather than sitting in index.html so they
+  // cannot outlive the script that keeps them in sync — markup for a control
+  // nothing is driving is exactly the visible-but-dead trap the WhatsApp
+  // button already fell into once.
+  var svcGrid = $('.services__grid');
+  if (svcGrid && 'IntersectionObserver' in window) {
+    var plates = [].slice.call(svcGrid.children);
+    if (plates.length > 1) {
+      var svcDots = document.createElement('div');
+      svcDots.className = 'services__dots';
+      // Not a tablist: these scroll a region, they do not swap panels. A plain
+      // group with aria-current is what that actually is.
+      svcDots.setAttribute('role', 'group');
+      svcDots.setAttribute('aria-label', 'מיקום ברצועת השירותים');
+
+      var ratios = plates.map(function () { return 0; });
+      var svcButtons = plates.map(function (plate, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'services__dot';
+        b.setAttribute('aria-current', String(i === 0));
+        // The plate's own title, so the control says where it goes rather
+        // than counting to five.
+        var title = $('.card__title', plate);
+        b.setAttribute('aria-label', title ? title.textContent.trim() : 'שירות ' + (i + 1));
+        b.addEventListener('click', function () {
+          // scrollIntoView, not scrollLeft: scrollLeft's sign and origin in a
+          // right-to-left scroller still differ between engines, and this
+          // page is RTL everywhere. block:'nearest' keeps the strip from
+          // dragging the page up or down while it moves sideways.
+          //
+          // `behavior` is deliberately absent. Naming it 'smooth' would
+          // override the CSS scroll-behavior property rather than read it,
+          // and a11y-widget.css sets `scroll-behavior: auto !important` under
+          // html.a11y-no-motion — so a visitor who had switched animations off
+          // in the widget would have got an animated scroll anyway. Omitting
+          // the key defers to the stylesheet, which already answers both the
+          // widget toggle and the OS preference.
+          plate.scrollIntoView({ inline: 'start', block: 'nearest' });
+        });
+        svcDots.appendChild(b);
+        return b;
+      });
+
+      // Which plate is showing is whichever covers most of the strip, so the
+      // marker tracks a half-finished swipe instead of jumping only once the
+      // snap has landed.
+      var svcIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          ratios[plates.indexOf(e.target)] = e.intersectionRatio;
+        });
+        var best = 0;
+        for (var i = 1; i < ratios.length; i++) if (ratios[i] > ratios[best]) best = i;
+        svcButtons.forEach(function (b, i) { b.setAttribute('aria-current', String(i === best)); });
+      }, { root: svcGrid, threshold: [0, 0.25, 0.5, 0.75, 1] });
+      plates.forEach(function (p) { svcIO.observe(p); });
+
+      svcGrid.parentNode.insertBefore(svcDots, svcGrid.nextSibling);
+    }
+  }
+
   /* ---------------------------------------------------------- lead form --- */
 
   var TYPE_LABEL = { wedding: 'חתונה', std: 'Save the Date', henna: 'חינה / אירוסין',

@@ -241,6 +241,43 @@ await page.waitForTimeout(200);
   await ctx.close();
 }
 
+// -------------------------------------------- the services strip without JS --
+// The five plates swipe on the phone instead of stacking to 4.5 screens, and
+// the strip is CSS scroll-snap precisely so that costs nothing when scripting
+// is off. The obvious "improvement" is to rebuild it as the transform track the
+// testimonials use — which would leave one plate on screen and four
+// unreachable. This is what stops that landing quietly.
+//
+// The dots are asserted ABSENT here for the same reason they are built in JS:
+// a marker nothing is driving is the visible-but-dead control this repo has
+// already shipped once.
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(400);
+  const strip = await np.evaluate(() => {
+    const g = document.querySelector('.services__grid');
+    const kids = [...g.children];
+    return {
+      total: kids.length,
+      rendered: kids.filter((c) => {
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }).length,
+      swipeable: g.scrollWidth > g.clientWidth + 1,
+      dots: document.querySelectorAll('.services__dot').length,
+    };
+  });
+  ok('with JS off, every service plate still renders',
+     strip.rendered === strip.total && strip.total === 5, `${strip.rendered}/${strip.total}`, '5/5');
+  ok('with JS off, the services strip still swipes',
+     strip.swipeable, strip.swipeable, 'scrollable');
+  ok('with JS off, no carousel dots are left undriven',
+     strip.dots === 0, strip.dots, 0);
+  await ctx.close();
+}
+
 // ------------------------------------------------------------ target sizes --
 // WCAG 2.2 SC 2.5.8. The exceptions are real and narrow: the honeypot is bot
 // bait no user can reach, and words inside a sentence are explicitly exempt.
