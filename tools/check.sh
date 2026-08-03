@@ -4,8 +4,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
 fail=0
 say() { printf '%-46s %s\n' "$1" "$2"; }
 
+# The page list was written out by hand in six places. A seventh page therefore
+# shipped with no asset check, no CSP-hash check, no id-reference check and no
+# [[OWNER: check -- silently, with every existing check still green. Derive it
+# once from what is actually on disk instead.
+PAGES=$(ls -1 *.html | sort)
+
 # every src/srcset target actually exists
-missing=$(grep -oE '(src|srcset)="[^"]*"' index.html accessibility.html privacy.html terms.html camera-3d.html admin.html 2>/dev/null \
+missing=$(grep -oE '(src|srcset)="[^"]*"' $PAGES 2>/dev/null \
   | sed 's/.*="//;s/"$//' | tr ',' '\n' | sed 's/ [0-9]*w$//' | tr -d ' ' \
   | grep -E '^assets/' | sort -u | while read -r f; do [ -f "$f" ] || echo "$f"; done)
 if [ -n "$missing" ]; then say "קבצים חסרים" "✗"; echo "$missing" | sed 's/^/    /'; fail=1; else say "כל הנכסים קיימים" "✓"; fi
@@ -28,7 +34,8 @@ say "פורמטי טלפון בשימוש" "$fmts"
 python3 - <<'PY' || fail=1
 import json, re, sys
 blocks = []
-for _f in ('index.html', 'camera-3d.html'):
+import glob as _g
+for _f in sorted(_g.glob('*.html')):        # derived, not hand-listed
     _s = open(_f, encoding='utf-8').read()
     for _b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', _s, re.S):
         blocks.append((_f, _b))
@@ -39,7 +46,7 @@ print(f'{"JSON-LD תקין":<46} ✓ ({len(blocks)} בלוקים)')
 PY
 
 # no external runtime dependency crept back in
-ext=$(grep -oE 'https://(fonts\.googleapis|fonts\.gstatic|unpkg|cdn\.jsdelivr)\.(com|net)' index.html camera-3d.html accessibility.html privacy.html terms.html admin.html 2>/dev/null | sort -u)
+ext=$(grep -oE 'https://(fonts\.googleapis|fonts\.gstatic|unpkg|cdn\.jsdelivr)\.(com|net)' $PAGES 2>/dev/null | sort -u)
 if [ -n "$ext" ]; then say "תלות חיצונית חזרה" "✗"; echo "$ext" | sed 's/^/    /'; fail=1; else say "אין תלויות חיצוניות בזמן ריצה" "✓"; fi
 
 # a service key or private token must never reach anything the browser loads
@@ -69,7 +76,7 @@ fi
 # that is how a favicon and an og:image can 404 with a green check.
 python3 - <<'PY' || fail=1
 import io, json, os, re, sys
-pages = ['index.html','accessibility.html','privacy.html','terms.html','camera-3d.html','admin.html']
+import glob as _g; pages = sorted(_g.glob('*.html'))   # derived, not hand-listed
 canon = re.search(r'<link rel="canonical" href="([^"]+)"', io.open('index.html', encoding='utf-8').read())
 origin = canon.group(1).rstrip('/') if canon and 'SITE_URL' not in canon.group(1) else None
 missing = []
@@ -122,7 +129,7 @@ PY
 # the assistant build their own DOM and wire their own ids in JS.
 python3 - <<'PY' || fail=1
 import io, re, sys
-pages = ['index.html','accessibility.html','privacy.html','terms.html','camera-3d.html','admin.html']
+import glob as _g; pages = sorted(_g.glob('*.html'))   # derived, not hand-listed
 bad = []
 for f in pages:
     s = io.open(f, encoding='utf-8').read()
@@ -211,7 +218,7 @@ for block in cfg.get('headers', []):
             policies.append((block.get('source', ''), h['value']))
 known = set()
 for _, v in policies: known.update(re.findall(r"'(sha(?:256|384|512)-[A-Za-z0-9+/=]+)'", v))
-pages = ['index.html','accessibility.html','privacy.html','terms.html','camera-3d.html','admin.html']
+import glob as _g; pages = sorted(_g.glob('*.html'))   # derived, not hand-listed
 bad, seen = [], 0
 for f in pages:
     s = io.open(f, encoding='utf-8').read()
@@ -299,6 +306,74 @@ for table in sorted(rls):
 if bad:
     print('    ' + '\n    '.join(bad)); sys.exit(1)
 print(f'{"SQL: לכל policy יש GRANT, אין הרשאה חסינת-RLS":<46} ✓')
+PY
+
+# An owner placeholder must never reach production. Every patch staged by the
+# E-E-A-T pass carries an [[OWNER: …]] token precisely so this line can stop it.
+# The legal drafts' [להשלים] markers are NOT checked here: those pages are
+# published knowingly as drafts, behind noindex.
+owner=$(grep -rl '\[\[OWNER:' $PAGES assets/css/*.css assets/js/*.js 2>/dev/null)
+if [ -n "$owner" ]; then say "placeholder של הבעלים בקוד" "✗"; echo "$owner" | sed 's/^/    /'; fail=1; else say "אין placeholders של הבעלים" "✓"; fi
+
+# sitemap.xml is the one file that silently goes wrong: nothing in the build
+# reads it, so a page added or noindexed leaves it stale for months.
+if python3 tools/gen-sitemap.py --check >/dev/null 2>&1; then say "sitemap.xml מעודכן" "✓"
+else say "sitemap.xml לא מעודכן" "✗ הרץ tools/gen-sitemap.py"; fail=1; fi
+
+# The ImageGallery block is derived from the gallery markup. A swapped
+# photograph leaves a caption naming an image that is no longer there, which is
+# worse than shipping no image markup at all.
+if python3 tools/gen-image-schema.py --check >/dev/null 2>&1; then say "ImageGallery מסונכרן לגלריה" "✓"
+else say "ImageGallery לא מסונכרן" "✗ הרץ tools/gen-image-schema.py"; fail=1; fi
+
+# llms.txt closes with the claim that this check exists. It describes the site to
+# assistants that quote it, so a page it never heard of is a page they will
+# answer about wrongly — or not at all.
+missing_llms=$(python3 - <<'PY'
+import re
+sm = open('sitemap.xml', encoding='utf-8').read()
+try:
+    llms = open('llms.txt', encoding='utf-8').read()
+except FileNotFoundError:
+    print('llms.txt missing'); raise SystemExit
+for loc in re.findall(r'<loc>([^<]+)</loc>', sm):
+    if loc not in llms:
+        print(loc)
+PY
+)
+if [ -n "$missing_llms" ]; then say "llms.txt מכסה את sitemap" "✗"; echo "$missing_llms" | sed 's/^/    /'; fail=1
+else say "llms.txt מכסה את sitemap" "✓"; fi
+
+# robots.txt now carries a policy with a legal commitment behind it: terms.html
+# undertakes that this content is not used to train models, to protect the
+# couples in the photographs. A crawler that finds a group naming it ignores the
+# "*" group entirely, so the Disallow lines are repeated per group — and a
+# careless edit that drops one silently opens /tools/ to an AI crawler while
+# every other check stays green. Assert the behaviour, not the text.
+python3 - <<'PY' || fail=1
+from urllib.robotparser import RobotFileParser
+import sys
+rp = RobotFileParser(); rp.parse(open('robots.txt', encoding='utf-8').read().splitlines())
+SITE = 'https://www.amora-studios.com'
+CASES = [
+    ('GPTBot','/',False), ('ClaudeBot','/',False), ('Google-Extended','/',False),
+    ('Applebot-Extended','/',False), ('CCBot','/',False), ('Bytespider','/',False),
+    ('meta-externalagent','/',False),
+    ('OAI-SearchBot','/',True), ('ChatGPT-User','/',True), ('Claude-SearchBot','/',True),
+    ('Claude-User','/',True), ('PerplexityBot','/',True),
+    ('Googlebot','/',True), ('Googlebot','/camera-3d.html',True),
+    ('OAI-SearchBot','/tools/x',False), ('OAI-SearchBot','/project/x',False),
+    ('Claude-SearchBot','/docs/x',False),
+    ('Googlebot','/project/x',False), ('Googlebot','/chats/x',False),
+    ('Googlebot','/docs/x',False), ('Googlebot','/tools/x',False),
+]
+bad = [f'{a} {p} -> {rp.can_fetch(a, SITE+p)}, expected {w}'
+       for a, p, w in CASES if rp.can_fetch(a, SITE + p) != w]
+if bad:
+    print('    ' + '\n    '.join(bad)); sys.exit(1)
+if not rp.site_maps():
+    print('    robots.txt לא מפנה ל-sitemap'); sys.exit(1)
+print(f'{"robots.txt: אימון חסום, ציטוט מותר":<46} ✓ ({len(CASES)} מקרים)')
 PY
 
 exit $fail

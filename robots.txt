@@ -1,15 +1,59 @@
-# Order matters: a robots.txt parser stops at the first matching rule, so a
-# blanket "Allow: /" written above these would swallow them and the Disallows
-# would never be reached. Verified with urllib.robotparser — with Allow first,
-# can_fetch('*', '/project/x.html') returned True.
+# Order matters WITHIN a group: a parser stops at the first matching rule, so a
+# blanket "Allow: /" written above the Disallows would swallow them. Verified
+# with urllib.robotparser — with Allow first, can_fetch('*', '/project/x.html')
+# returned True.
 #
-# These paths are already excluded from the deployment by .vercelignore, so
-# nothing is served at them today and this is a second line of defence rather
-# than the only one. It matters the day a path becomes servable.
+# Order does NOT matter between groups, but group membership does: a crawler
+# that finds a group naming it ignores the "*" group entirely. That is why the
+# Disallow lines below are repeated in every group that is allowed in, rather
+# than written once and inherited. They are not inherited.
 #
-# Kept terse on purpose: robots.txt is public, and a comment describing what
-# is behind a path is an invitation. The Disallow lines name the paths because
-# they must; they do not need to say what is worth finding there.
+# Kept terse on purpose: robots.txt is public, and a comment describing what is
+# behind a path is an invitation. The Disallow lines name the paths because they
+# must; they do not need to say what is worth finding there.
+
+# ---------------------------------------------------------------------------
+# AI crawlers are split deliberately, because they do two different jobs and
+# terms.html only permits one of them.
+#
+# terms.html states: "אין לבצע איסוף אוטומטי של תמונות מהאתר (scraping), ואין
+# להשתמש בתוכן שבו לאימון מודלים של בינה מלאכותית", and gives the reason —
+# "הכלל הזה נועד קודם כול להגן על האנשים שבתמונות, לא רק עלינו". These are
+# photographs of real couples. The commitment is to them.
+#
+# Blocking the training crawlers costs nothing in visibility: they build
+# corpora for future model versions, which is not what surfaces this studio in
+# an answer today. Retrieval is. So the retrieval bots are welcome and the
+# training bots are not, and the two lists below say which is which.
+# ---------------------------------------------------------------------------
+
+# Training-corpus collection — declined, per terms.html.
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: Bytespider
+User-agent: meta-externalagent
+Disallow: /
+
+# Retrieval and citation — welcome. These are the ones that fetch a page in
+# order to answer someone's question and cite it, which is the entire point of
+# publishing the FAQ and llms.txt. Note that blocking ClaudeBot above does not
+# block these: Anthropic's and OpenAI's crawlers are independently controlled.
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+Disallow: /project/
+Disallow: /chats/
+Disallow: /docs/
+Disallow: /tools/
+Allow: /
+
+# Everyone else, search engines included.
 User-agent: *
 Disallow: /project/
 Disallow: /chats/

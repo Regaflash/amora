@@ -1,9 +1,20 @@
 # tools
 
-Build and maintenance scripts. None of them run in the browser — the site
-itself stays dependency-free. They need `sharp` (images) and `ffmpeg` (video):
+Build and maintenance scripts. None of them ship to the browser — `tools/` is
+in `.vercelignore` and the site itself stays dependency-free. They need `sharp`
+(images), `ffmpeg` (video), and `playwright-core` + `pngjs` (verification):
 
-    npm i sharp
+    npm i sharp playwright-core pngjs
+
+## The two checks
+
+`check.sh` reads the files. `verify.mjs` drives the real site in a real browser
+and asserts what a visitor can observe. They catch different things and neither
+replaces the other — the focus ring once went invisible at 1.00:1 with entirely
+valid CSS, and no amount of reading the stylesheet would have found it.
+
+    tools/check.sh          # 19 static assertions, must exit 0
+    node tools/verify.mjs   # 28 runtime assertions, must exit 0
 
 | file | what it does |
 | --- | --- |
@@ -15,7 +26,10 @@ itself stays dependency-free. They need `sharp` (images) and `ffmpeg` (video):
 | `dedupe.mjs` | Perceptual duplicate finder for a source folder. |
 | `sheet.mjs` | Contact sheets, for choosing photos. |
 | `set-site-url.sh` | Replaces the `SITE_URL` placeholder. **Run once before going live.** |
-| `check.sh` | Consistency checks. Run before deploying — must exit 0. |
+| `check.sh` | Static consistency checks. Run before deploying — must exit 0. |
+| `verify.mjs` | Runtime checks in Chromium: keyboard and focus behaviour, live regions, the form with JS disabled, WCAG 2.2 target sizes, Core Web Vitals, composited-pixel contrast, the 404, and the CRM's escaping of hostile lead data. Supabase is stood in for with route fulfilment, so it runs offline and touches no real data. Must exit 0. |
+| `gen-sitemap.py` | Regenerates `sitemap.xml` from each page's own robots meta, git dates and the homepage's alt-bearing photographs. `--check` fails if stale. |
+| `gen-image-schema.py` | Regenerates the `ImageGallery` JSON-LD in `index.html` from the gallery markup. `--check` fails if stale. |
 | `make-icons.mjs` | Regenerates `favicon.ico` and the PNG icon set from `assets/img/logo.jpg`. |
 | `anchors.sh` | Given a JSON array of `{file, find, replace}` patches, checks each `find` matches exactly once. |
 

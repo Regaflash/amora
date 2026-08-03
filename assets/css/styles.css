@@ -693,6 +693,13 @@ summary::-webkit-details-marker { display: none; }
   display: grid;
   justify-items: center;
   gap: 8px;
+  /* The visible mark is a 1px rule and a small chevron, which gave it an 8px
+     hit area — under the 24px WCAG 2.2 SC 2.5.8 minimum, and genuinely hard to
+     hit with a thumb. Padding alone widens the target: the element is absolutely
+     positioned and centred with translateX(-50%), so -50% of the new width still
+     lands on the same axis. A negative margin to "cancel" the padding was tried
+     and pushed it 12px off-centre — there is nothing to cancel. */
+  padding-inline: 12px;
 }
 .hero__cue-line {
   display: block;
@@ -1018,6 +1025,10 @@ summary::-webkit-details-marker { display: none; }
   background: repeating-linear-gradient(135deg, #26221C 0 8px, #1C1A18 8px 18px);
   border: 1px solid rgba(201, 174, 140, 0.35);
 }
+/* While the next photograph decodes, the one on screen is dimmed rather than
+   swapped underneath its caption — see openLightbox() in main.js. opacity only:
+   no physical side, nothing to mirror under dir="rtl". */
+.lightbox__figure[data-loading] { opacity: 0.55; }
 .lightbox__img {
   display: block;
   aspect-ratio: var(--ratio, 4 / 5);
@@ -1150,6 +1161,26 @@ summary::-webkit-details-marker { display: none; }
   aspect-ratio: 16 / 9;
   border: 0;
 }
+/* .film__play sets display:block, which beats the UA sheet's [hidden] rule —
+   measured: setting .hidden left the button 1078x606 and fully visible. */
+.film__play[hidden] { display: none; }
+/* Centred with auto margins, so there is no physical side to mirror in RTL.
+   The bottom margin is not decoration: .film__frame is overflow:hidden and the
+   shared :focus-visible ring is drawn at a 3px OUTWARD offset, the same clip
+   that already ate the play button ring and forced outline-offset:-4px above. */
+.film__back {
+  display: block;
+  margin: 14px auto 8px;
+  padding: 10px 20px;
+  min-height: 24px;
+  border: 1px solid rgba(201, 174, 140, 0.55);
+  background: transparent;
+  color: var(--sand);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.film__back:hover { border-color: var(--champagne); }
 .film__note { bottom: 14px; right: 16px; color: rgba(217, 195, 165, 0.55); }
 
 /* --------------------------------------------------------------- gear --- */
@@ -1510,8 +1541,11 @@ summary::-webkit-details-marker { display: none; }
 }
 .field__opt-in input {
   flex: none;
-  width: 16px;
-  height: 16px;
+  /* 24px is the WCAG 2.2 SC 2.5.8 floor. A 16px box in the one form on the
+     site that turns a visitor into an enquiry is the wrong place to save
+     8 pixels. */
+  width: 24px;
+  height: 24px;
   margin: 0;
   accent-color: var(--champagne);
   cursor: pointer;
@@ -1541,6 +1575,10 @@ select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
 textarea.field__control { resize: vertical; }
 .field__error { font-size: 13px; color: var(--terracotta); display: none; }
 .field__error.is-shown { display: block; min-height: 18px; }
+/* The one link out of the FAQ. It sits after the <details> list because the
+   answers themselves must stay byte-identical to the FAQPage JSON-LD. */
+.faq__more { margin: var(--sp-5) 0 0; font-size: var(--t-small); }
+
 .field-row {
   display: grid;
   /* 140px paired the date and event-type controls two-across at 390px, in the
@@ -1591,6 +1629,8 @@ textarea.field__control { resize: vertical; }
 .form__submit:hover { background: var(--sand); }
 .form__submit.is-sending { background: var(--sand); cursor: wait; opacity: .75; }
 .form__alt { font-size: var(--t-small); color: var(--mocha); margin: 0; text-align: center; }
+.form__consent { font-size: var(--t-micro); color: var(--mocha); margin: 0 0 var(--sp-1); text-align: center; }
+.form__consent a { color: var(--charcoal); text-underline-offset: 3px; }
 .form__failure {
   margin: 0;
   padding: 13px 14px;
@@ -1670,7 +1710,17 @@ textarea.field__control { resize: vertical; }
 }
 .site-footer__copy { font-size: var(--t-micro); letter-spacing: .1em; color: var(--mocha); margin: 0; }
 .site-footer__legal { display: flex; flex-wrap: wrap; gap: var(--sp-5); }
-.site-footer__legal a { font-size: var(--t-micro); letter-spacing: .04em; color: var(--mocha); }
+.site-footer__legal a {
+  font-size: var(--t-micro);
+  letter-spacing: .04em;
+  color: var(--mocha);
+  /* Standalone links in a row, so the SC 2.5.8 inline exception does not apply
+     to them the way it does to the consent line inside the form. Padding takes
+     them past 24px without changing where they sit. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
 
 /* --------------------------------------------------------- whatsapp --- */
 

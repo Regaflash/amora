@@ -132,6 +132,13 @@
   font-size: 15px;
   line-height: 1.7;
   text-wrap: pretty;
+  /* An unbroken run — a pasted URL, a long Instagram handle — has no break
+     opportunity, so the bubble grew to the width of the string and scrolled
+     sideways inside .am-log instead of wrapping. `anywhere` rather than
+     `break-word` because it also shrinks the min-content width, which is what
+     actually stops the flex item from expanding. Direction-neutral: nothing
+     here resolves to a physical side under dir="rtl". */
+  overflow-wrap: anywhere;
 }
 .am-msg--user .am-bubble {
   background: var(--champagne);

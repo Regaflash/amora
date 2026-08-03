@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Amora Studio | צילום וידאו וסטילס לחתונות — תל אביב</title>
-<meta name="description" content="Amora Studio — צילום וידאו וסטילס לחתונות ואירועים. תל אביב, פעילות בכל הארץ. אספקה תוך 30 יום. לבדיקת זמינות: 050-3662699" />
-<meta property="og:title" content="Amora Studio | הרגעים שלכם. לנצח." />
+<title>צילום חתונות בתל אביב — וידאו וסטילס | Amora Studio</title>
+<meta name="description" content="צילום חתונות בתל אביב ובכל הארץ — וידאו וסטילס, שני צלמים בחתונה מלאה. גלריה ראשונה תוך 7 ימים, הסרט תוך 30 יום. לבדיקת זמינות: 050-3662699" />
+<meta property="og:title" content="צילום חתונות בתל אביב — וידאו וסטילס | Amora Studio" />
 <meta property="og:description" content="צילום וידאו וסטילס לחתונות ואירועים — תל אביב, בכל הארץ." />
 <meta property="og:type" content="website" />
 <link rel="canonical" href="https://www.amora-studios.com/" />
@@ -18,7 +18,7 @@
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Amora Studio | הרגעים שלכם. לנצח." />
+<meta name="twitter:title" content="צילום חתונות בתל אביב — וידאו וסטילס | Amora Studio" />
 <meta name="twitter:description" content="צילום וידאו וסטילס לחתונות ואירועים — תל אביב, בכל הארץ." />
 <meta name="twitter:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
 <meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
@@ -65,14 +65,20 @@
   "addressLocality": "תל אביב",
   "addressCountry": "IL"
  },
- "areaServed": {
-  "@type": "Country",
-  "name": "ישראל"
- },
- "knowsLanguage": [
-  "he",
-  "en"
+ "areaServed": [
+  {
+   "@type": "Country",
+   "@id": "https://www.amora-studios.com/#area",
+   "name": "ישראל"
+  },
+  { "@type": "AdministrativeArea", "name": "מחוז תל אביב" },
+  { "@type": "AdministrativeArea", "name": "מחוז המרכז" },
+  { "@type": "AdministrativeArea", "name": "מחוז ירושלים" },
+  { "@type": "AdministrativeArea", "name": "מחוז חיפה" },
+  { "@type": "AdministrativeArea", "name": "מחוז הצפון" },
+  { "@type": "AdministrativeArea", "name": "מחוז הדרום" }
  ],
+ "knowsLanguage": "he",
  "sameAs": [
   "https://www.instagram.com/amora___studio/"
  ],
@@ -91,35 +97,50 @@
     "@type": "Offer",
     "itemOffered": {
      "@type": "Service",
-     "name": "צילום חתונה מלא — סטילס ווידאו"
+     "name": "צילום חתונה מלא — סטילס ווידאו",
+     "serviceType": "צילום חתונות",
+     "provider": { "@id": "https://www.amora-studios.com/#business" },
+     "areaServed": { "@id": "https://www.amora-studios.com/#area" }
     }
    },
    {
     "@type": "Offer",
     "itemOffered": {
      "@type": "Service",
-     "name": "צילומי זוגיות / Save the Date"
+     "name": "צילומי זוגיות / Save the Date",
+     "serviceType": "צילומי זוגיות",
+     "provider": { "@id": "https://www.amora-studios.com/#business" },
+     "areaServed": { "@id": "https://www.amora-studios.com/#area" }
     }
    },
    {
     "@type": "Offer",
     "itemOffered": {
      "@type": "Service",
-     "name": "צילומי הכנות בבוקר האירוע"
+     "name": "צילומי הכנות בבוקר האירוע",
+     "serviceType": "צילום הכנות",
+     "provider": { "@id": "https://www.amora-studios.com/#business" },
+     "areaServed": { "@id": "https://www.amora-studios.com/#area" }
     }
    },
    {
     "@type": "Offer",
     "itemOffered": {
      "@type": "Service",
-     "name": "צילום אירועים — חינה, אירוסין, בר ובת מצווה"
+     "name": "צילום אירועים — חינה, אירוסין, בר ובת מצווה",
+     "serviceType": "צילום אירועים",
+     "provider": { "@id": "https://www.amora-studios.com/#business" },
+     "areaServed": { "@id": "https://www.amora-studios.com/#area" }
     }
    },
    {
     "@type": "Offer",
     "itemOffered": {
      "@type": "Service",
-     "name": "צילומי משפחה ושושבינות"
+     "name": "צילומי משפחה ושושבינות",
+     "serviceType": "צילום משפחה",
+     "provider": { "@id": "https://www.amora-studios.com/#business" },
+     "areaServed": { "@id": "https://www.amora-studios.com/#area" }
     }
    }
   ]
@@ -149,7 +170,7 @@
    "name": "אתם מגיעים לכל הארץ?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "כן. הבסיס בתל אביב ואנחנו מצלמים מהגליל ועד אילת, בלי תוספת נסיעות באזור המרכז."
+    "text": "כן. Amora Studio מבוססים בתל אביב, ומצלמים מהגליל ועד אילת — בלי תוספת נסיעות באזור המרכז."
    }
   },
   {
@@ -157,12 +178,12 @@
    "name": "יש צלם שני?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "בחתונה מלאה תמיד. אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות."
+    "text": "בחתונה מלאה יש תמיד שני צלמים. אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות."
    }
   },
   {
    "@type": "Question",
-   "name": "מה כוללת החבילה?",
+   "name": "מה כוללת חבילת החתונה המלאה?",
    "acceptedAnswer": {
     "@type": "Answer",
     "text": "כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם. אלבום מודפס וצילומי Save the Date אפשר להוסיף."
@@ -191,6 +212,14 @@
     "@type": "Answer",
     "text": "התאריך עובר איתכם ללא עלות, בכפוף לזמינות. אם אנחנו תפוסים בתאריך החדש — נחזיר את המקדמה במלואה."
    }
+  },
+  {
+   "@type": "Question",
+   "name": "האולם שלנו חשוך — איך זה מצטלם?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "אנחנו מצלמים על גוף פול־פריים ועדשות פריים מהירות, כאלה שאוספות הרבה אור, ומשלימים בתאורה שמכבדת את האור שכבר יש בחדר. בלי פלאשים שמסמאים את האורחים."
+   }
   }
  ]
 }
@@ -214,6 +243,202 @@
 </script>
 <link rel="stylesheet" href="assets/css/a11y-widget.css" />
 <script src="assets/js/a11y-widget.js"></script>
+<!-- BEGIN generated image schema — tools/gen-image-schema.py -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "ImageGallery",
+ "@id": "https://www.amora-studios.com/#gallery-schema",
+ "name": "רגעים מהעבודות שלנו",
+ "inLanguage": "he",
+ "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
+ "about": { "@id": "https://www.amora-studios.com/#business" },
+ "numberOfItems": 18,
+ "associatedMedia": [
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g01",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g01-900.jpg",
+   "caption": "רגע החופה",
+   "name": "רגע החופה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g02",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g02-900.jpg",
+   "caption": "פורטרט כלה בחתונה",
+   "name": "פורטרט כלה בחתונה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g03",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g03-1100.jpg",
+   "caption": "הזוג אחרי הטקס בחתונה",
+   "name": "הזוג אחרי הטקס בחתונה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g04",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g04-900.jpg",
+   "caption": "צילומי זוגיות בלוקיישן",
+   "name": "צילומי זוגיות בלוקיישן",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g05",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g05-900.jpg",
+   "caption": "שמלת הכלה והצעדים הראשונים בחתונה",
+   "name": "שמלת הכלה והצעדים הראשונים בחתונה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g06",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g06-1100.jpg",
+   "caption": "צילומי Save the Date בשקיעה",
+   "name": "צילומי Save the Date בשקיעה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g07",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g07-900.jpg",
+   "caption": "ריקודים בחתונה",
+   "name": "ריקודים בחתונה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g08",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g08-1300.jpg",
+   "caption": "חופה בשקיעה",
+   "name": "חופה בשקיעה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g09",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g09-900.jpg",
+   "caption": "איפור בבוקר האירוע",
+   "name": "איפור בבוקר האירוע",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g10",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g10-900.jpg",
+   "caption": "עיצוב שיער לכלה בבוקר ההכנות",
+   "name": "עיצוב שיער לכלה בבוקר ההכנות",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g11",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g11-1100.jpg",
+   "caption": "פרטי שמלת הכלה בבוקר ההכנות",
+   "name": "פרטי שמלת הכלה בבוקר ההכנות",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g12",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g12-900.jpg",
+   "caption": "עיצוב שולחנות באירוע",
+   "name": "עיצוב שולחנות באירוע",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g13",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g13-1100.jpg",
+   "caption": "חגיגה עם האורחים באירוע",
+   "name": "חגיגה עם האורחים באירוע",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g14",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g14-900.jpg",
+   "caption": "צילום שושבינות",
+   "name": "צילום שושבינות",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g15",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g15-900.jpg",
+   "caption": "צילומי זוגיות בעיר",
+   "name": "צילומי זוגיות בעיר",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g16",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g16-900.jpg",
+   "caption": "רגע שקט בין בני הזוג בחתונה",
+   "name": "רגע שקט בין בני הזוג בחתונה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g17",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g17-600.jpg",
+   "caption": "ההליכה אל החופה",
+   "name": "ההליכה אל החופה",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  },
+  {
+   "@type": "ImageObject",
+   "@id": "https://www.amora-studios.com/#img-g18",
+   "contentUrl": "https://www.amora-studios.com/assets/img/g18-900.jpg",
+   "caption": "פורטרט זוגי בצילומי Save the Date",
+   "name": "פורטרט זוגי בצילומי Save the Date",
+   "creator": { "@id": "https://www.amora-studios.com/#business" },
+   "copyrightNotice": "© Amora Studio",
+   "license": "https://www.amora-studios.com/terms.html"
+  }
+ ]
+}
+</script>
+<!-- END generated image schema -->
 </head>
 <body>
 
@@ -262,7 +487,7 @@
   <a class="menu__link" href="#process" data-menu-link>תהליך</a>
   <a class="menu__link" href="#faq" data-menu-link>שאלות נפוצות</a>
   <a class="menu__cta" href="#contact" data-menu-link>לבדיקת זמינות</a>
-  <a class="menu__phone" href="tel:0503662699">050-3662699</a>
+  <a class="menu__phone" href="tel:+972503662699">050-3662699</a>
 </div>
 
 <!-- tabindex="-1" is what makes the skip link work: without it the
@@ -332,7 +557,7 @@
       </div>
       <div>
         <div class="chapter">
-          <p class="eyebrow">01 — Behind the lens</p>
+          <p class="eyebrow" lang="en">01 — Behind the lens</p>
           <h2 class="h2">מאחורי העדשה</h2>
         </div>
         <p class="about__lead">אנחנו לא באים לביים לכם את החתונה. אנחנו באים להיות שם — כדי שבעוד עשרים שנה תוכלו להרגיש שוב בדיוק את מה שהרגשתם.</p>
@@ -347,7 +572,7 @@
   <section class="services section" id="services" data-reveal>
     <div class="chapter chapter--split">
       <div>
-        <p class="eyebrow">02 — What we shoot</p>
+        <p class="eyebrow" lang="en">02 — What we shoot</p>
         <h2 class="h2">מה אנחנו מצלמים</h2>
       </div>
       <p class="chapter__deck">חמישה סוגי צילום, אותה עין. אפשר לשלב הכול לחבילה אחת.</p>
@@ -443,7 +668,7 @@
          sits outside it and runs edge to edge. -->
     <div class="shell gallery__head">
       <div class="chapter">
-        <p class="eyebrow">03 — The gallery</p>
+        <p class="eyebrow" lang="en">03 — The gallery</p>
         <h2 class="h2">רגעים מהעבודות שלנו</h2>
       </div>
 
@@ -473,20 +698,20 @@
           </button>
         </li>
         <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="פורטרט כלה" data-ratio="4/5" data-img="g02" aria-label="הגדלה: פורטרט כלה">
+          <button class="masonry__btn" type="button" data-alt="פורטרט כלה בחתונה" data-ratio="4/5" data-img="g02" aria-label="הגדלה: פורטרט כלה בחתונה">
             <picture>
             <source type="image/webp" srcset="assets/img/g02-500.webp 500w, assets/img/g02-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g02-900.jpg" srcset="assets/img/g02-500.jpg 500w, assets/img/g02-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="פורטרט כלה" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="פורטרט כלה בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
         <li class="masonry__item" data-cat="weddings" data-ratio="16/9">
-          <button class="masonry__btn" type="button" data-alt="הזוג אחרי הטקס" data-ratio="16/9" data-img="g03" aria-label="הגדלה: הזוג אחרי הטקס">
+          <button class="masonry__btn" type="button" data-alt="הזוג אחרי הטקס בחתונה" data-ratio="16/9" data-img="g03" aria-label="הגדלה: הזוג אחרי הטקס בחתונה">
             <picture>
             <source type="image/webp" srcset="assets/img/g03-600.webp 600w, assets/img/g03-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g03-1100.jpg" srcset="assets/img/g03-600.jpg 600w, assets/img/g03-1100.jpg 1100w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="הזוג אחרי הטקס" width="1100" height="619" loading="lazy" decoding="async" />
+                 alt="הזוג אחרי הטקס בחתונה" width="1100" height="619" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
@@ -500,29 +725,29 @@
           </button>
         </li>
         <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="השמלה והצעדים הראשונים" data-ratio="4/5" data-img="g05" aria-label="הגדלה: השמלה והצעדים הראשונים">
+          <button class="masonry__btn" type="button" data-alt="שמלת הכלה והצעדים הראשונים בחתונה" data-ratio="4/5" data-img="g05" aria-label="הגדלה: שמלת הכלה והצעדים הראשונים בחתונה">
             <picture>
             <source type="image/webp" srcset="assets/img/g05-500.webp 500w, assets/img/g05-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g05-900.jpg" srcset="assets/img/g05-500.jpg 500w, assets/img/g05-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="השמלה והצעדים הראשונים" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="שמלת הכלה והצעדים הראשונים בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
         <li class="masonry__item" data-cat="std" data-ratio="16/9">
-          <button class="masonry__btn" type="button" data-alt="Save the Date בשקיעה" data-ratio="16/9" data-img="g06" aria-label="הגדלה: Save the Date בשקיעה">
+          <button class="masonry__btn" type="button" data-alt="צילומי Save the Date בשקיעה" data-ratio="16/9" data-img="g06" aria-label="הגדלה: צילומי Save the Date בשקיעה">
             <picture>
             <source type="image/webp" srcset="assets/img/g06-600.webp 600w, assets/img/g06-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g06-1100.jpg" srcset="assets/img/g06-600.jpg 600w, assets/img/g06-1100.jpg 1100w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="Save the Date בשקיעה" width="1100" height="619" loading="lazy" decoding="async" />
+                 alt="צילומי Save the Date בשקיעה" width="1100" height="619" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
         <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="ריקודים" data-ratio="4/5" data-img="g07" aria-label="הגדלה: ריקודים">
+          <button class="masonry__btn" type="button" data-alt="ריקודים בחתונה" data-ratio="4/5" data-img="g07" aria-label="הגדלה: ריקודים בחתונה">
             <picture>
             <source type="image/webp" srcset="assets/img/g07-500.webp 500w, assets/img/g07-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g07-900.jpg" srcset="assets/img/g07-500.jpg 500w, assets/img/g07-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="ריקודים" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="ריקודים בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
@@ -545,20 +770,20 @@
           </button>
         </li>
         <li class="masonry__item" data-cat="prep" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="עיצוב שיער לכלה" data-ratio="4/5" data-img="g10" aria-label="הגדלה: עיצוב שיער לכלה">
+          <button class="masonry__btn" type="button" data-alt="עיצוב שיער לכלה בבוקר ההכנות" data-ratio="4/5" data-img="g10" aria-label="הגדלה: עיצוב שיער לכלה בבוקר ההכנות">
             <picture>
             <source type="image/webp" srcset="assets/img/g10-500.webp 500w, assets/img/g10-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g10-900.jpg" srcset="assets/img/g10-500.jpg 500w, assets/img/g10-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="עיצוב שיער לכלה" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="עיצוב שיער לכלה בבוקר ההכנות" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
         <li class="masonry__item" data-cat="prep" data-ratio="16/9">
-          <button class="masonry__btn" type="button" data-alt="פרטי השמלה" data-ratio="16/9" data-img="g11" aria-label="הגדלה: פרטי השמלה">
+          <button class="masonry__btn" type="button" data-alt="פרטי שמלת הכלה בבוקר ההכנות" data-ratio="16/9" data-img="g11" aria-label="הגדלה: פרטי שמלת הכלה בבוקר ההכנות">
             <picture>
             <source type="image/webp" srcset="assets/img/g11-600.webp 600w, assets/img/g11-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g11-1100.jpg" srcset="assets/img/g11-600.jpg 600w, assets/img/g11-1100.jpg 1100w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="פרטי השמלה" width="1100" height="619" loading="lazy" decoding="async" />
+                 alt="פרטי שמלת הכלה בבוקר ההכנות" width="1100" height="619" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
@@ -572,38 +797,38 @@
           </button>
         </li>
         <li class="masonry__item" data-cat="events" data-ratio="16/9">
-          <button class="masonry__btn" type="button" data-alt="חגיגה עם האורחים" data-ratio="16/9" data-img="g13" aria-label="הגדלה: חגיגה עם האורחים">
+          <button class="masonry__btn" type="button" data-alt="חגיגה עם האורחים באירוע" data-ratio="16/9" data-img="g13" aria-label="הגדלה: חגיגה עם האורחים באירוע">
             <picture>
             <source type="image/webp" srcset="assets/img/g13-600.webp 600w, assets/img/g13-1100.webp 1100w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g13-1100.jpg" srcset="assets/img/g13-600.jpg 600w, assets/img/g13-1100.jpg 1100w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="חגיגה עם האורחים" width="1100" height="619" loading="lazy" decoding="async" />
+                 alt="חגיגה עם האורחים באירוע" width="1100" height="619" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
         <li class="masonry__item" data-cat="events" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="שושבינות" data-ratio="4/5" data-img="g14" aria-label="הגדלה: שושבינות">
+          <button class="masonry__btn" type="button" data-alt="צילום שושבינות" data-ratio="4/5" data-img="g14" aria-label="הגדלה: צילום שושבינות">
             <picture>
             <source type="image/webp" srcset="assets/img/g14-500.webp 500w, assets/img/g14-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g14-900.jpg" srcset="assets/img/g14-500.jpg 500w, assets/img/g14-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="שושבינות" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="צילום שושבינות" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
         <li class="masonry__item" data-cat="std" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="זוג בעיר" data-ratio="4/5" data-img="g15" aria-label="הגדלה: זוג בעיר">
+          <button class="masonry__btn" type="button" data-alt="צילומי זוגיות בעיר" data-ratio="4/5" data-img="g15" aria-label="הגדלה: צילומי זוגיות בעיר">
             <picture>
             <source type="image/webp" srcset="assets/img/g15-500.webp 500w, assets/img/g15-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g15-900.jpg" srcset="assets/img/g15-500.jpg 500w, assets/img/g15-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="זוג בעיר" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="צילומי זוגיות בעיר" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
         <li class="masonry__item" data-cat="weddings" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="רגע שקט בין השניים" data-ratio="4/5" data-img="g16" aria-label="הגדלה: רגע שקט בין השניים">
+          <button class="masonry__btn" type="button" data-alt="רגע שקט בין בני הזוג בחתונה" data-ratio="4/5" data-img="g16" aria-label="הגדלה: רגע שקט בין בני הזוג בחתונה">
             <picture>
             <source type="image/webp" srcset="assets/img/g16-500.webp 500w, assets/img/g16-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g16-900.jpg" srcset="assets/img/g16-500.jpg 500w, assets/img/g16-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="רגע שקט בין השניים" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="רגע שקט בין בני הזוג בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
@@ -617,11 +842,11 @@
           </button>
         </li>
         <li class="masonry__item" data-cat="std" data-ratio="4/5">
-          <button class="masonry__btn" type="button" data-alt="פורטרט זוגי" data-ratio="4/5" data-img="g18" aria-label="הגדלה: פורטרט זוגי">
+          <button class="masonry__btn" type="button" data-alt="פורטרט זוגי בצילומי Save the Date" data-ratio="4/5" data-img="g18" aria-label="הגדלה: פורטרט זוגי בצילומי Save the Date">
             <picture>
             <source type="image/webp" srcset="assets/img/g18-500.webp 500w, assets/img/g18-900.webp 900w" sizes="(max-width: 560px) 92vw, 330px" />
             <img class="masonry__photo" src="assets/img/g18-900.jpg" srcset="assets/img/g18-500.jpg 500w, assets/img/g18-900.jpg 900w" sizes="(max-width: 560px) 92vw, 330px"
-                 alt="פורטרט זוגי" width="900" height="1125" loading="lazy" decoding="async" />
+                 alt="פורטרט זוגי בצילומי Save the Date" width="900" height="1125" loading="lazy" decoding="async" />
           </picture>
           </button>
         </li>
@@ -638,7 +863,7 @@
   <section class="film" data-section="film">
     <div class="film__inner">
       <div class="chapter chapter--center">
-        <p class="eyebrow">04 — The film</p>
+        <p class="eyebrow" lang="en">04 — The film</p>
         <h2 class="h2">חתונה אחת, שלוש דקות</h2>
         <p class="chapter__deck">הסרט שאנחנו הכי אוהבים להראות. שווה אוזניות.</p>
       </div>
@@ -662,12 +887,12 @@
     <div class="gear__grid">
       <div>
         <div class="chapter">
-          <p class="eyebrow">05 — The tool</p>
+          <p class="eyebrow" lang="en">05 — The tool</p>
           <h2 class="h2">מה מצלם אתכם</h2>
         </div>
         <p class="gear__lead">גוף פול־פריים, עדשות פריים מהירות, ותאורה שמכבדת את האור שיש בחדר. בלי פלאשים שמסמאים את האורחים.</p>
         <p class="gear__hint">סובבו את הדגם — זה הכלי שמלווה אותנו מהבוקר של ההכנות ועד השיר האחרון.</p>
-        <a class="gear__cta" href="camera-3d.html">לתצוגה מלאה במסך גדול ←</a>
+        <a class="gear__cta" href="camera-3d.html">המצלמה שלנו בתלת־ממד — לתצוגה מלאה ←</a>
       </div>
       <div class="gear__stage">
         <iframe src="camera-3d.html?embed=1" title="דגם תלת־מימד של המצלמה" loading="lazy"></iframe>
@@ -678,7 +903,7 @@
   <!-- ===== 07 · תהליך העבודה ===== -->
   <section class="process section section--pad shell" id="process" data-reveal>
     <div class="chapter">
-      <p class="eyebrow">06 — How it works</p>
+      <p class="eyebrow" lang="en">06 — How it works</p>
       <h2 class="h2">איך זה עובד</h2>
     </div>
     <div class="process__grid">
@@ -709,7 +934,7 @@
   <section class="quotes" data-reveal>
     <div class="quotes__inner">
       <div class="chapter chapter--center">
-        <p class="eyebrow">07 — Our couples say</p>
+        <p class="eyebrow" lang="en">07 — Our couples say</p>
       <h2 class="h2">מה אומרים עלינו</h2>
       </div>
 
@@ -751,7 +976,7 @@
     <div class="faq__layout">
       <div class="faq__head">
         <div class="chapter">
-          <p class="eyebrow">08 — Good to know</p>
+          <p class="eyebrow" lang="en">08 — Good to know</p>
           <h2 class="h2">שאלות שנשאלנו כבר</h2>
         </div>
       </div>
@@ -763,14 +988,14 @@
       </details>
       <details class="faq__item">
         <summary class="faq__q">אתם מגיעים לכל הארץ?<span class="faq__sign" aria-hidden="true">+</span></summary>
-        <p class="faq__a">כן. הבסיס בתל אביב ואנחנו מצלמים מהגליל ועד אילת, בלי תוספת נסיעות באזור המרכז.</p>
+        <p class="faq__a">כן. Amora Studio מבוססים בתל אביב, ומצלמים מהגליל ועד אילת — בלי תוספת נסיעות באזור המרכז.</p>
       </details>
       <details class="faq__item">
         <summary class="faq__q">יש צלם שני?<span class="faq__sign" aria-hidden="true">+</span></summary>
-        <p class="faq__a">בחתונה מלאה תמיד. אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות.</p>
+        <p class="faq__a">בחתונה מלאה יש תמיד שני צלמים. אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות.</p>
       </details>
       <details class="faq__item">
-        <summary class="faq__q">מה כוללת החבילה?<span class="faq__sign" aria-hidden="true">+</span></summary>
+        <summary class="faq__q">מה כוללת חבילת החתונה המלאה?<span class="faq__sign" aria-hidden="true">+</span></summary>
         <p class="faq__a">כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם. אלבום מודפס וצילומי Save the Date אפשר להוסיף.</p>
       </details>
       <details class="faq__item">
@@ -785,6 +1010,14 @@
         <summary class="faq__q">ומה אם התאריך זז?<span class="faq__sign" aria-hidden="true">+</span></summary>
         <p class="faq__a">התאריך עובר איתכם ללא עלות, בכפוף לזמינות. אם אנחנו תפוסים בתאריך החדש — נחזיר את המקדמה במלואה.</p>
       </details>
+      <details class="faq__item">
+        <summary class="faq__q">האולם שלנו חשוך — איך זה מצטלם?<span class="faq__sign" aria-hidden="true">+</span></summary>
+        <p class="faq__a">אנחנו מצלמים על גוף פול־פריים ועדשות פריים מהירות, כאלה שאוספות הרבה אור, ומשלימים בתאורה שמכבדת את האור שכבר יש בחדר. בלי פלאשים שמסמאים את האורחים.</p>
+      </details>
+        <!-- Outside the <details> list on purpose: the FAQ answers must stay
+             byte-identical to the FAQPage JSON-LD, and tools/ invariant checks
+             that one-for-one. Adding a link inside an answer broke it once. -->
+        <p class="faq__more"><a class="link-underline" href="cost.html">מה בדיוק משפיע על מחיר צילום חתונה ←</a></p>
       </div>
     </div>
   </section>
@@ -797,11 +1030,11 @@
     <div class="contact__grid">
       <div>
         <div class="chapter">
-          <p class="eyebrow">09 — Let's talk</p>
+          <p class="eyebrow" lang="en">09 — Let's talk</p>
           <h2 class="contact__title">התאריך שלכם עדיין פנוי?</h2>
           <p class="contact__text">השאירו פרטים ונחזור אליכם היום עם זמינות והצעה מותאמת.</p>
         </div>
-        <a class="contact__phone" href="tel:0503662699">050-3662699</a>
+        <a class="contact__phone" href="tel:+972503662699">050-3662699</a>
       </div>
 
       <!-- method="dialog" on a form with no <dialog> ancestor is a defined
@@ -877,6 +1110,7 @@
           <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
 
           <button class="form__submit" type="submit" data-submit>שלחו — נחזור אליכם היום</button>
+          <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
           <p class="form__failure" data-form-failure role="alert" hidden></p>
           <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
         </div>
@@ -908,7 +1142,7 @@
       <a class="site-footer__link" href="#contact">בדיקת זמינות</a>
     </nav>
     <div class="site-footer__col">
-      <a class="site-footer__link" href="tel:0503662699">050-3662699</a>
+      <a class="site-footer__link" href="tel:+972503662699">050-3662699</a>
       <a class="site-footer__link" href="https://www.instagram.com/amora___studio/" target="_blank" rel="noopener" style="letter-spacing:.04em">Instagram — @amora___studio</a>
       <p class="site-footer__meta">אזור פעילות: כל הארץ</p>
     </div>
