@@ -280,25 +280,71 @@
       wrap = null; frame = null; current = null; proven = false;
     }
 
-    /** The one thing that must never happen is a black or empty hero, so the
-     *  frame is faded in only on positive proof that the player is alive behind
-     *  it. The iframe's `load` event is no such proof — measured, not assumed:
-     *  a cross-origin iframe fires `load` for the browser's own error page too,
-     *  63ms after a refused connection. A message from a YouTube origin can
-     *  only have come from YouTube's own player code running in that frame. */
-    function reveal() {
-      if (proven || !wrap) return;
+    /** Two different facts, deliberately kept apart.
+     *
+     *  "The frame loaded" is proved by any message from a YouTube origin — the
+     *  iframe's own `load` event is not proof, measured rather than assumed: a
+     *  cross-origin iframe fires `load` for the browser's own error page too,
+     *  63ms after a refused connection. That fact stops the ping timers.
+     *
+     *  "The video is PLAYING" is a stricter fact and it is the one that decides
+     *  whether the frame may be seen. Revealing on mere aliveness shipped a
+     *  real defect: on an iPhone in Low Power Mode, autoplay is refused, the
+     *  player answers anyway, and the hero faded in showing YouTube's unstarted
+     *  UI — the film's title, the uploading channel's name and a row of
+     *  transport controls, straight across the headline. controls=0 does not
+     *  remove any of that; it only removes the bar during playback. And the
+     *  centre controls cannot be cropped away by overscan the way a corner
+     *  watermark can, because they sit in the middle of the frame.
+     *
+     *  So: only state 1 shows the frame, and anything else hides it again and
+     *  leaves the poster — which is a still from the film — on screen. A hero
+     *  that quietly does not move is a design; a hero wearing someone else's
+     *  branding is a mistake. */
+    var PLAYING = 1;
+
+    function markLoaded() {
+      if (proven) return;
       proven = true;
       fails = 0;
       stopTimers();
+    }
+
+    function reveal() {
+      if (!wrap) return;
       wrap.setAttribute('data-hero-yt', 'playing');
       if (shouldPlay()) wrap.classList.add('is-ready');
+    }
+
+    function conceal() {
+      if (!wrap) return;
+      wrap.setAttribute('data-hero-yt', 'idle');
+      wrap.classList.remove('is-ready');
+    }
+
+    /** The player reports its state in more than one message shape depending on
+     *  version: {info:{playerState:n}} and {info:n} have both been observed.
+     *  Read whichever is present and ignore anything that carries neither. */
+    function stateOf(data) {
+      var d = data;
+      if (typeof d === 'string') {
+        if (d.charAt(0) !== '{') return null;      // "null" and bare pings
+        try { d = JSON.parse(d); } catch (err) { return null; }
+      }
+      if (!d || typeof d !== 'object') return null;
+      var info = d.info;
+      if (typeof info === 'number') return info;
+      if (info && typeof info.playerState === 'number') return info.playerState;
+      return null;
     }
 
     window.addEventListener('message', function (e) {
       if (!frame || !e || YT_ORIGINS.indexOf(e.origin) < 0) return;
       if (frame.contentWindow && e.source !== frame.contentWindow) return;
-      reveal();
+      markLoaded();
+      var state = stateOf(e.data);
+      if (state === null) return;                  // not a state message
+      if (state === PLAYING) reveal(); else conceal();
     });
 
     function build(which) {
@@ -364,7 +410,10 @@
 
     function resume() {
       if (!wrap) return;
-      if (proven) wrap.classList.add('is-ready');
+      // Deliberately does NOT add is-ready here. Ask the player to start; the
+      // message handler shows the frame if and when it reports PLAYING. Showing
+      // it on `proven` alone was the same defect in a second place — scrolling
+      // back to a player that never started flashed its chrome over the hero.
       command('playVideo');
     }
 

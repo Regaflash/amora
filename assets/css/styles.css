@@ -296,6 +296,75 @@ summary::-webkit-details-marker { display: none; }
 .btn--solid { background: var(--champagne); color: #1C1A18; }
 .btn--solid:hover { background: var(--sand); color: #1C1A18; transform: translateY(-2px); }
 
+/* ---------------------------------------------------------------------------
+   Glass over the film.
+
+   The hero sits on moving footage, and a solid block dropped on top of it
+   reads as a sticker rather than as part of the frame. These three controls —
+   the two hero calls to action, the header's own CTA and the burger — are
+   given a translucent, blurred surface so the film keeps running behind them,
+   and a soft radius so they stop reading as boxes cut out of the picture.
+
+   Scoped to the hero and the un-scrolled header ON PURPOSE. .btn--solid is
+   also the primary button on cost.html, over a light page, where translucency
+   would leave dark text floating on nothing. The moment the header picks up
+   .is-scrolled it is over ivory, not film, and the glass is dropped there too.
+
+   -webkit-backdrop-filter is not optional: iOS Safari is the browser this was
+   reported from, and it still needs the prefix. Where backdrop-filter is not
+   supported at all, the @supports block below is simply skipped and the
+   buttons keep a slightly stronger flat tint — legible either way, which is
+   why the base colours are set outside the @supports. */
+.hero__actions .btn {
+  border-radius: 999px;
+  backface-visibility: hidden;   /* Safari: stops the blur seaming on scroll */
+}
+.hero__actions .btn--solid {
+  background: rgba(201, 174, 140, 0.34);
+  border-color: rgba(201, 174, 140, 0.9);
+  color: #FFFDF9;
+}
+.hero__actions .btn--solid:hover {
+  background: rgba(201, 174, 140, 0.52);
+  border-color: var(--champagne);
+  color: #FFFDF9;
+}
+.hero__actions .btn--ghost-light {
+  background: rgba(255, 253, 249, 0.10);
+  border-color: rgba(255, 253, 249, 0.5);
+}
+.hero__actions .btn--ghost-light:hover {
+  background: rgba(255, 253, 249, 0.2);
+  border-color: #FFFDF9;
+}
+
+/* Dark glass here, light glass on the hero buttons, and the difference is
+   measured rather than aesthetic. These two sit at the very top of the film,
+   above where the hero scrim reaches, so their backdrop is whatever the frame
+   is showing. A light tint under white text measured 3.97:1 — below the 4.5
+   floor. Darkening the glass instead pushes the backdrop down and the contrast
+   up, and it still shows the film through. */
+.site-header:not(.is-scrolled) .nav-mobile__cta,
+.site-header:not(.is-scrolled) .burger {
+  border-radius: 999px;
+  background: rgba(24, 22, 20, 0.42);
+  border-color: rgba(255, 253, 249, 0.5);
+}
+.site-header:not(.is-scrolled) .burger { border-radius: 50%; }
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hero__actions .btn,
+  .site-header:not(.is-scrolled) .nav-mobile__cta,
+  .site-header:not(.is-scrolled) .burger {
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
+  }
+  /* With a blur behind it the fill can be lighter without losing legibility,
+     so the film shows through more. */
+  .hero__actions .btn--solid { background: rgba(201, 174, 140, 0.26); }
+  .hero__actions .btn--ghost-light { background: rgba(255, 253, 249, 0.07); }
+}
+
 .btn--ghost-light {
   background: transparent;
   color: #FFFDF9;
