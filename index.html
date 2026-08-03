@@ -519,7 +519,14 @@
       <img class="hero__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="92" height="92" />
       <p class="hero__eyebrow">Wedding Films &amp; Photography</p>
       <h1 class="hero__title">הרגעים שלכם. לנצח.</h1>
-      <p class="hero__sub">צילום וידאו וסטילס לחתונות ואירועים — Amora Studio, תל אביב</p>
+      <!-- dir="ltr" + a non-breaking space, because this is a Latin run inside
+           an RTL sentence and both halves of that matter. On a 390px screen the
+           line wrapped between the two words, and the bidi algorithm then put
+           the comma at the start of the next line, so the first sentence a phone
+           visitor reads rendered as "Amora — צילום…ואירועים / Studio, תל אביב":
+           the studio's name broken in half. The nbsp stops the break; the dir
+           marks the run for what it is. Same tagging privacy.html already uses. -->
+      <p class="hero__sub">צילום וידאו וסטילס לחתונות ואירועים — <span dir="ltr">Amora&nbsp;Studio</span>, תל אביב</p>
       <div class="hero__actions">
         <a class="btn btn--solid" href="#contact">לבדיקת זמינות לתאריך שלכם</a>
         <a class="btn btn--ghost-light" href="#gallery">לצפייה בעבודות</a>
