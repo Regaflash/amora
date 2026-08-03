@@ -120,9 +120,43 @@
     }
     // Shown on every screen, not just mobile: couples compare vendors together
     // at a desktop, and that is exactly when they want to ask one question.
+    // ...but not while the lead form is on screen — see formOnScreen below.
     if (waFloat) {
-      waFloat.classList.toggle('is-visible', pct > WA_THRESHOLD);
+      waFloat.classList.toggle('is-visible', pct > WA_THRESHOLD && !formOnScreen);
     }
+  }
+
+  /* ------------------------------------------ floats vs. the lead form --- */
+
+  // Measured at 390px: the WhatsApp button (bottom-left, 96x50) and the
+  // assistant launcher stacked above it (113x48) are painted OVER the form's
+  // own inputs as those scroll through the bottom band. Not merely adjacent —
+  // elementFromPoint at the intersection returned the float, so a tap aimed at
+  // "שם מלא", "טלפון" or "אימייל" opened WhatsApp or the assistant instead.
+  // That is the one form the whole site exists to get filled in.
+  //
+  // Both floats are redundant exactly where they do this damage: the form
+  // carries its own WhatsApp line (.form__alt) and the assistant's job is to
+  // answer the questions that lead here. So they stand down while the form is
+  // on screen and come back when it is not.
+  //
+  // The WhatsApp button is gated by removing .is-visible rather than by a
+  // competing CSS rule, deliberately: the reduced-motion override in
+  // a11y-widget.css is keyed on .wa-float.is-visible, so this cannot
+  // reintroduce the visible-but-dead state that override already caused once.
+  // The accessibility FAB is NOT touched — it is the accessibility control and
+  // stays reachable at all times; it also sits on the opposite edge and covers
+  // only the trailing ~54px of a field.
+  var formOnScreen = false;
+  var leadForm = $('[data-form]');
+  if (leadForm && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      formOnScreen = entries[0].isIntersecting;
+      // The launcher belongs to assistant.js; a root class keeps that file's
+      // ownership intact instead of reaching across into its DOM.
+      document.documentElement.classList.toggle('form-in-view', formOnScreen);
+      onScroll();
+    }, { rootMargin: '0px 0px -8% 0px' }).observe(leadForm);
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });

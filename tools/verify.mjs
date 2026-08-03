@@ -265,6 +265,80 @@ await page.waitForTimeout(200);
      small.length === 0, small.length ? small : 'all at or above 24px', 'none under 24px');
 }
 
+// ------------------------------------- the floats vs. the form they feed --
+// Adjacency is not the bug; occlusion is. The WhatsApp button and the
+// assistant launcher are both fixed to the bottom-left, and at 390px they were
+// painted OVER the lead form's own inputs as those scrolled through that band
+// — elementFromPoint at the intersection returned the float, so a tap aimed at
+// "שם מלא", "טלפון" or "אימייל" opened WhatsApp or the assistant instead. On
+// the one form the site exists to get filled in. They now stand down while the
+// form is on screen.
+//
+// The accessibility FAB is exempt on purpose: it is the accessibility control
+// and must stay reachable, and it covers only the trailing ~54px of a field
+// from the opposite edge. Hiding it would trade one defect for a worse one.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(900);
+  const box = await p.evaluate(() => {
+    const b = document.querySelector('[data-form]').getBoundingClientRect();
+    return { top: Math.round(b.top + scrollY), h: Math.round(b.height) };
+  });
+  const covered = [];
+  for (let y = Math.max(0, box.top - 844); y < box.top + box.h + 100; y += 60) {
+    await p.evaluate((v) => window.scrollTo(0, v), y);
+    await p.waitForTimeout(120);
+    covered.push(...await p.evaluate(() => {
+      const hits = [];
+      for (const sel of ['.wa-float', '.am-launcher']) {
+        const n = document.querySelector(sel);
+        if (!n) continue;
+        const cs = getComputedStyle(n);
+        if (cs.pointerEvents === 'none' || cs.opacity === '0') continue;
+        const b = n.getBoundingClientRect();
+        for (const el of document.querySelectorAll('.field__control, .field__label, .form__submit')) {
+          const e = el.getBoundingClientRect();
+          if (e.width === 0 || e.height === 0) continue;
+          if (b.left >= e.right || b.right <= e.left || b.top >= e.bottom || b.bottom <= e.top) continue;
+          const cx = (Math.max(b.left, e.left) + Math.min(b.right, e.right)) / 2;
+          const cy = (Math.max(b.top, e.top) + Math.min(b.bottom, e.bottom)) / 2;
+          const top = document.elementFromPoint(cx, cy);
+          // Only a float actually painted on top steals the tap.
+          if (top && top.closest(sel)) hits.push(`${sel} over ${el.className} @y=${Math.round(scrollY)}`);
+        }
+      }
+      return hits;
+    }));
+  }
+  ok('no contact float steals a tap from the lead form',
+     covered.length === 0, covered.length ? covered.slice(0, 4) : 'form never occluded', 'none');
+  await p.close();
+}
+
+// ------------------------------------------- the process rows use the width --
+// The step text is capped at a readable 46ch, but the column holding it used to
+// be the elastic one — 798px at 1440 for a 435px paragraph. The row's rule ran
+// the full width underneath, so every step stopped 363px short of it, and
+// because the page is RTL that dead band fell at the end of each line. The
+// elastic column is now the title's, which pins the text to the far edge.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const gaps = await p.evaluate(() => {
+    const grid = document.querySelector('.process__grid');
+    const g = grid.getBoundingClientRect();
+    // RTL: the line ends at the inline-end edge, which is the grid's left.
+    return [...grid.querySelectorAll('.step__text')]
+      .map((t) => Math.round(t.getBoundingClientRect().left - g.left));
+  });
+  const worst = Math.max(...gaps);
+  ok('every process row reaches the rule that runs under it',
+     worst <= 2, `${worst}px short at the line end`, '<=2px');
+  await p.close();
+}
+
 // ----------------------------------------------------------- Core Web Vitals --
 {
   const p = await browser.newPage({ viewport: { width: 390, height: 844 } });

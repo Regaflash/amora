@@ -34,10 +34,21 @@
   border-radius: 2px;
   cursor: pointer;
   box-shadow: 0 6px 24px rgba(28, 26, 24, 0.14);
-  transition: background 320ms var(--ease), transform 320ms var(--ease);
+  transition: background 320ms var(--ease), transform 320ms var(--ease),
+              opacity 320ms var(--ease);
 }
 .am-launcher:hover { background: var(--cream); transform: translateY(-2px); }
 .am-launcher.is-open { background: var(--champagne); }
+
+/* Stands down while the lead form is on screen — main.js sets .form-in-view on
+   the root. Measured at 390px, the launcher was painted over the form's own
+   "שם מלא" / "טלפון" / "אימייל" inputs as they scrolled through the bottom
+   band, so a tap aimed at a field opened the assistant instead. An open panel
+   keeps its launcher: that is the control that closes it. */
+html.form-in-view .am-launcher:not(.is-open) {
+  opacity: 0;
+  pointer-events: none;
+}
 .am-launcher__label { font-size: 13px; letter-spacing: .08em; }
 .am-launcher__dot {
   width: 7px;
