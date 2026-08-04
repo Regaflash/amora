@@ -302,6 +302,60 @@ await page.waitForTimeout(200);
      small.length === 0, small.length ? small : 'all at or above 24px', 'none under 24px');
 }
 
+// --------------------------- camera-3d: chrome standalone, no chrome embedded --
+// This page is index,follow and one of three entries in sitemap.xml, and its
+// body used to be a title, a canvas and one text link — no header, no nav, no
+// footer, no way to enquire. It now reuses the homepage's chrome, which creates
+// the opposite hazard: the homepage iframes this same file at ?embed=1 for its
+// #gear section, and any chrome that survives that flag is drawn a second time
+// INSIDE the homepage — most visibly a duplicate WhatsApp button a few hundred
+// pixels from the real one.
+//
+// Both directions are asserted because each is one forgotten selector away.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  // .menu is excluded from the visible set on purpose: it ships with the
+  // `hidden` attribute and only appears once the burger opens it, so requiring
+  // it to be visible tests the mobile menu rather than the chrome. It is
+  // checked for existence instead — the burger's aria-controls needs a target.
+  const shown = async () => p.evaluate(() => {
+    const state = {};
+    for (const sel of ['.site-header', '.site-footer', '.wa-float', '.am-launcher']) {
+      const n = document.querySelector(sel);
+      state[sel] = n ? getComputedStyle(n).display !== 'none' : false;
+    }
+    return state;
+  });
+
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(2500);
+  const solo = await shown();
+  const missing = Object.keys(solo).filter((k) => !solo[k]);
+  const menuTarget = await p.evaluate(() => {
+    const b = document.querySelector('[data-menu-toggle]');
+    return !!(b && document.getElementById(b.getAttribute('aria-controls')));
+  });
+  ok('camera-3d carries the site chrome when visited directly',
+     missing.length === 0 && menuTarget,
+     missing.length ? `missing ${missing.join(', ')}` : (menuTarget ? 'header, footer, WhatsApp, assistant, menu target' : 'burger opens nothing'),
+     'all present');
+
+  await p.goto(BASE + '/camera-3d.html?embed=1', { waitUntil: 'load' });
+  await p.waitForTimeout(2500);
+  const emb = await shown();
+  const leaked = Object.keys(emb).filter((k) => emb[k]);
+  // .menu is re-included here — in the embed it must be display:none from the
+  // .is-embed rule, not merely from its own `hidden` attribute, so that opening
+  // it inside the iframe is impossible even if the burger somehow survives.
+  if (await p.evaluate(() => {
+    const n = document.querySelector('.menu');
+    return n ? getComputedStyle(n).display !== 'none' : false;
+  })) leaked.push('.menu');
+  ok('camera-3d draws no chrome when embedded in the homepage',
+     leaked.length === 0, leaked.length ? `leaked ${leaked.join(', ')}` : 'none', 'none');
+  await p.close();
+}
+
 // ------------------------------- every service plate has arrived by the swipe --
 // loading="lazy" counts distance to the viewport, and the strip runs sideways,
 // so the plates that are only off-screen horizontally were never approached by

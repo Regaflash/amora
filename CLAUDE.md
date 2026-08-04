@@ -69,7 +69,12 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `accessibility.html`, `privacy.html`, `terms.html`, `404.html` and
   `admin.html` (the private lead CRM — noindex, no-store, its own enforcing
   CSP, absent from both sitemap.xml and robots.txt on purpose). The
-  accessibility widget and the site assistant load on every public page.
+  accessibility widget loads on every public page. The site assistant does
+  **not** — this entry claimed it did, and it was wrong: `assistant.js` was on
+  `index.html` and `cost.html` only. It is now also on `camera-3d.html`, which
+  is `index, follow` and one of three entries in `sitemap.xml`. The four
+  remaining pages (`accessibility`, `privacy`, `terms`, `404`) are noindex or
+  not in the sitemap, and deliberately keep the lighter shell.
   `404.html` is served by Vercel AT the address that was not found, so every
   asset it references must stay root-absolute — a relative href resolves
   against the dead path. That is a real bug that has already happened once.
