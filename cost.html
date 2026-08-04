@@ -198,13 +198,13 @@
         <p class="form__title">בדיקת זמינות</p>
 
         <label class="field">
-          <span class="field__label">שם מלא</span>
+          <span class="field__label">שם מלא <span class="field__req" aria-hidden="true">(חובה)</span></span>
           <input class="field__control" name="name" type="text" autocomplete="name" data-field="name" aria-required="true" aria-describedby="err-name" />
           <span class="field__error" id="err-name" data-error="name"></span>
         </label>
 
         <label class="field">
-          <span class="field__label">טלפון</span>
+          <span class="field__label">טלפון <span class="field__req" aria-hidden="true">(חובה)</span></span>
           <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
           <span class="field__error" id="err-phone" data-error="phone"></span>
         </label>
@@ -217,7 +217,7 @@
 
         <div class="field-row">
           <div class="field">
-            <label class="field__label" for="lead-date">תאריך האירוע</label>
+            <label class="field__label" for="lead-date">תאריך האירוע <span class="field__req" aria-hidden="true">(חובה)</span></label>
             <input class="field__control" id="lead-date" name="date" type="date" data-field="date" aria-required="true" aria-describedby="err-date" />
             <label class="field__opt-in">
               <input type="checkbox" name="date_tbd" value="1" data-field="date_tbd" data-date-tbd />
@@ -226,7 +226,7 @@
             <span class="field__error" id="err-date" data-error="date"></span>
           </div>
           <label class="field">
-            <span class="field__label">סוג האירוע</span>
+            <span class="field__label">סוג האירוע <span class="field__req" aria-hidden="true">(חובה)</span></span>
             <select class="field__control" name="type" data-field="type" aria-required="true" aria-describedby="err-type">
               <option value="">בחרו</option>
               <option value="wedding">חתונה</option>
