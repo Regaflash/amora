@@ -30,10 +30,44 @@ The owner's accounts are already wired together:
   reads it from there — `tools/manifest.json` maps every slot to a filename.
   It is **not tracked**: `.gitignore` holds the patterns, `.vercelignore`
   repeats them, and `tools/check.sh` fails if any of it returns to HEAD.
-- **Vercel** — connected to that GitHub account, **and holds the domain**.
-  This is where the site is hosted. Deploys should target Vercel.
+- **Vercel** — connected to that GitHub account. This is where the site is
+  hosted. Deploys should target Vercel. It does **not** hold the domain: this
+  entry used to say it did, and it was wrong. Vercel lists
+  `amora-studios.com` as "registered with a third party" and exposes no DNS
+  tab for it.
+- **Hostinger** — the registrar, and where DNS actually lives. Every DNS
+  record for `amora-studios.com` is edited there, not in the Vercel
+  dashboard: the `A` record pointing at Vercel, the `www` CNAME, the Google
+  Workspace `MX`, and both `google-site-verification` TXT records. Anything
+  that says "add a DNS record in Vercel" is an instruction that cannot be
+  followed.
 - **Supabase** — connected to the same GitHub account. Available as the
   backend for the lead form (see `docs/supabase-leads.sql`).
+
+- **Google Search Console** — verified 2026-08-04. The property is a
+  **Domain** property (`sc-domain:amora-studios.com`), verified by DNS TXT at
+  Hostinger, so it covers apex, `www`, every subdomain and both protocols in
+  one record. `sitemap.xml` is submitted and the three indexable URLs have
+  been through Request Indexing.
+
+  Two consequences worth knowing before touching it again:
+
+  - **A Domain property has no URL prefix, so the Sitemaps field needs the
+    full URL.** Entering `sitemap.xml` — correct for a URL-prefix property —
+    is rejected with "Invalid sitemap address". Submit
+    `https://www.amora-studios.com/sitemap.xml`.
+  - **There are two `google-site-verification` TXT records and only one is
+    ours.** `oz_ZtTvod…` is this property. `kyZHK2Va…` predates it and is not
+    ours to remove — the domain's `MX` points at `SMTP.GOOGLE.COM`, so it is
+    most likely the Google Workspace domain verification, and deleting it
+    risks mail. TXT is multi-value: add alongside, never replace.
+
+  `/` reported "Indexed, though blocked by robots.txt" once. It was stale
+  crawl data, not a bug — Test Live URL returned `Crawl allowed: Yes`, and
+  `urllib.robotparser` confirms Googlebot may fetch `/`, `/cost.html` and
+  `/camera-3d.html`. Note that `Google-Extended` is disallowed by design and
+  is **not** Googlebot; it governs model training only and has no effect on
+  crawling or indexing. Do not "fix" it.
 
 Because the host is Vercel, header rules live in **`vercel.json`**, not in
 `_headers` — Vercel does not read Netlify/Cloudflare's `_headers` format. The
@@ -207,9 +241,8 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   thing no code in this repo can produce: the local pack renders above the
   organic results. The site's entire declared off-site footprint is one
   Instagram link.
-- **Google Search Console**, verified by DNS TXT in the Vercel dashboard —
-  zero repo change, zero deploy. Until it exists nobody can measure whether any
-  of the search work is working.
+- ~~Google Search Console~~ — **done, 2026-08-04.** See the Search Console
+  entry under Infrastructure above.
 - **A business email on the site.** No longer blocking `LEAD_ALERT_TO` — that
   is set and alerts arrive. Still absent from the pages themselves: there is no
   `mailto:` anywhere in the eight HTML files, and `privacy.html` and
