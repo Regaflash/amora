@@ -850,6 +850,33 @@
   var svcGrid = $('.services__grid');
   if (svcGrid && 'IntersectionObserver' in window) {
     var plates = [].slice.call(svcGrid.children);
+
+    // Priming the strip's photographs, which the strip itself broke.
+    //
+    // The plates carry loading="lazy", which was right when they were a
+    // vertical stack: scrolling past the section brought each one into the
+    // viewport and the browser fetched it in time. Laid out sideways, the
+    // fifth plate sits ~1122px beyond the right edge and NO amount of vertical
+    // scrolling ever brings it near — so it stayed unfetched until the swipe
+    // that revealed it. Measured at 390px on a throttled link (1.6Mbps,
+    // 150ms): four plates loaded, the fifth blank, and after a swipe it stayed
+    // blank ~500ms while the snap itself finishes in ~300. The visitor lands on
+    // an empty card and watches the photograph turn up.
+    //
+    // So: once the section is within a screen of the viewport, stop being lazy
+    // about the plates that are only off-screen sideways. Nothing is fetched
+    // earlier than before on first paint — the section is far below the fold,
+    // and this fires no sooner than the old lazy trigger would have. It just
+    // counts distance the way the layout actually runs.
+    new IntersectionObserver(function (entries, obs) {
+      if (!entries[0].isIntersecting) return;
+      plates.forEach(function (plate) {
+        var img = $('img', plate);
+        if (img && img.getAttribute('loading') === 'lazy') img.loading = 'eager';
+      });
+      obs.disconnect();
+    }, { rootMargin: '800px 0px' }).observe(svcGrid);
+
     if (plates.length > 1) {
       var svcDots = document.createElement('div');
       svcDots.className = 'services__dots';

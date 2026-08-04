@@ -302,6 +302,41 @@ await page.waitForTimeout(200);
      small.length === 0, small.length ? small : 'all at or above 24px', 'none under 24px');
 }
 
+// ------------------------------- every service plate has arrived by the swipe --
+// loading="lazy" counts distance to the viewport, and the strip runs sideways,
+// so the plates that are only off-screen horizontally were never approached by
+// any amount of vertical scrolling. Measured before the fix, throttled to
+// 1.6Mbps/150ms: the fifth plate was still blank ~500ms after a swipe that
+// itself finishes in ~300 — you landed on an empty card. main.js drops the
+// lazy flag once the section is within a screen.
+//
+// Throttled on purpose. On the loopback this file otherwise runs against, every
+// image is instant and the defect is invisible — which is exactly how it got
+// shipped.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const p = await ctx.newPage();
+  const cdp = await ctx.newCDPSession(p);
+  await cdp.send('Network.emulateNetworkConditions', {
+    offline: false, latency: 150,
+    downloadThroughput: (1.6 * 1024 * 1024) / 8, uploadThroughput: (750 * 1024) / 8,
+  });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.evaluate(async () => {
+    const H = document.documentElement.scrollHeight;
+    for (let y = 0; y < H; y += 400) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 80)); }
+  });
+  await p.waitForTimeout(2500);
+  await p.evaluate(() => document.querySelector('#services').scrollIntoView());
+  await p.waitForTimeout(600);
+  const blank = await p.evaluate(() => [...document.querySelectorAll('.card__photo')]
+    .map((i, n) => (i.complete && i.naturalWidth > 0 ? null : n + 1))
+    .filter((x) => x !== null));
+  ok('every service plate has its photograph before it is swiped to',
+     blank.length === 0, blank.length ? `blank: plate ${blank.join(', ')}` : 'all loaded', 'none blank');
+  await ctx.close();
+}
+
 // ------------------------------------- the floats vs. the form they feed --
 // Adjacency is not the bug; occlusion is. The WhatsApp button and the
 // assistant launcher are both fixed to the bottom-left, and at 390px they were

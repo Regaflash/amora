@@ -140,9 +140,18 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   name and phone. Nothing measures a visitor who does not submit, and
   `privacy.html` promises exactly that.
 - **The FAQ answers on the homepage are byte-identical to the FAQPage JSON-LD**
-  and a script checks it one-for-one. Do not put a link, or anything else,
-  inside a `.faq__a`. That broke the invariant once; the link out to `cost.html`
-  lives after the `<details>` list as `.faq__more` for exactly that reason.
+  and `tools/check.sh` checks it one-for-one — eight answers, plus a separate
+  assertion that no `.faq__a` contains a tag. Do not put a link, or anything
+  else, inside a `.faq__a`. That broke the invariant once; the link out to
+  `cost.html` lives after the `<details>` list as `.faq__more` for that reason.
+
+  This entry claimed the script existed long before one did. `check.sh` ran 20
+  checks and none of them was this; the eight answers were mirrored into
+  structured data by hand and guarded by this sentence. They had not drifted
+  when the check was finally written, which was luck rather than a mechanism —
+  the visible copy and the copy Google is served could have parted in either
+  direction and every check would still have passed. Same lesson as the lead
+  alerts below: **a guarantee written here is not a guarantee that runs.**
 - **Lead alerts: deployed, and still one owner step from sending.** A trigger on
   INSERT into `public.leads` (`docs/supabase-lead-alert-webhook.sql`) calls the
   `lead-alert` Edge Function, which emails the studio. Both are live on
