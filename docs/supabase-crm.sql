@@ -86,6 +86,38 @@ grant update (handled) on table public.leads to authenticated;
 revoke select, update, delete on table public.leads from anon;
 grant insert on table public.leads to anon;   -- unchanged: what the site needs
 
+-- ⚠ PRODUCTION DOES NOT MATCH THIS LINE, AND THAT COST EVERY LEAD FOR A DAY.
+--
+-- The grant above is table-level, so a column added later is covered
+-- automatically. The live project is not in that state: a migration that exists
+-- only in the database — `scope_anon_insert_to_form_columns`, 2026-08-02, with
+-- no counterpart in this repo — narrowed it to a fixed column list.
+--
+-- The next day `leads_add_email_date_tbd_and_shape_checks` added `email` and
+-- `date_tbd`, and the site began sending those plus `source`. A column-scoped
+-- grant is all-or-nothing per statement: naming one ungranted column fails the
+-- whole INSERT with "permission denied for column". Every submission from the
+-- live form failed from that moment, and public.leads never held a row.
+--
+-- Nothing looked wrong from here. The RLS policy "anon can insert leads" is
+-- correct and was never the problem — a policy filters rows, it does not confer
+-- privileges — and `information_schema.role_table_grants` does not list
+-- column-scoped grants at all, so the table-level view showed anon with nothing
+-- and the column-level truth needs a different view. Worse, the pipeline was
+-- smoke-tested with a privileged INSERT, which ignores column grants entirely:
+-- it exercised the one path a visitor never takes.
+--
+-- Fixed on 2026-08-04 by `grant_anon_insert_on_email_date_tbd_source`.
+--
+-- Before adding any column the form submits, run this and confirm the new
+-- column appears. Do not trust the table-level view, and do not smoke-test as
+-- postgres — `set local role anon` first, or submit the real form.
+--
+--   select string_agg(column_name, ', ' order by column_name)
+--     from information_schema.role_column_grants
+--    where table_schema = 'public' and table_name = 'leads'
+--      and grantee = 'anon' and privilege_type = 'INSERT';
+
 -- TRUNCATE is exempt from row-level security, so an RLS policy would not stop
 -- it. These three are Supabase default-privilege leftovers and were confirmed
 -- present on this project before this file was run.

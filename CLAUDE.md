@@ -136,6 +136,20 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   nothing. It carries `data-header-solid` because it has no hero, and without
   it the header spends its first 80px as ivory text on the sand background.
 
+- **Adding a form field needs a GRANT, and forgetting it kills the form
+  silently.** `anon`'s INSERT on `public.leads` is **column-scoped** in
+  production — narrowed by `scope_anon_insert_to_form_columns` (2026-08-02), a
+  migration that exists only in the database and has no counterpart in
+  `docs/`, which still shows a table-level grant. A column-scoped grant is
+  all-or-nothing per statement: naming one ungranted column fails the whole
+  INSERT. `email`, `date_tbd` and `source` were added to the table and to the
+  site but not to the grant, and **every submission from the live form failed
+  for a day** while `public.leads` stayed empty and the RLS policy looked
+  perfect. Two traps worth naming: `role_table_grants` does not list
+  column-scoped grants, so the table-level view shows `anon` with nothing; and
+  a smoke test run as `postgres` ignores column grants entirely, which is how
+  this shipped. Test with `set local role anon`, or submit the real form. The
+  reconciliation query is at the bottom of `docs/supabase-crm.sql`.
 - **The lead form's fields are enumerated in `privacy.html`.** Adding or
   removing one means editing that list in the same change — the page states in
   as many words what is collected and what is not. `email` (optional) and
