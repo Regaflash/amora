@@ -356,6 +356,49 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ------------------------------ the 3D stage's own furniture, inside its shadow --
+// hide-toolbar was read once in the constructor, so a consumer setting it from
+// DOMContentLoaded — which is what camera-3d.html does for ?embed=1 — was always
+// too late and got the Download OBJ / Download GLB buttons anyway. Reading the
+// attribute back said `true` the whole time; only the shadow DOM told the truth,
+// which is why this is asserted through shadowRoot rather than by attribute.
+//
+// And the hint and the toolbar are both pinned to the bottom edge on opposite
+// sides: 211px + 267px inside 390px, printing through each other until they
+// were stacked. Both directions are checked, because "toolbar hidden" and
+// "toolbar placed" fail independently.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const stage = () => p.evaluate(() => {
+    const st = document.querySelector('three-d-stage');
+    if (!st || !st.shadowRoot) return { missing: true };
+    const tb = st.shadowRoot.querySelector('.toolbar');
+    const note = st.shadowRoot.querySelector('.note');
+    const box = (n) => { const b = n.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
+    let collide = false;
+    if (tb && note) {
+      const a = box(tb), c = box(note);
+      collide = a.l < c.r && a.r > c.l && a.t < c.b && a.b > c.t;
+    }
+    return { toolbar: !!tb, buttons: tb ? tb.querySelectorAll('button').length : 0, note: !!note, collide };
+  });
+
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(3200);
+  const solo = await stage();
+  ok('the 3D stage keeps its download buttons on its own page',
+     solo.toolbar && solo.buttons === 2, `toolbar=${solo.toolbar} buttons=${solo.buttons}`, 'toolbar with 2 buttons');
+  ok('the 3D stage hint is not printed through by the buttons at 390px',
+     solo.collide === false, solo.collide ? 'hint and toolbar overlap' : 'clear', 'clear');
+
+  await p.goto(BASE + '/camera-3d.html?embed=1', { waitUntil: 'load' });
+  await p.waitForTimeout(3200);
+  const emb = await stage();
+  ok('hide-toolbar actually removes the toolbar, not just sets an attribute',
+     emb.toolbar === false, emb.toolbar ? 'toolbar still in the shadow DOM' : 'gone', 'gone');
+  await p.close();
+}
+
 // ------------------------------- every service plate has arrived by the swipe --
 // loading="lazy" counts distance to the viewport, and the strip runs sideways,
 // so the plates that are only off-screen horizontally were never approached by
