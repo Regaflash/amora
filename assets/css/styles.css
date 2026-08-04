@@ -1477,15 +1477,11 @@ summary::-webkit-details-marker { display: none; }
   margin: 0 auto var(--sp-7);
   text-wrap: pretty;
 }
-.quotes__avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  margin: 0 auto 12px;
-  object-fit: cover;
-  border: 1px solid var(--line);
-}
-.quotes__slide picture { display: block; }
+/* .quotes__avatar and its <picture> wrapper are gone on purpose. The
+   testimonial portraits showed real people who had not said the quoted
+   words; the markup was removed first, then the image files and their
+   manifest slots. Re-adding any of the three needs written permission —
+   see CLAUDE.md. */
 .quotes__name { font-size: var(--t-micro); letter-spacing: .2em; color: var(--charcoal); margin: 0; }
 .quotes__meta { font-family: var(--script); font-style: italic; font-size: var(--t-small); letter-spacing: .06em; color: var(--mocha); margin: var(--sp-2) 0 0; }
 .quotes__controls {
