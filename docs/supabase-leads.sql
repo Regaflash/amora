@@ -53,6 +53,13 @@ create policy "anon can insert leads"
 -- "permission denied for table leads" — the policy above is never consulted.
 -- INSERT only, so the same key still cannot read a single lead back.
 grant usage on schema public to anon;
+-- Superseded by the column-scoped grant in docs/supabase-crm.sql, which is what
+-- production runs and what should be run. Left here because this file is the
+-- original bootstrap and this is the line that makes the difference between a
+-- working form and a silent one — but a table-level grant would also let the
+-- form's identity write `handled`, `id` and `created_at`. Use the crm.sql
+-- version, and see docs/verify-lead-insert.sql for the probe that proves the
+-- live grant covers every column the form posts.
 grant insert on table public.leads to anon;
 
 -- Basic abuse guard: reject obviously empty submissions at the database level,

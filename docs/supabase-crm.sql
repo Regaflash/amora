@@ -84,39 +84,37 @@ grant update (handled) on table public.leads to authenticated;
 -- 5 · confirm the public key stayed write-only -------------------------------
 
 revoke select, update, delete on table public.leads from anon;
-grant insert on table public.leads to anon;   -- unchanged: what the site needs
 
--- ⚠ PRODUCTION DOES NOT MATCH THIS LINE, AND THAT COST EVERY LEAD FOR A DAY.
+-- Column-scoped on purpose, and this file used to say `grant insert on table
+-- public.leads to anon` instead — which is not what production runs and is not
+-- what should be run. A table-level grant would let the form's own identity
+-- write `handled` (a stranger could mark their own enquiry dealt with and bury
+-- it) as well as `id` and `created_at`. anon may write the ten fields the form
+-- collects and nothing else.
 --
--- The grant above is table-level, so a column added later is covered
--- automatically. The live project is not in that state: a migration that exists
--- only in the database — `scope_anon_insert_to_form_columns`, 2026-08-02, with
--- no counterpart in this repo — narrowed it to a fixed column list.
+-- The cost of that precision: a column-scoped grant is all-or-nothing per
+-- statement. Naming ONE ungranted column fails the whole INSERT with
+-- "permission denied for column". On 2026-08-03 `email`, `date_tbd` and
+-- `source` were added to the table and to the site and not to this list, and
+-- every submission from the live form failed for a day while public.leads
+-- stayed empty.
 --
--- The next day `leads_add_email_date_tbd_and_shape_checks` added `email` and
--- `date_tbd`, and the site began sending those plus `source`. A column-scoped
--- grant is all-or-nothing per statement: naming one ungranted column fails the
--- whole INSERT with "permission denied for column". Every submission from the
--- live form failed from that moment, and public.leads never held a row.
+-- Nothing available at the time would have shown it. The RLS policy was correct
+-- and looked it — a policy filters rows, it does not confer privileges.
+-- information_schema.role_table_grants omits column-scoped grants entirely, so
+-- the table-level view showed anon holding nothing. And the pipeline was
+-- smoke-tested with a privileged INSERT, which ignores column grants: it
+-- exercised the one path a visitor never takes.
 --
--- Nothing looked wrong from here. The RLS policy "anon can insert leads" is
--- correct and was never the problem — a policy filters rows, it does not confer
--- privileges — and `information_schema.role_table_grants` does not list
--- column-scoped grants at all, so the table-level view showed anon with nothing
--- and the column-level truth needs a different view. Worse, the pipeline was
--- smoke-tested with a privileged INSERT, which ignores column grants entirely:
--- it exercised the one path a visitor never takes.
---
--- Fixed on 2026-08-04 by `grant_anon_insert_on_email_date_tbd_source`.
---
--- Before adding any column the form submits, run this and confirm the new
--- column appears. Do not trust the table-level view, and do not smoke-test as
--- postgres — `set local role anon` first, or submit the real form.
---
---   select string_agg(column_name, ', ' order by column_name)
---     from information_schema.role_column_grants
---    where table_schema = 'public' and table_name = 'leads'
---      and grantee = 'anon' and privilege_type = 'INSERT';
+-- ⚠ THIS LIST IS LOAD-BEARING. It must equal the payload keys in the Supabase
+-- branch of assets/js/main.js. tools/check.sh compares the two on every build
+-- and fails when they drift, which is the mechanism that did not exist in
+-- August. docs/verify-lead-insert.sql proves the live grant matches by becoming
+-- anon and inserting for real.
+grant insert (
+  name, phone, email, event_date, date_tbd,
+  event_type, area, coverage, message, source
+) on table public.leads to anon;
 
 -- TRUNCATE is exempt from row-level security, so an RLS policy would not stop
 -- it. These three are Supabase default-privilege leftovers and were confirmed

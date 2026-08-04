@@ -418,4 +418,62 @@ if not rp.site_maps():
 print(f'{"robots.txt: אימון חסום, ציטוט מותר":<46} ✓ ({len(CASES)} מקרים)')
 PY
 
+# Every column the form posts must be in anon's INSERT grant.
+#
+# This is the check that did not exist on 2026-08-03, when `email`, `date_tbd`
+# and `source` were added to the table and to main.js but not to the grant.
+# anon's INSERT is column-scoped, and a column-scoped grant is all-or-nothing
+# per statement — one ungranted column fails the whole INSERT. Every submission
+# from the live form failed for a day and public.leads stayed empty.
+#
+# What this can and cannot do: it reads files, so it compares main.js against
+# the grant DECLARED in docs/supabase-crm.sql. It cannot see the database. That
+# is deliberate and the limit is the point — docs/verify-lead-insert.sql is the
+# other half, and it proves the LIVE grant by becoming anon and inserting for
+# real. Repo state is not deploy state; this check only keeps the repo honest
+# with itself.
+python3 - <<'PY' || fail=1
+import re, sys
+
+js = open('assets/js/main.js', encoding='utf-8').read()
+# The payload object in the Supabase branch: from `payload = {` to its closing
+# `};`, anchored on the endpoint assignment above it so a future second payload
+# cannot be picked up by accident.
+m = re.search(r"/rest/v1/leads.*?payload\s*=\s*\{(.*?)\n\s*\};", js, re.S)
+if not m:
+    print(f'{"שדות הטופס מול הרשאת anon":<46} ✗ לא נמצא ה-payload ב-main.js')
+    sys.exit(1)
+body = re.sub(r'//[^\n]*', '', m.group(1))          # strip comments
+posts = set(re.findall(r'^\s*([a-z_]+)\s*:', body, re.M))
+
+sql = open('docs/supabase-crm.sql', encoding='utf-8').read()
+g = re.search(r'grant\s+insert\s*\((.*?)\)\s*on\s+table\s+public\.leads\s+to\s+anon',
+              sql, re.S | re.I)
+if not g:
+    print(f'{"שדות הטופס מול הרשאת anon":<46} ✗ אין grant insert (…) ל-anon ב-supabase-crm.sql')
+    print('    הרשאה ברמת טבלה מאפשרת ל-anon לכתוב handled / id / created_at')
+    sys.exit(1)
+granted = set(c.strip() for c in re.sub(r'--[^\n]*', '', g.group(1)).split(',') if c.strip())
+
+missing = sorted(posts - granted)
+extra   = sorted(granted - posts)
+if missing:
+    print(f'{"שדות הטופס מול הרשאת anon":<46} ✗')
+    print('    main.js שולח עמודות שאינן ב-grant: ' + ', '.join(missing))
+    print('    כל שליחה מהאתר תיכשל ב-permission denied for column.')
+    print('    הוסף אותן ל-grant ב-docs/supabase-crm.sql, הרץ את אותו grant על')
+    print('    הפרויקט החי, ואמת עם docs/verify-lead-insert.sql.')
+    sys.exit(1)
+if extra:
+    print(f'{"שדות הטופס מול הרשאת anon":<46} ✗')
+    print('    ה-grant רחב מהטופס: ' + ', '.join(extra))
+    print('    צמצם — anon לא צריך הרשאת כתיבה לעמודה שהטופס לא שולח.')
+    sys.exit(1)
+for never in ('id', 'created_at', 'handled'):
+    if never in granted:
+        print(f'{"שדות הטופס מול הרשאת anon":<46} ✗ anon מורשה לכתוב {never}')
+        sys.exit(1)
+print(f'{"שדות הטופס מול הרשאת anon":<46} ✓ ({len(posts)} עמודות)')
+PY
+
 exit $fail
