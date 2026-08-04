@@ -368,7 +368,18 @@ html.a11y-no-motion *::after {
 }
 html.a11y-no-motion { scroll-behavior: auto !important; }
 html.a11y-no-motion [data-reveal] { opacity: 1 !important; transform: none !important; }
-html.a11y-no-motion .wa-float { opacity: 1 !important; transform: none !important; }
+
+/* The WhatsApp button is NOT the same case as [data-reveal], and treating it
+   as one made it worse than invisible. Its hidden state is not a half-finished
+   animation — it is a deliberate gate: main.js adds .is-visible past 30% of the
+   page, and until then the button is opacity:0 AND pointer-events:none.
+   Forcing opacity here lifted half of that. The button rendered solid champagne
+   from the moment the page loaded and did nothing at all when tapped: no
+   cursor change, no feedback, nothing. And this mode is not opt-in — a11y-widget.js
+   turns it on automatically for anyone whose OS asks for reduced motion, so a
+   whole cohort met a dead control on one of the three ways to contact the studio.
+   Qualify it: no motion, but still only once the gate has actually opened. */
+html.a11y-no-motion .wa-float.is-visible { opacity: 1 !important; transform: none !important; }
 
 /* --- 6. גופן קריא --------------------------------------------------------
    System faces only — no webfont may be fetched. Arial covers Hebrew on every

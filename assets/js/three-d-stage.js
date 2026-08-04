@@ -108,6 +108,17 @@
       color: rgba(26, 25, 21, 0.55);
       user-select: none;
     }
+    /* The hint and the download buttons are both pinned to the bottom edge on
+       opposite sides, which is fine until the two of them are wider than the
+       stage. Measured at 390px: a 211px hint and a 267px toolbar in 390px of
+       room — they printed straight through each other. Stack them instead, and
+       only lift the hint when there is actually a toolbar under it to clear,
+       so the ?embed=1 case (no toolbar) keeps its hint on the bottom edge. */
+    @media (max-width: 560px) {
+      .toolbar { left: 16px; justify-content: flex-end; flex-wrap: wrap; }
+      .note { max-width: none; right: 16px; }
+      :host(:not([hide-toolbar])) .note { bottom: 62px; }
+    }
     .err {
       position: absolute;
       inset: 0;
@@ -147,6 +158,27 @@
   }
 
   class ThreeDStage extends HTMLElement {
+    /* hide-toolbar was read once, in the constructor, and that made it a
+       promise the component could not keep. An element upgrades the moment
+       customElements.define runs — which for this file is a classic script at
+       the end of <body>, i.e. during parsing — so any consumer that sets the
+       attribute from DOMContentLoaded is already too late and gets the toolbar
+       anyway. camera-3d.html did exactly that for its ?embed=1 mode: the
+       attribute read `true` and the Download OBJ / Download GLB buttons were
+       on screen regardless, overlapping the drag hint at 390px inside the
+       homepage's own #gear iframe. Observing it makes the attribute mean what
+       it says whenever it is set. */
+    static get observedAttributes() { return ['hide-toolbar']; }
+
+    attributeChangedCallback(name, prev, next) {
+      if (name !== 'hide-toolbar' || !this._toolbar) return;
+      if (next === null) {
+        if (!this._toolbar.isConnected) this.shadowRoot.appendChild(this._toolbar);
+      } else {
+        this._toolbar.remove();
+      }
+    }
+
     constructor() {
       super();
       const root = this.attachShadow({ mode: 'open' });

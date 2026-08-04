@@ -864,6 +864,47 @@ summary::-webkit-details-marker { display: none; }
   .services__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
+/* On a phone the five plates stacked to 3808px — 4.5 screens of the 18.5 the
+   whole page occupies, and the single most scroll-expensive thing on it. They
+   are peers, so they swipe instead.
+
+   Scroll-snap, deliberately, rather than the transform track the testimonials
+   use. That track needs JS to move, which is a fair trade for three quotes but
+   not for the five services: with scripting off it would leave one plate on
+   screen and four unreachable, and this page renders its content without JS on
+   purpose. A snap strip is native — it swipes, it snaps, it honours RTL, and
+   it needs no script to do any of it.
+
+   Keyboard access comes free for the same reason: the plates are anchors, so
+   tabbing to one scrolls it into view natively. That is why there is no
+   tabindex on the container — it would add a tab stop that does nothing on the
+   desktop grid, to solve a problem the anchors already solve.
+
+   The negative margin lets the strip run to both screen edges while the
+   padding keeps the first plate aligned to the gutter like everything above
+   it, and leaves the next plate peeking — which is the affordance that says
+   there is more without spending a row on saying so. */
+@media (max-width: 699px) {
+  .services__grid {
+    display: flex;
+    grid-template-columns: none;
+    gap: var(--sp-5);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    scroll-padding-inline: var(--gutter);
+    /* The peek is the affordance; a scrollbar under it is just noise. */
+    scrollbar-width: none;
+  }
+  .services__grid::-webkit-scrollbar { display: none; }
+  .services__grid > .card {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+  }
+}
+
 /* The plate: a photograph, a hairline, a caption. No panel, no border round
    the picture, no rounded corner, no fill. */
 .card {
@@ -940,6 +981,36 @@ summary::-webkit-details-marker { display: none; }
   .card--lead .card__title { font-size: clamp(1.75rem, 2.6vw, 2.5rem); }
   .card--lead .card__text { font-size: var(--t-lead); line-height: 1.7; max-width: 30ch; }
 }
+
+/* The strip's position indicator. Written by main.js and only on the phone,
+   so it cannot appear over the desktop grid where it would mean nothing, and
+   cannot appear without the script that keeps it in sync. Same 2px mark and
+   same 24px hit area as the testimonial dots — one carousel vocabulary, not
+   two. These are indicators AND controls: tapping one scrolls to that plate. */
+.services__dots { display: none; }
+@media (max-width: 699px) {
+  .services__dots {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-top: var(--sp-5);
+  }
+}
+.services__dot {
+  box-sizing: content-box;
+  width: 10px;
+  height: 2px;
+  padding: 11px 7px;
+  border: 0;
+  cursor: pointer;
+  border-radius: 0;
+  background-color: rgba(107, 91, 75, 0.5);
+  background-clip: content-box;
+  transition: width 400ms, background-color 400ms;
+}
+/* background-color, not background: the shorthand resets background-clip and
+   paints the whole 24px hit area. Same trap as .quotes__dot. */
+.services__dot[aria-current="true"] { width: 30px; background-color: var(--champagne-ink); }
 
 /* ------------------------------------------------------------ gallery --- */
 
@@ -1355,10 +1426,20 @@ summary::-webkit-details-marker { display: none; }
 }
 /* Wide enough for the third column: numeral, then the step's name, then what
    happens — all on one baseline, ruled off. A contents page, not four boxes,
-   and it uses the width instead of leaving half the row empty. */
+   and it uses the width instead of leaving half the row empty.
+
+   The slack goes to the TITLE column, not the text column. It used to be the
+   other way round — `15rem` for the title and `1fr` for the text — and the
+   1fr column then measured 798px at 1440 while the paragraph inside it was
+   capped at 46ch. Measured: the text stopped 363px short of the rule that ran
+   under it, at every width from 940 up, on all four rows. Because the page is
+   RTL that dead band fell at the LEFT edge — the end of every line — so each
+   row read as truncated rather than as composed. Swapping which column is
+   elastic pins the paragraph to the far edge and lets the whitespace fall
+   between the title and the text, where a contents page wants it anyway. */
 @media (min-width: 940px) {
   .step {
-    grid-template-columns: minmax(0, 4.5rem) minmax(0, 15rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 4.5rem) minmax(0, 1fr) minmax(0, 46ch);
     column-gap: clamp(28px, 3.4vw, 64px);
   }
   .step__num { grid-row: 1; }

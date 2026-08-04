@@ -241,6 +241,43 @@ await page.waitForTimeout(200);
   await ctx.close();
 }
 
+// -------------------------------------------- the services strip without JS --
+// The five plates swipe on the phone instead of stacking to 4.5 screens, and
+// the strip is CSS scroll-snap precisely so that costs nothing when scripting
+// is off. The obvious "improvement" is to rebuild it as the transform track the
+// testimonials use — which would leave one plate on screen and four
+// unreachable. This is what stops that landing quietly.
+//
+// The dots are asserted ABSENT here for the same reason they are built in JS:
+// a marker nothing is driving is the visible-but-dead control this repo has
+// already shipped once.
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(400);
+  const strip = await np.evaluate(() => {
+    const g = document.querySelector('.services__grid');
+    const kids = [...g.children];
+    return {
+      total: kids.length,
+      rendered: kids.filter((c) => {
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }).length,
+      swipeable: g.scrollWidth > g.clientWidth + 1,
+      dots: document.querySelectorAll('.services__dot').length,
+    };
+  });
+  ok('with JS off, every service plate still renders',
+     strip.rendered === strip.total && strip.total === 5, `${strip.rendered}/${strip.total}`, '5/5');
+  ok('with JS off, the services strip still swipes',
+     strip.swipeable, strip.swipeable, 'scrollable');
+  ok('with JS off, no carousel dots are left undriven',
+     strip.dots === 0, strip.dots, 0);
+  await ctx.close();
+}
+
 // ------------------------------------------------------------ target sizes --
 // WCAG 2.2 SC 2.5.8. The exceptions are real and narrow: the honeypot is bot
 // bait no user can reach, and words inside a sentence are explicitly exempt.
@@ -263,6 +300,212 @@ await page.waitForTimeout(200);
   });
   ok('every non-exempt target is at least 24x24 (WCAG 2.2 SC 2.5.8)',
      small.length === 0, small.length ? small : 'all at or above 24px', 'none under 24px');
+}
+
+// --------------------------- camera-3d: chrome standalone, no chrome embedded --
+// This page is index,follow and one of three entries in sitemap.xml, and its
+// body used to be a title, a canvas and one text link — no header, no nav, no
+// footer, no way to enquire. It now reuses the homepage's chrome, which creates
+// the opposite hazard: the homepage iframes this same file at ?embed=1 for its
+// #gear section, and any chrome that survives that flag is drawn a second time
+// INSIDE the homepage — most visibly a duplicate WhatsApp button a few hundred
+// pixels from the real one.
+//
+// Both directions are asserted because each is one forgotten selector away.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  // .menu is excluded from the visible set on purpose: it ships with the
+  // `hidden` attribute and only appears once the burger opens it, so requiring
+  // it to be visible tests the mobile menu rather than the chrome. It is
+  // checked for existence instead — the burger's aria-controls needs a target.
+  const shown = async () => p.evaluate(() => {
+    const state = {};
+    for (const sel of ['.site-header', '.site-footer', '.wa-float', '.am-launcher']) {
+      const n = document.querySelector(sel);
+      state[sel] = n ? getComputedStyle(n).display !== 'none' : false;
+    }
+    return state;
+  });
+
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(2500);
+  const solo = await shown();
+  const missing = Object.keys(solo).filter((k) => !solo[k]);
+  const menuTarget = await p.evaluate(() => {
+    const b = document.querySelector('[data-menu-toggle]');
+    return !!(b && document.getElementById(b.getAttribute('aria-controls')));
+  });
+  ok('camera-3d carries the site chrome when visited directly',
+     missing.length === 0 && menuTarget,
+     missing.length ? `missing ${missing.join(', ')}` : (menuTarget ? 'header, footer, WhatsApp, assistant, menu target' : 'burger opens nothing'),
+     'all present');
+
+  await p.goto(BASE + '/camera-3d.html?embed=1', { waitUntil: 'load' });
+  await p.waitForTimeout(2500);
+  const emb = await shown();
+  const leaked = Object.keys(emb).filter((k) => emb[k]);
+  // .menu is re-included here — in the embed it must be display:none from the
+  // .is-embed rule, not merely from its own `hidden` attribute, so that opening
+  // it inside the iframe is impossible even if the burger somehow survives.
+  if (await p.evaluate(() => {
+    const n = document.querySelector('.menu');
+    return n ? getComputedStyle(n).display !== 'none' : false;
+  })) leaked.push('.menu');
+  ok('camera-3d draws no chrome when embedded in the homepage',
+     leaked.length === 0, leaked.length ? `leaked ${leaked.join(', ')}` : 'none', 'none');
+  await p.close();
+}
+
+// ------------------------------ the 3D stage's own furniture, inside its shadow --
+// hide-toolbar was read once in the constructor, so a consumer setting it from
+// DOMContentLoaded — which is what camera-3d.html does for ?embed=1 — was always
+// too late and got the Download OBJ / Download GLB buttons anyway. Reading the
+// attribute back said `true` the whole time; only the shadow DOM told the truth,
+// which is why this is asserted through shadowRoot rather than by attribute.
+//
+// And the hint and the toolbar are both pinned to the bottom edge on opposite
+// sides: 211px + 267px inside 390px, printing through each other until they
+// were stacked. Both directions are checked, because "toolbar hidden" and
+// "toolbar placed" fail independently.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const stage = () => p.evaluate(() => {
+    const st = document.querySelector('three-d-stage');
+    if (!st || !st.shadowRoot) return { missing: true };
+    const tb = st.shadowRoot.querySelector('.toolbar');
+    const note = st.shadowRoot.querySelector('.note');
+    const box = (n) => { const b = n.getBoundingClientRect(); return { l: b.left, r: b.right, t: b.top, b: b.bottom }; };
+    let collide = false;
+    if (tb && note) {
+      const a = box(tb), c = box(note);
+      collide = a.l < c.r && a.r > c.l && a.t < c.b && a.b > c.t;
+    }
+    return { toolbar: !!tb, buttons: tb ? tb.querySelectorAll('button').length : 0, note: !!note, collide };
+  });
+
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(3200);
+  const solo = await stage();
+  ok('the 3D stage keeps its download buttons on its own page',
+     solo.toolbar && solo.buttons === 2, `toolbar=${solo.toolbar} buttons=${solo.buttons}`, 'toolbar with 2 buttons');
+  ok('the 3D stage hint is not printed through by the buttons at 390px',
+     solo.collide === false, solo.collide ? 'hint and toolbar overlap' : 'clear', 'clear');
+
+  await p.goto(BASE + '/camera-3d.html?embed=1', { waitUntil: 'load' });
+  await p.waitForTimeout(3200);
+  const emb = await stage();
+  ok('hide-toolbar actually removes the toolbar, not just sets an attribute',
+     emb.toolbar === false, emb.toolbar ? 'toolbar still in the shadow DOM' : 'gone', 'gone');
+  await p.close();
+}
+
+// ------------------------------- every service plate has arrived by the swipe --
+// loading="lazy" counts distance to the viewport, and the strip runs sideways,
+// so the plates that are only off-screen horizontally were never approached by
+// any amount of vertical scrolling. Measured before the fix, throttled to
+// 1.6Mbps/150ms: the fifth plate was still blank ~500ms after a swipe that
+// itself finishes in ~300 — you landed on an empty card. main.js drops the
+// lazy flag once the section is within a screen.
+//
+// Throttled on purpose. On the loopback this file otherwise runs against, every
+// image is instant and the defect is invisible — which is exactly how it got
+// shipped.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const p = await ctx.newPage();
+  const cdp = await ctx.newCDPSession(p);
+  await cdp.send('Network.emulateNetworkConditions', {
+    offline: false, latency: 150,
+    downloadThroughput: (1.6 * 1024 * 1024) / 8, uploadThroughput: (750 * 1024) / 8,
+  });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.evaluate(async () => {
+    const H = document.documentElement.scrollHeight;
+    for (let y = 0; y < H; y += 400) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 80)); }
+  });
+  await p.waitForTimeout(2500);
+  await p.evaluate(() => document.querySelector('#services').scrollIntoView());
+  await p.waitForTimeout(600);
+  const blank = await p.evaluate(() => [...document.querySelectorAll('.card__photo')]
+    .map((i, n) => (i.complete && i.naturalWidth > 0 ? null : n + 1))
+    .filter((x) => x !== null));
+  ok('every service plate has its photograph before it is swiped to',
+     blank.length === 0, blank.length ? `blank: plate ${blank.join(', ')}` : 'all loaded', 'none blank');
+  await ctx.close();
+}
+
+// ------------------------------------- the floats vs. the form they feed --
+// Adjacency is not the bug; occlusion is. The WhatsApp button and the
+// assistant launcher are both fixed to the bottom-left, and at 390px they were
+// painted OVER the lead form's own inputs as those scrolled through that band
+// — elementFromPoint at the intersection returned the float, so a tap aimed at
+// "שם מלא", "טלפון" or "אימייל" opened WhatsApp or the assistant instead. On
+// the one form the site exists to get filled in. They now stand down while the
+// form is on screen.
+//
+// The accessibility FAB is exempt on purpose: it is the accessibility control
+// and must stay reachable, and it covers only the trailing ~54px of a field
+// from the opposite edge. Hiding it would trade one defect for a worse one.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(900);
+  const box = await p.evaluate(() => {
+    const b = document.querySelector('[data-form]').getBoundingClientRect();
+    return { top: Math.round(b.top + scrollY), h: Math.round(b.height) };
+  });
+  const covered = [];
+  for (let y = Math.max(0, box.top - 844); y < box.top + box.h + 100; y += 60) {
+    await p.evaluate((v) => window.scrollTo(0, v), y);
+    await p.waitForTimeout(120);
+    covered.push(...await p.evaluate(() => {
+      const hits = [];
+      for (const sel of ['.wa-float', '.am-launcher']) {
+        const n = document.querySelector(sel);
+        if (!n) continue;
+        const cs = getComputedStyle(n);
+        if (cs.pointerEvents === 'none' || cs.opacity === '0') continue;
+        const b = n.getBoundingClientRect();
+        for (const el of document.querySelectorAll('.field__control, .field__label, .form__submit')) {
+          const e = el.getBoundingClientRect();
+          if (e.width === 0 || e.height === 0) continue;
+          if (b.left >= e.right || b.right <= e.left || b.top >= e.bottom || b.bottom <= e.top) continue;
+          const cx = (Math.max(b.left, e.left) + Math.min(b.right, e.right)) / 2;
+          const cy = (Math.max(b.top, e.top) + Math.min(b.bottom, e.bottom)) / 2;
+          const top = document.elementFromPoint(cx, cy);
+          // Only a float actually painted on top steals the tap.
+          if (top && top.closest(sel)) hits.push(`${sel} over ${el.className} @y=${Math.round(scrollY)}`);
+        }
+      }
+      return hits;
+    }));
+  }
+  ok('no contact float steals a tap from the lead form',
+     covered.length === 0, covered.length ? covered.slice(0, 4) : 'form never occluded', 'none');
+  await p.close();
+}
+
+// ------------------------------------------- the process rows use the width --
+// The step text is capped at a readable 46ch, but the column holding it used to
+// be the elastic one — 798px at 1440 for a 435px paragraph. The row's rule ran
+// the full width underneath, so every step stopped 363px short of it, and
+// because the page is RTL that dead band fell at the end of each line. The
+// elastic column is now the title's, which pins the text to the far edge.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const gaps = await p.evaluate(() => {
+    const grid = document.querySelector('.process__grid');
+    const g = grid.getBoundingClientRect();
+    // RTL: the line ends at the inline-end edge, which is the grid's left.
+    return [...grid.querySelectorAll('.step__text')]
+      .map((t) => Math.round(t.getBoundingClientRect().left - g.left));
+  });
+  const worst = Math.max(...gaps);
+  ok('every process row reaches the rule that runs under it',
+     worst <= 2, `${worst}px short at the line end`, '<=2px');
+  await p.close();
 }
 
 // ----------------------------------------------------------- Core Web Vitals --

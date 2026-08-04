@@ -72,16 +72,28 @@
 }
 </script>
 <link rel="stylesheet" href="assets/css/fonts.css" />
+<!-- This page used to carry only fonts.css and the small block below, because
+     its body was a title and a canvas and needed nothing else. It now reuses
+     the homepage's header, menu, footer and WhatsApp button, and that markup
+     is styled in styles.css — without this link the chrome renders naked and
+     the "fixed" header is not fixed at all, it just falls into normal flow.
+     Both links sit ABOVE the inline block on purpose: this page's own rules
+     for body, .page-head and three-d-stage must keep winning the cascade. -->
+<link rel="stylesheet" href="assets/css/styles.css" />
+<link rel="stylesheet" href="assets/css/assistant.css" />
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; background: #F7F2EA; color: #1C1A18; font-family: Heebo, sans-serif; font-weight: 300; }
   a { color: #1C1A18; }
   three-d-stage:not(:defined) { visibility: hidden; }
 
+  /* Top padding clears the fixed site header, the same way .legal does on
+     cost.html. In the homepage iframe the header is gone and so is the need,
+     which .is-embed below takes back. */
   .page-head {
     max-width: 1320px;
     margin: 0 auto;
-    padding: 30px clamp(18px, 4vw, 56px) 10px;
+    padding: clamp(96px, 11vw, 140px) clamp(18px, 4vw, 56px) 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -103,21 +115,23 @@
     margin: 0;
   }
   .page-head__sub { font-size: 15px; color: #6B5B4B; margin: 10px 0 0; max-width: 56ch; }
-  .page-head__back {
-    font-size: 12px;
-    letter-spacing: .16em;
-    padding: 14px 26px;
-    border: 1px solid #C9AE8C;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: background 320ms, color 320ms;
-  }
-  .page-head__back:hover { background: #C9AE8C; color: #FFFDF9; }
-
   three-d-stage { display: block; width: 100%; height: 78vh; min-height: 520px; }
 
-  /* Embedded in the homepage's #gear iframe: chrome off, stage fills the frame. */
-  .is-embed .page-head { display: none; }
+  /* Embedded in the homepage's #gear iframe: chrome off, stage fills the frame.
+     The site header, menu, footer and WhatsApp button are listed here for the
+     same reason .page-head always was — inside the iframe they would be a
+     second copy of the chrome the homepage is already drawing around it, and
+     the WhatsApp button in particular would sit as a duplicate a few hundred
+     pixels from the real one. a11y-widget.js reaches the same conclusion in JS
+     with its own embedded() guard. */
+  .is-embed .page-head,
+  .is-embed .site-header,
+  .is-embed .menu,
+  .is-embed .site-footer,
+  .is-embed .wa-float,
+  .is-embed .am-launcher,
+  .is-embed .am-panel { display: none; }
+  .is-embed .page-head { padding-top: 0; }
   .is-embed three-d-stage { height: 100vh; min-height: 0; }
 </style>
 <script>
@@ -133,21 +147,116 @@
 <script src="assets/js/a11y-widget.js"></script>
 </head>
 <body>
+
+<!-- This page is index,follow and one of only three entries in sitemap.xml, and
+     until now its entire body was a title, the 3D stage and a single "back to
+     the site" text link — no header, no nav, no footer, no way to enquire. That
+     is the same hole cost.html was in, described in the project notes as "the
+     legal-drafts shell with one text link out", and it is fixed here the same
+     way: the homepage's own markup, reused verbatim so main.js needs no
+     page-specific branch.
+
+     data-header-solid: there is no hero here, so the header must not spend its
+     first 80px transparent with ivory text on the sand background.
+
+     Every #contact is written as index.html#contact. No such id exists on this
+     page, and tools/check.sh fails any in-page fragment that resolves to
+     nothing. -->
+<header class="site-header is-scrolled" data-header data-header-solid>
+  <div class="site-header__bar">
+    <a href="index.html" class="brand" aria-label="Amora Studio — לעמוד הבית">
+      <img class="brand__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="46" height="46" />
+    </a>
+
+    <nav class="nav" aria-label="ניווט ראשי">
+      <a class="nav__link" href="index.html#about">אודות</a>
+      <a class="nav__link" href="index.html#services">שירותים</a>
+      <a class="nav__link" href="index.html#gallery">גלריה</a>
+      <a class="nav__link" href="index.html#faq">שאלות</a>
+      <a class="nav__cta" href="index.html#contact">בדיקת זמינות</a>
+    </nav>
+
+    <div class="nav-mobile">
+      <a class="nav-mobile__cta" href="index.html#contact">בדיקת זמינות</a>
+      <button class="burger" type="button" data-menu-toggle aria-label="תפריט" aria-expanded="false" aria-controls="mobile-menu">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="progress" aria-hidden="true">
+    <div class="progress__bar" data-progress></div>
+  </div>
+</header>
+
+<div class="menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="תפריט" hidden>
+  <button class="menu__close" type="button" data-menu-close aria-label="סגירה">✕</button>
+  <p class="menu__brand">Amora Studio</p>
+  <a class="menu__link" href="index.html#about" data-menu-link>אודות</a>
+  <a class="menu__link" href="index.html#services" data-menu-link>שירותים</a>
+  <a class="menu__link" href="index.html#gallery" data-menu-link>גלריה</a>
+  <a class="menu__link" href="index.html#faq" data-menu-link>שאלות נפוצות</a>
+  <a class="menu__cta" href="index.html#contact" data-menu-link>לבדיקת זמינות</a>
+  <a class="menu__phone" href="tel:+972503662699">050-3662699</a>
+</div>
+
+<main id="main" tabindex="-1">
   <div class="page-head">
     <div>
       <p class="page-head__kicker">The tool behind the look</p>
       <h1 class="page-head__title">המצלמה שלנו, מכל זווית</h1>
       <p class="page-head__sub">גררו לסיבוב, גלגלו לזום. הדגם זמין להורדה בפורמט OBJ או GLB.</p>
     </div>
-    <a class="page-head__back" href="index.html">← חזרה לאתר</a>
+    <!-- The "← חזרה לאתר" button that used to sit here is gone: the header
+         above carries the brand mark and the whole nav, so it was a second
+         route home a few pixels away from the first. It could not be kept
+         "for the embed" either — .is-embed hides this entire block. -->
   </div>
 
   <three-d-stage name="amora-camera" background="#F7F2EA" autorotate
                  note="גררו לסיבוב · גלגלו לזום · גרירה ימנית להזזה"
                  fallback="assets/img/camera-still.jpg"
                  fallback-alt="דגם תלת־ממדי של המצלמה של Amora Studio"></three-d-stage>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__top">
+    <div>
+      <img class="site-footer__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="64" height="64" />
+      <p class="site-footer__blurb">צילום וידאו וסטילס לחתונות ואירועים. תל אביב — ובכל הארץ.</p>
+    </div>
+    <nav class="site-footer__col" aria-label="ניווט פוטר">
+      <a class="site-footer__link" href="index.html#about">אודות</a>
+      <a class="site-footer__link" href="index.html#services">שירותים</a>
+      <a class="site-footer__link" href="index.html#gallery">גלריה</a>
+      <a class="site-footer__link" href="index.html#faq">שאלות נפוצות</a>
+      <a class="site-footer__link" href="index.html#contact">בדיקת זמינות</a>
+    </nav>
+    <div class="site-footer__col">
+      <a class="site-footer__link" href="tel:+972503662699">050-3662699</a>
+      <a class="site-footer__link" href="https://www.instagram.com/amora___studio/" target="_blank" rel="noopener" style="letter-spacing:.04em">Instagram — @amora___studio</a>
+      <p class="site-footer__meta">אזור פעילות: כל הארץ</p>
+    </div>
+  </div>
+  <div class="site-footer__bottom">
+    <p class="site-footer__copy">© 2026 Amora Studio · כל הזכויות שמורות</p>
+    <div class="site-footer__legal">
+      <a href="accessibility.html">הצהרת נגישות</a>
+      <a href="privacy.html">מדיניות פרטיות</a>
+      <a href="terms.html">תנאי שימוש</a>
+    </div>
+  </div>
+</footer>
+
+<a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ">
+  <span>וואטסאפ</span>
+</a>
 
   <script src="assets/js/three-d-stage.js"></script>
   <script type="module" src="assets/js/camera-model.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/assistant.js"></script>
 </body>
 </html>

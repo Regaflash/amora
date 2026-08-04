@@ -45,6 +45,48 @@ for _f, _b in blocks:
 print(f'{"JSON-LD תקין":<46} ✓ ({len(blocks)} בלוקים)')
 PY
 
+# The FAQ answers must stay byte-identical to the FAQPage JSON-LD.
+#
+# The project notes have described this as enforced by a script for a long
+# time, and it is the stated reason for a standing rule — nothing may be put
+# inside a .faq__a, not even a link, because it would break the lock. It was
+# not enforced by anything. Eight answers, mirrored by hand into structured
+# data, guarded by a sentence in a markdown file: the visible copy and the copy
+# Google is served could drift apart in either direction and every check here
+# would still pass. They had not drifted, which is luck, not a mechanism.
+python3 - <<'PY' || fail=1
+import re, json, html, sys
+src = open('index.html', encoding='utf-8').read()
+norm = lambda t: html.unescape(re.sub(r'\s+', ' ', t)).strip()
+seen = [norm(a) for a in re.findall(r'<p class="faq__a">(.*?)</p>', src, re.S)]
+faq = None
+for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', src, re.S):
+    d = json.loads(b)
+    for node in (d if isinstance(d, list) else [d]):
+        if node.get('@type') == 'FAQPage':
+            faq = node
+if faq is None:
+    print(f'{"FAQ נעול ל-JSON-LD":<46} ✗ אין בלוק FAQPage'); sys.exit(1)
+ld = [norm(q['acceptedAnswer']['text']) for q in faq['mainEntity']]
+if len(seen) != len(ld):
+    print(f'{"FAQ נעול ל-JSON-LD":<46} ✗ {len(seen)} תשובות בעמוד מול {len(ld)} ב-JSON-LD')
+    sys.exit(1)
+bad = [i for i, (a, l) in enumerate(zip(seen, ld), 1) if a != l]
+# Markup inside an answer would be normalised away above and the lock would
+# still read as intact, so the raw run is checked for tags separately.
+tags = [i for i, a in enumerate(re.findall(r'<p class="faq__a">(.*?)</p>', src, re.S), 1) if '<' in a]
+if bad or tags:
+    for i in bad:
+        print(f'    תשובה {i} אינה זהה ל-JSON-LD')
+        print(f'      עמוד : {seen[i-1][:110]}')
+        print(f'      סכימה: {ld[i-1][:110]}')
+    for i in tags:
+        print(f'    תשובה {i} מכילה תגית — .faq__a חייב להישאר טקסט בלבד')
+    print(f'{"FAQ נעול ל-JSON-LD":<46} ✗')
+    sys.exit(1)
+print(f'{"FAQ נעול ל-JSON-LD":<46} ✓ ({len(ld)} תשובות)')
+PY
+
 # no external runtime dependency crept back in
 ext=$(grep -oE 'https://(fonts\.googleapis|fonts\.gstatic|unpkg|cdn\.jsdelivr)\.(com|net)' $PAGES 2>/dev/null | sort -u)
 if [ -n "$ext" ]; then say "תלות חיצונית חזרה" "✗"; echo "$ext" | sed 's/^/    /'; fail=1; else say "אין תלויות חיצוניות בזמן ריצה" "✓"; fi
