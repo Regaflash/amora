@@ -1717,6 +1717,13 @@ summary::-webkit-details-marker { display: none; }
 .field { display: grid; gap: var(--sp-2); }
 .field__label { font-size: var(--t-micro); letter-spacing: .16em; color: var(--mocha); }
 .field__opt { opacity: .7; letter-spacing: normal; }
+/* Same weight and idiom as .field__opt beside it — the form already qualifies
+   labels in parentheses, so requirement is said the way optionality already
+   was, rather than with an asterisk that needs a legend to decode. Champagne
+   ink rather than lowered opacity: this one is a constraint the visitor has to
+   act on, not an aside. #806142 on the form's ivory panel measures 5.58:1, and
+   5.08:1 on cream where cost.html renders the same form. */
+.field__req { color: var(--champagne-ink); letter-spacing: normal; }
 /* The "no date yet" opt-out. Sits in the date field's own grid cell so the
    two read as one control; the shared :focus-visible rule already gives the
    box the charcoal ring the rest of this form uses. */

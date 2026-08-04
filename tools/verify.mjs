@@ -278,6 +278,42 @@ await page.waitForTimeout(200);
   await ctx.close();
 }
 
+// ------------------------------- required fields say so to the eye as well --
+// WCAG 3.3.2. aria-required tells a screen reader; it tells a sighted visitor
+// nothing, and this form marked only the OPTIONAL fields — not even all of
+// them. "מה מצלמים" is optional and unmarked while "סוג האירוע" sits beside it
+// required and looks identical, so the only way to learn which was which was to
+// submit and be rejected. Found when a real attempt to fill the form stalled on
+// exactly that, twice, before reaching the network.
+//
+// Both pages that carry the form are checked, derived rather than listed: the
+// homepage and cost.html hold separate copies of the same markup, and a fix
+// applied to one of them is the drift this repo keeps producing.
+{
+  const pages = ['/', '/cost.html'];
+  const bad = [];
+  for (const url of pages) {
+    const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    await p.goto(BASE + url, { waitUntil: 'load' });
+    await p.waitForTimeout(600);
+    bad.push(...await p.evaluate((where) => {
+      const out = [];
+      for (const ctrl of document.querySelectorAll('[data-form] [aria-required="true"]')) {
+        const field = ctrl.closest('.field');
+        const label = field && field.querySelector('.field__label');
+        const marker = label && label.querySelector('.field__req');
+        const visible = marker && getComputedStyle(marker).display !== 'none'
+                               && marker.textContent.trim().length > 0;
+        if (!visible) out.push(`${where} ${ctrl.getAttribute('data-field') || ctrl.name}`);
+      }
+      return out;
+    }, url));
+    await p.close();
+  }
+  ok('every required field is marked required to the eye, not just to aria',
+     bad.length === 0, bad.length ? bad : 'all marked on both forms', 'none unmarked');
+}
+
 // ------------------------------------------------------------ target sizes --
 // WCAG 2.2 SC 2.5.8. The exceptions are real and narrow: the honeypot is bot
 // bait no user can reach, and words inside a sentence are explicitly exempt.
