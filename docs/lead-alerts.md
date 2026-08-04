@@ -6,14 +6,29 @@
 | --- | --- |
 | `lead-alert` Edge Function | **deployed** to `dkejuaildigikufrdiru`, `verify_jwt` off |
 | `on_lead_insert_alert` trigger on `public.leads` | **created** |
-| `LEAD_ALERT_SECRET` on the function | **not set — owner** |
-| `RESEND_API_KEY` on the function | **not set — owner** |
-| `LEAD_ALERT_TO` on the function | **not set — owner** |
+| `LEAD_ALERT_SECRET` on the function | **set** — 2026-08-04 |
+| `RESEND_API_KEY` on the function | **set** — 2026-08-04 |
+| `LEAD_ALERT_TO` on the function | **set** — 2026-08-04 |
 
-Until the last three are set, an enquiry still reaches the database and still
-shows in `admin.html`, and the function answers `500 alert not configured` —
-which is deliberate, because an alert that returns 200 without sending is worse
-than none. **No email is sent until an owner completes steps 1 and 3 below.**
+**Sending, and proved by a real submission rather than by this table.** On
+2026-08-04 at 17:20:49 a lead entered `public.leads` from the live form and
+53 ms later `net._http_response` recorded `200 {"sent":true}`. The studio
+received the email. The full chain — browser → INSERT → trigger → function →
+Resend → inbox — is exercised, not inferred.
+
+Do not take the row above as evidence of anything. It is a claim in a markdown
+file, and this file has already been wrong twice in exactly that way. The
+evidence is the query in step 5.
+
+Prior states worth keeping, because both were invisible from here:
+
+* Until 2026-08-04 the three secrets were unset and the function answered
+  `500 alert not configured` — deliberate, because an alert that returns 200
+  without sending is worse than none.
+* Until 2026-08-04 the form could not insert at all. `anon`'s INSERT is
+  column-scoped and three columns the site posts were missing from the grant,
+  so every submission failed and `public.leads` was empty. The alert pipeline
+  was fine throughout; nothing ever reached it. See `docs/supabase-crm.sql`.
 
 This table exists because the earlier version of this file described the setup
 as though it had been done. It had not: the function was in the repo and

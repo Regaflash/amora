@@ -171,13 +171,20 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the visible copy and the copy Google is served could have parted in either
   direction and every check would still have passed. Same lesson as the lead
   alerts below: **a guarantee written here is not a guarantee that runs.**
-- **Lead alerts: deployed, and still one owner step from sending.** A trigger on
-  INSERT into `public.leads` (`docs/supabase-lead-alert-webhook.sql`) calls the
-  `lead-alert` Edge Function, which emails the studio. Both are live on
-  `dkejuaildigikufrdiru` and verified end to end. `RESEND_API_KEY`,
-  `LEAD_ALERT_TO` and `LEAD_ALERT_SECRET` are **not set**, so the function
-  answers `500 alert not configured` and no mail goes out yet. Status table and
-  the remaining steps: `docs/lead-alerts.md`.
+- **Lead alerts: sending, as of 2026-08-04.** A trigger on INSERT into
+  `public.leads` (`docs/supabase-lead-alert-webhook.sql`) calls the
+  `lead-alert` Edge Function, which emails the studio. All three secrets are
+  set. Proved by a real submission, not by this sentence: a lead entered from
+  the live form at 17:20:49 and `net._http_response` recorded
+  `200 {"sent":true}` 53 ms later. Status and the verification query:
+  `docs/lead-alerts.md`.
+
+  Getting there turned up the thing that actually mattered. **The form had
+  never inserted a single lead** — `anon`'s column-scoped INSERT grant was
+  missing three columns the site posts, so every submission failed while the
+  alert pipeline sat downstream of a call it never received. Fixing alerts is
+  what surfaced it; the alerts were never the problem. See the GRANT entry
+  above.
 
   This entry used to read "wired, not aspirational" and it was wrong, for
   months. The function was in the repo; `public.leads` had no trigger and the
@@ -203,9 +210,12 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - **Google Search Console**, verified by DNS TXT in the Vercel dashboard —
   zero repo change, zero deploy. Until it exists nobody can measure whether any
   of the search work is working.
-- **A business email.** There is no `mailto:` anywhere in the eight HTML pages.
-  Now also blocking `LEAD_ALERT_TO`: the lead-alert pipeline is deployed and
-  waiting on an address to send to.
+- **A business email on the site.** No longer blocking `LEAD_ALERT_TO` — that
+  is set and alerts arrive. Still absent from the pages themselves: there is no
+  `mailto:` anywhere in the eight HTML files, and `privacy.html` and
+  `accessibility.html` both carry `[להשלים]` where an address belongs. Those
+  two are legal statements that name a contact route by law, so the gap is
+  theirs to close, not the homepage's.
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
