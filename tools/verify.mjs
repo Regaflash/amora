@@ -508,6 +508,80 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// -------------------------------------- the FAQ head holds its column open --
+// At 1440 the head is ~180px of a ~950px column, so ~770px of the section's
+// width carried nothing while eight questions ran down the other side. It is
+// sticky now, which is easy to break in two opposite directions and so is
+// checked in both:
+//
+//   * align-self:start is load-bearing. A grid item stretches to its row by
+//     default, and a stretched item has no free space to stick within — the
+//     property applies, computes to `sticky`, and simply never moves.
+//   * the top alignment is deliberate: the chapter's hairline and the first
+//     question's hairline are meant to land on the same y and read as one rule
+//     broken by the gutter. Sticky must not cost that at rest.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(1800);
+  const at = await p.evaluate(() => {
+    const h = document.querySelector('.faq__head');
+    const q = document.querySelector('.faq__item');
+    const sec = document.querySelector('#faq');
+    return {
+      position: getComputedStyle(h).position,
+      headTop: Math.round(h.getBoundingClientRect().top + scrollY),
+      qTop: Math.round(q.getBoundingClientRect().top + scrollY),
+      secTop: Math.round(sec.getBoundingClientRect().top + scrollY),
+      secH: Math.round(sec.getBoundingClientRect().height),
+    };
+  });
+  ok('the FAQ head and the first question still share a baseline at rest',
+     at.position === 'sticky' && Math.abs(at.headTop - at.qTop) <= 1,
+     `${at.position}, ${Math.abs(at.headTop - at.qTop)}px apart`, 'sticky, 0px apart');
+
+  // Partway down the section the head must have stopped travelling with it.
+  await p.evaluate((y) => window.scrollTo(0, y), at.secTop + Math.round(at.secH * 0.45));
+  await p.waitForTimeout(350);
+  const pinned = await p.evaluate(() => Math.round(document.querySelector('.faq__head').getBoundingClientRect().top));
+  ok('the FAQ head is still on screen halfway through the questions',
+     pinned >= 0 && pinned < 300, `${pinned}px from the top`, 'pinned, not scrolled away');
+  await p.close();
+}
+
+// ------------------------ the contact pitch stays beside the form it pitches --
+// The largest idle column on the page: the form measured 1058px against the
+// pitch's 288px at 1440. The heading and the phone number had scrolled away by
+// the third field, leaving a visitor part-way through the site's only
+// conversion path with no heading and no second way to make contact on screen.
+//
+// The phone link is what is actually asserted, not the pitch's coordinates —
+// it is the part with something to lose, and it is inside the sticky block, so
+// it fails the moment the stickiness does.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(1800);
+  const sec = await p.evaluate(() => {
+    const s = document.querySelector('#contact');
+    return { top: Math.round(s.getBoundingClientRect().top + scrollY), h: Math.round(s.getBoundingClientRect().height) };
+  });
+  const lost = [];
+  for (const frac of [0.3, 0.55, 0.7]) {
+    await p.evaluate((y) => window.scrollTo(0, y), sec.top - 150 + frac * sec.h);
+    await p.waitForTimeout(300);
+    const seen = await p.evaluate(() => {
+      const a = document.querySelector('.contact__phone');
+      const r = a.getBoundingClientRect();
+      return r.top > -1 && r.bottom < innerHeight + 1;
+    });
+    if (!seen) lost.push(`${Math.round(frac * 100)}%`);
+  }
+  ok('the phone number stays on screen while the lead form is being filled',
+     lost.length === 0, lost.length ? `gone at ${lost.join(', ')} through the section` : 'visible throughout', 'visible throughout');
+  await p.close();
+}
+
 // ----------------------------------------------------------- Core Web Vitals --
 {
   const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
