@@ -1571,6 +1571,28 @@ summary::-webkit-details-marker { display: none; }
     grid-template-columns: minmax(0, 0.56fr) minmax(0, 1fr);
     gap: clamp(40px, 6vw, 104px);
   }
+  /* The alignment above is deliberate and stays exactly as it was — what it
+     left behind was the problem. Measured at 1440: the head is ~180px of a
+     ~950px column, so roughly 770px of the section's width carried nothing
+     while eight questions ran down the other side. In most sections that
+     reads as editorial asymmetry; here it reads as a column somebody forgot
+     to fill.
+
+     Sticky rather than anything moved or added: at rest nothing changes, so
+     the chapter's hairline and the first question's hairline still land on the
+     same y and still read as one rule broken by the gutter. It only engages
+     once you scroll, which is also when the title is worth keeping — the
+     answers open to well over a screen, and until now "שאלות שנשאלנו כבר"
+     scrolled away before the first one was finished.
+
+     align-self:start is load-bearing: a grid item stretches to the row by
+     default, and a stretched item has no free space to stick within. The
+     offset clears the fixed header (76px) with the page's own rhythm on top. */
+  .faq__head {
+    position: sticky;
+    top: calc(76px + var(--sp-6, 40px));
+    align-self: start;
+  }
 }
 .faq__head .chapter { margin-bottom: 0; }
 .faq__item { border-top: 1px solid var(--rule); }
@@ -1625,6 +1647,23 @@ summary::-webkit-details-marker { display: none; }
   gap: clamp(40px, 5vw, 88px);
   align-items: center;
 }
+/* The form is the tall one — measured 1058px against the pitch's 288px at
+   1440, so 770px of this column stood empty. That is the largest idle column
+   on the page and the only one that costs something: "התאריך שלכם עדיין
+   פנוי?" and the phone number had scrolled away by the third field, so from
+   there down the visitor was filling a form with no heading and no second way
+   to make contact anywhere on screen. Sticky keeps both beside them.
+
+   align-items on the grid stays `center` — the pitch's resting position is
+   unchanged, so nothing moves until you scroll. Centred is not stretched, so
+   there is still free space in the grid area for it to travel through. */
+@media (min-width: 900px) {
+  .contact__pitch {
+    position: sticky;
+    top: calc(76px + var(--sp-6));
+  }
+}
+
 /* Same rule as the hero: type over photography is set in warm ivory, not
    sand. Sand pixel-sampled 3.65:1 against the brightest highlight left in
    the frame; warm ivory clears AA on the same pixel and keeps the warmth. */
