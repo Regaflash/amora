@@ -309,6 +309,24 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   UPDATE and not a code change. Re-verified with a real row:
   `200 {"sent":true,...,"recipients":1}`.
 
+  **Delivery confirmed from the receiving end, 5.8 evening:** three sends, all
+  Delivered, none bounced, none complained, landing in the **Inbox** with the
+  spam folder entirely empty. Resend's log shows four `403`s clustered before
+  the fix and `200`s after — the fingerprint of the bug and its repair.
+
+  One prediction of mine was wrong and the correction is worth keeping: the
+  sends made *before* the domain was verified did **not** fail. Once the
+  destination became `support@amora-studios.com`, that address was the Resend
+  account owner, so the shared sender was allowed to reach it. Verifying the
+  domain did not rescue a broken send; it removed a constraint already worked
+  around by pointing at the owner's own inbox. **What verification buys is any
+  recipient, not this one.**
+
+  **Still unverified:** whether Gmail recorded `SPF=PASS` / `DKIM=PASS` and a
+  DMARC result. That needs "show original" in the mailbox, and nobody guessed
+  at it. "Reached the inbox" is weaker evidence than a PASS line, and it is the
+  evidence there is.
+
   Recorded but deliberately untouched: the domain has **no apex SPF record at
   all**, although its MX points at Google. Apex SPF governs every piece of mail
   the domain sends, so a wrong one marks the studio's own Gmail as spam. Same

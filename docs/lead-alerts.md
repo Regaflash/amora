@@ -161,6 +161,44 @@ update private.settings
 That capability did not exist before today: with the shared sender, a second
 recipient was *impossible*, not merely unconfigured.
 
+### Delivery baseline — read out of Resend and the inbox, 2026-08-05 evening
+
+Confirmed from the receiving end, which is the only place that settles it. A
+`200` from Resend means *"I accepted the message"*, not *"it reached a human"*.
+
+| Local time | Sender | Result |
+| --- | --- | --- |
+| 18:35 | `leads@amora-studios.com` (verified domain) | Delivered → **Inbox** |
+| 17:30 | `onboarding@resend.dev` (shared) | Delivered → Inbox, opened |
+| 16:53 | Resend's own "Hello World" | Delivered, opened |
+
+**Three delivered, zero bounced, zero complaints, and the spam folder is
+entirely empty** — not just free of these messages, empty of everything.
+
+Resend's request log shows `POST /emails` → four `403`s clustered about two
+hours earlier, then `200`s. That cluster is the fingerprint of the bug and its
+fix: the 403s are the attempts made while `lead_alert_to` still pointed at
+regaflash, and they stop at the moment the destination moved.
+
+**A prediction of mine was wrong here, and the correction matters.** I expected
+the pre-verification sends to have failed. They did not. Once the destination
+became `support@amora-studios.com`, that address *was* the Resend account
+owner, so the shared `onboarding@resend.dev` sender was permitted to reach it.
+Verifying the domain did not rescue a broken send — it removed a constraint
+that had already been worked around by pointing at the owner's own inbox. What
+verification actually buys is **any recipient**, not this one.
+
+### Still unverified: the authentication headers
+
+Whether Gmail recorded `SPF=PASS`, `DKIM=PASS` and a DMARC result was **not**
+established. Reading it needs Gmail's "show original" view, which was not
+reachable during the check, and no one guessed at what it said.
+
+"Landed in the inbox" is weaker evidence than a PASS line, and it is the
+evidence we have. Given the domain has no apex SPF record at all, this is worth
+closing properly the next time someone is in that mailbox: open any alert →
+**Show original** → read the `SPF`, `DKIM` and `DMARC` lines at the top.
+
 ### Noticed while verifying, deliberately not acted on
 
 The domain has **no SPF record on the apex at all** — no `v=spf1` on `@` —
