@@ -30,8 +30,16 @@ The owner's accounts are already wired together:
   reads it from there — `tools/manifest.json` maps every slot to a filename.
   It is **not tracked**: `.gitignore` holds the patterns, `.vercelignore`
   repeats them, and `tools/check.sh` fails if any of it returns to HEAD.
-- **Vercel** — connected to that GitHub account, **and holds the domain**.
-  This is where the site is hosted. Deploys should target Vercel.
+- **Vercel** — connected to that GitHub account. This is where the site is
+  **hosted**; deploys should target Vercel.
+- **Hostinger** — holds the **DNS**. Nameservers are `ns1.dns-parking.com` /
+  `ns2.dns-parking.com`, and the records live at
+  `hpanel.hostinger.com/domains/dns`, not in the Vercel dashboard. `www` is a
+  CNAME to vercel-dns, which is how both facts are true at once. This entry
+  used to say Vercel "holds the domain", and a browser agent sent to the
+  Vercel dashboard for a DNS change would have found nothing there.
+  **MX on `@` points to Google**, so the domain has working mail — see the
+  business-email note below.
 - **Supabase** — connected to the same GitHub account. Available as the
   backend for the lead form (see `docs/supabase-leads.sql`).
 
@@ -200,12 +208,22 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   thing no code in this repo can produce: the local pack renders above the
   organic results. The site's entire declared off-site footprint is one
   Instagram link.
-- **Google Search Console**, verified by DNS TXT in the Vercel dashboard —
-  zero repo change, zero deploy. Until it exists nobody can measure whether any
-  of the search work is working.
-- **A business email.** There is no `mailto:` anywhere in the eight HTML pages.
-  Now also blocking `LEAD_ALERT_TO`: the lead-alert pipeline is deployed and
-  waiting on an address to send to.
+- ~~**Google Search Console**~~ — **done, and it was done before this file
+  noticed.** The `amora-studios.com` Domain property was verified on
+  2026-08-04 by Rega Flash; two `google-site-verification` TXT records already
+  sit on `@` at Hostinger. Confirmed twice over: a read-only browser check,
+  and Google's own "you recently verified this Domain property" mail. It is
+  already earning — the image-schema finding below came from it.
+- **A business email — the address exists; what is missing is the decision to
+  use it.** `support@amora-studios.com` is a live Google account: it appears
+  as the sender of a Drive share in the studio's own mail. That is enough to
+  unblock `LEAD_ALERT_TO`, which has been waiting on "an address" for months
+  while the address existed. Still genuinely missing: `RESEND_API_KEY`, and a
+  decision on whether this address goes on the site as a `mailto:` — there is
+  still none in the eight HTML pages. **Do not set `LEAD_ALERT_TO` without
+  asking the owner to confirm the mailbox is monitored**; a lead alert sent to
+  an unread inbox is the same failure as no alert at all, wearing a green
+  tick.
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
