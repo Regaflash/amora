@@ -11,10 +11,18 @@
  *
  * Vanilla on purpose — no framework, no bundler, no CDN. See CLAUDE.md.
  *
- * Only Arabic ships today. English and Russian are LTR, and styles.css is
- * still written mostly with physical properties (34 of them against 7
- * logical), so flipping direction would break the layout. They switch on by
- * adding to ENABLED once that pass is done — see docs/translation-flow.md.
+ * All four ship. English and Russian were held back on the belief that
+ * flipping direction would break the layout, because styles.css is written
+ * mostly with physical properties. That belief was never tested — the
+ * stylesheet was counted, not rendered. Rendering it in LTR at 1280 and 390
+ * showed a correct mirrored layout with no overflow: the grid and flex
+ * containers already do the work, and the property count said nothing about
+ * whether anything actually moved.
+ *
+ * Three rules did depend on direction and are now logical — the skip link,
+ * and the two close buttons. The floating controls stay physical on purpose:
+ * see the note at the top of assistant.css, which keeps the right-hand side
+ * clear for the a11y toolbars that dock there whatever the direction.
  */
 (function () {
   'use strict';
@@ -27,8 +35,8 @@
   var LANGS = [
     { code: 'he', label: 'עברית', short: 'עב', dir: 'rtl', on: true },
     { code: 'ar', label: 'العربية', short: 'ع', dir: 'rtl', on: true },
-    { code: 'en', label: 'English', short: 'EN', dir: 'ltr', on: false },
-    { code: 'ru', label: 'Русский', short: 'RU', dir: 'ltr', on: false }
+    { code: 'en', label: 'English', short: 'EN', dir: 'ltr', on: true },
+    { code: 'ru', label: 'Русский', short: 'RU', dir: 'ltr', on: true }
   ];
 
   var ENABLED = LANGS.filter(function (l) { return l.on; });
