@@ -309,6 +309,18 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   UPDATE and not a code change. Re-verified with a real row:
   `200 {"sent":true,...,"recipients":1}`.
 
+  **Both inboxes receive, from 5.8:** `lead_alert_to` holds
+  `support@amora-studios.com, support@regaflash.com`, verified with a real row
+  (`recipients: 2`). That send is also the first real proof of what verifying
+  the domain bought — regaflash is *not* the Resend account owner, so it would
+  have been refused `403` that morning.
+
+  `LEAD_ALERT_TO` in Supabase Secrets still says `support@regaflash.com` and is
+  **not** in use. Its risk dropped today: before verification, falling back to
+  it meant every alert failing silently; now it would only lose the amora
+  address. Worth aligning in the dashboard, no longer urgent, and impossible
+  from code — Secrets have no API.
+
   **Delivery confirmed from the receiving end, 5.8 evening:** three sends, all
   Delivered, none bounced, none complained, landing in the **Inbox** with the
   spam folder entirely empty. Resend's log shows four `403`s clustered before
