@@ -4,58 +4,67 @@
 
 | Piece | State |
 | --- | --- |
-| `lead-alert` Edge Function | **deployed** (v10), `verify_jwt` off |
-| `on_lead_insert_alert` trigger on `public.leads` | **created and firing** ✓ |
-| `LEAD_ALERT_SECRET` | **set** (04.08) ✓ |
-| `RESEND_API_KEY` | **set** (05.08) ✓ |
-| `LEAD_ALERT_TO` | **set** (04.08) — but see below |
-| **an email actually arriving** | ❌ **no — one field disagrees with another** |
+| `lead-alert` Edge Function | **deployed** (v11), `verify_jwt` off |
+| `on_lead_insert_alert` trigger on `public.leads` | **firing** ✓ |
+| `LEAD_ALERT_SECRET` | **set** ✓ |
+| `RESEND_API_KEY` | **set** ✓ |
+| destination (`private.settings.lead_alert_to`) | `support@amora-studios.com` ✓ |
+| **an email actually arriving** | **YES — verified 5.8.2026** ✓ |
 
-### Tested end to end on 5.8.2026, and it failed
+Verified the only way that means anything: a real row inserted into
+`public.leads`, and `net._http_response` came back
+`200 {"sent":true,"to_source":"private.settings"}`. Test row deleted.
 
-Every box above was ticked, so the honest thing was to insert a real row and
-watch. The trigger fired, the function ran, Resend refused:
+### It failed first, and the failure is the useful part
 
-> `403 validation_error` — *"You can only send testing emails to your own email
-> address (**support@amora-studios.com**). To send emails to other recipients,
-> please verify a domain at resend.com/domains, and change the `from` address
-> to an email using this domain."*
+With every secret set, the first end-to-end test returned **403** from Resend:
 
-Three facts that are each fine alone and broken together:
+> *"You can only send testing emails to your own email address
+> (**support@amora-studios.com**). To send emails to other recipients, please
+> verify a domain at resend.com/domains, and change the `from` address to an
+> email using this domain."*
 
-- the Resend account belongs to **support@amora-studios.com**
-- `LEAD_ALERT_TO` is **support@regaflash.com**
-- no domain is verified on the account (`/domains` returns `[]`), so
-  `LEAD_ALERT_FROM` falls back to Resend's shared `onboarding@resend.dev`,
-  which may only deliver to the account owner
+Three settings, each correct alone, that disagreed with each other: the Resend
+account belongs to amora, `LEAD_ALERT_TO` held `support@regaflash.com`, and no
+domain is verified — so the sender falls back to the shared
+`onboarding@resend.dev`, which may only deliver to the account owner.
 
-**This is the whole reason the status table now has a last row.** Five green
-ticks described the configuration accurately and told us nothing about whether
-a single email would arrive. The only check worth anything was sending one.
+**Five green ticks described the configuration accurately and told us nothing
+about whether one email would arrive.** The only check worth anything was
+sending one.
 
-### Two ways to fix it
+### Why the destination moved into the database
 
-**A — one field, works immediately.** Set `LEAD_ALERT_TO` to
-`support@amora-studios.com`. It is the Resend account owner, so the shared
-sender is allowed to deliver to it, and it is arguably the better destination
-anyway: the studio's own address rather than the agency's.
+Fixing it meant changing one value — and a Supabase Secret can only be changed
+in the dashboard, which means a person has to do it, which is exactly how the
+wrong value sat there unnoticed for a day.
 
-**B — the durable one.** Verify `amora-studios.com` at resend.com/domains, then
-set `LEAD_ALERT_FROM` to an address on that domain. After that alerts can go to
-any recipient, and they arrive from the studio rather than from a Resend test
-sender. **Care with DNS:** `@` already carries Google MX and two
-`google-site-verification` TXT records. Resend's records are additive — add,
-never edit or replace, or the studio loses its mail.
+A destination address is configuration, not a credential. It now lives in
+`private.settings`, read through `public.lead_alert_to()`
+(`SECURITY DEFINER`, EXECUTE to `service_role` only), mirroring
+`meta_capi_hook_secret` rather than inventing a second pattern.
 
-A is not a workaround to be embarrassed about; it is the correct destination
-plus a sender restriction that stops mattering once B is done.
+```sql
+-- change where lead alerts go
+update private.settings set value = 'someone@example.com' where key = 'lead_alert_to';
+```
 
-This table exists because the earlier version of this file described the setup
-as though it had been done. It had not: the function was in the repo and
-nowhere else, `public.leads` had no trigger, and the site spent months promising
-same-day replies to enquiries nobody was told about. Writing is not deploying.
-Verify with the two queries at the bottom of
-`docs/supabase-lead-alert-webhook.sql`.
+Precedence is explicit and **the function reports which source it used** in
+every response (`to_source`). The bug being fixed was two settings disagreeing
+with nothing to say which one won; the fix should not reproduce that shape.
+The database row wins; `LEAD_ALERT_TO` remains as a fallback if the row is
+deleted.
+
+### Still worth doing — verify the domain in Resend
+
+Today alerts can only reach `support@amora-studios.com`, because that is the
+Resend account owner and the sender is Resend's shared test address. Verifying
+`amora-studios.com` at resend.com/domains and setting `LEAD_ALERT_FROM` to an
+address on it lifts both limits: alerts to any recipient, sent from the studio.
+
+**Care with DNS:** `@` already carries Google MX and two
+`google-site-verification` TXT records. Resend's records are **additive** —
+add, never edit or replace, or the studio loses its mail.
 
 ## The problem this solves
 

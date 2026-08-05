@@ -61,3 +61,31 @@ grant execute on function public.meta_capi_hook_secret() to service_role;
 -- A check run as postgres proves nothing here. That mistake shipped a broken
 -- column grant in this project once already -- see the note at the bottom of
 -- docs/supabase-crm.sql.
+
+
+-- ---------------------------------------------------------------------------
+-- Lead alert destination. Applied 2026-08-05 as `lead_alert_to_in_settings`.
+--
+-- Same pattern, different reason. This is not a secret at all -- it is an
+-- email address -- but it lives here because a Supabase Secret can only be
+-- changed from the dashboard, and the lead-alert pipeline spent a day silently
+-- failing on exactly one wrong value that nobody could fix from code.
+--
+--   insert into private.settings (key, value)
+--   values ('lead_alert_to', 'support@amora-studios.com')
+--   on conflict (key) do update set value = excluded.value;
+--
+--   create or replace function public.lead_alert_to()
+--   returns text language sql stable security definer set search_path to ''
+--   as $$ select value from private.settings where key = 'lead_alert_to'; $$;
+--
+--   revoke all on function public.lead_alert_to() from public, anon, authenticated;
+--   grant execute on function public.lead_alert_to() to service_role;
+--
+-- To redirect lead alerts, one statement -- no dashboard, no redeploy:
+--
+--   update private.settings set value = 'someone@example.com'
+--    where key = 'lead_alert_to';
+--
+-- The function reports which source it used as `to_source` on every response,
+-- so the env fallback can never quietly win.

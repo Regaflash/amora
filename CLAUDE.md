@@ -179,24 +179,30 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the visible copy and the copy Google is served could have parted in either
   direction and every check would still have passed. Same lesson as the lead
   alerts below: **a guarantee written here is not a guarantee that runs.**
-- **Lead alerts: every secret is set, and no email arrives.** Tested end to end
-  on 5.8.2026 by inserting a real row: the trigger fired, `lead-alert` ran, and
-  Resend returned **403** — *"You can only send testing emails to your own email
-  address (support@amora-studios.com)"*. The Resend account is amora's,
-  `LEAD_ALERT_TO` is `support@regaflash.com`, and no domain is verified, so the
-  sender falls back to Resend's shared `onboarding@resend.dev`, which may only
-  deliver to the account owner. Each setting is individually correct; they
-  disagree with each other.
+- **Lead alerts: live and verified 5.8.2026.** A real row inserted into
+  `public.leads` produced `200 {"sent":true,"to_source":"private.settings"}`
+  in `net._http_response`, and the row was deleted. This is the first time an
+  alert has actually been delivered.
 
-  **Fix: point `LEAD_ALERT_TO` at `support@amora-studios.com`** (one field,
-  works at once), or verify the domain in Resend and set `LEAD_ALERT_FROM`.
-  Full detail and the DNS caution: `docs/lead-alerts.md`.
+  The destination now lives in **`private.settings.lead_alert_to`**
+  (`support@amora-studios.com`), not in Supabase Secrets — read via
+  `public.lead_alert_to()`, EXECUTE to `service_role` only. Changing it is one
+  `update`, no dashboard and no redeploy. `LEAD_ALERT_TO` survives as a
+  fallback, and every response reports `to_source` so the live value is never
+  a guess.
 
-  This entry has now been wrong in both directions — it once claimed the
-  pipeline was live when no trigger existed, and then claimed three secrets
-  were unset when two had been set the day before. **The status of this
-  pipeline is not knowable by reading anything; insert a row and look at
-  `net._http_response`.**
+  It failed first, and that is the part worth remembering: every secret was
+  set and Resend still returned 403, because the account belongs to amora
+  while `LEAD_ALERT_TO` pointed at regaflash and no domain is verified.
+  **Still open:** verify `amora-studios.com` in Resend and set
+  `LEAD_ALERT_FROM`, which is what allows alerts to reach any address rather
+  than only the account owner. DNS caution and the full account in
+  `docs/lead-alerts.md`.
+
+  This entry has been wrong in both directions before — claiming the pipeline
+  was live when no trigger existed, then claiming secrets were unset when they
+  were set. **Its status is not knowable by reading anything; insert a row and
+  look at `net._http_response`.**
 - A photo of the team at work — the `about` slot is a stand-in, and the section
   text talks about "the two of us" with no name or face anywhere on the site.
 - Legal review of `accessibility.html`, `privacy.html` and `terms.html` (all
