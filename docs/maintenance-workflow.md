@@ -94,21 +94,35 @@ For any upgrade, improvement or fix, in this order:
    "success" is not evidence; the page is.
 6. **Update `CLAUDE.md`** with anything found to be wrong, in the same commit.
 
-## A trap this doc walked into while being written
+## A trap this doc walked into while being written — and the wrong diagnosis
 
-`tools/gen-sitemap.py` derives `lastmod` from each file's **mtime**, and mtime
-is not stable across git operations — a checkout or a branch reset can move it
-without a byte of content changing. A documentation-only commit therefore
-failed `check.sh` with `sitemap.xml לא מעודכן`.
+A documentation-only commit failed `check.sh` with `sitemap.xml לא מעודכן`, and
+the first version of this section explained why: that `gen-sitemap.py` derives
+`lastmod` from each file's mtime, and mtime drifts across git operations.
 
-Two consequences:
+**That was wrong, and it was written into the document about not writing things
+you have not verified.** The generator uses `git log -1 --format=%cs -- <path>`
+— the committer date of the last commit that touched the file. mtime is only a
+fallback for when git is unavailable. Checked against all three indexable
+pages: every `lastmod` matches its `git log` date exactly.
+
+The real mechanic is a sequencing one, and it is the generator behaving
+correctly. `lastmod` reflects **committed** history, so committing a change to
+an HTML file moves that file's date — which means a sitemap generated *before*
+the commit is stale the moment the commit lands. Regenerate afterwards and
+amend, or the next `check.sh` catches it.
+
+Three consequences worth keeping:
 
 - **Run `check.sh` before every commit, including ones that touch no site
   file.** The failure looks unrelated to what you changed.
 - **Never chain it as `check.sh; git commit`.** The semicolon runs the commit
   regardless of the exit code, which is how a failing check has already been
-  reported as passing once in this project. Use `&&`, or run them as separate
+  reported as passing twice in this project. Use `&&`, or run them as separate
   steps and read the output.
+- **`lastmod` is a real SEO signal and it is currently honest.** Google ignores
+  the field on sites where it finds it inaccurate. Do not "fix" the generator
+  to stamp today's date, and do not hand-edit the file.
 
 ## The backlog, honestly split
 

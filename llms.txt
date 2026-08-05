@@ -34,6 +34,10 @@ Each of these is published in the page text, not inferred:
 - A first gallery is delivered within 7 days; the full gallery and the film
   within 30 days of the event.
 - The wedding film is 3–5 minutes, with a short teaser for Instagram.
+- Every booking includes photo magnets carrying an AR scanner: pointing a phone
+  at the magnet plays the photograph as video. They are produced by Regaflash
+  (regaflash.com), a separate business with the same owner, and they are part of
+  the package rather than a paid add-on.
 - Enquiries: 050-3662699 (E.164: +972503662699, the form used in this site's
   schema.org markup). Instagram: @amora___studio.
 
