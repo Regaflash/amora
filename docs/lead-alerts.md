@@ -9,6 +9,8 @@
 | `LEAD_ALERT_SECRET` | **set** — 2026-08-04 |
 | `RESEND_API_KEY` | **set** — 2026-08-04, **rotated 2026-08-05** |
 | destination (`private.settings.lead_alert_to`) | `support@amora-studios.com` |
+| sender (`private.settings.lead_alert_from`) | `Amora Studio <leads@amora-studios.com>` ✓ |
+| `amora-studios.com` verified in Resend | **yes — 2026-08-05 18:14** ✓ |
 | **an email actually arriving** | **yes — re-verified 5.8.2026** ✓ |
 
 **Sending, and proved by real submissions rather than by this table.** On
@@ -119,7 +121,60 @@ was declined on 2026-08-05, for reasons that outlive this setup:
 If it is wanted later, the first step is to *read* `_dmarc` and confirm nothing
 is there — not to add one.
 
-### Still worth doing — verify the domain in Resend
+### ✓ Domain verified — 2026-08-05 18:14
+
+`amora-studios.com` is verified in the **amora** Resend account, region Ireland
+(eu-west-1). Three records were added at Hostinger, all as new rows, none
+touching the apex:
+
+| Type | Name | Purpose |
+| --- | --- | --- |
+| TXT | `resend._domainkey` | DKIM |
+| MX | `send` (priority 10) | bounce/complaint feedback |
+| TXT | `send` | SPF for the sending subdomain |
+
+The five pre-existing records were confirmed untouched afterwards: the `www`
+CNAME to vercel-dns, both `google-site-verification` TXT records, the Google
+`MX` on `@` at priority 1, and the `A` record. The name-doubling failure the
+command warned about did not occur, and it was checked by reading the saved
+table rather than by trusting what was typed.
+
+**Two limits lifted at once.** Alerts can now go to any recipient, not only the
+Resend account owner, and they are sent from the studio rather than from a
+shared test address.
+
+`lead_alert_from` therefore joins `lead_alert_to` in `private.settings`, behind
+`public.lead_alert_from()` on the same grant. Re-verified end to end with a
+real row: `200 {"sent":true,"to_source":"private.settings",
+"from_source":"private.settings","recipients":1}`. Test row deleted.
+
+**The destination now accepts a list.** `lead_alert_to` is split on commas, so
+adding a second inbox is an UPDATE rather than a code change — for example
+putting alerts back in front of regaflash as well as amora:
+
+```sql
+update private.settings
+   set value = 'support@amora-studios.com, support@regaflash.com'
+ where key = 'lead_alert_to';
+```
+
+That capability did not exist before today: with the shared sender, a second
+recipient was *impossible*, not merely unconfigured.
+
+### Noticed while verifying, deliberately not acted on
+
+The domain has **no SPF record on the apex at all** — no `v=spf1` on `@` —
+even though its `MX` points at Google. The SPF added today lives on `send` and
+does not touch this.
+
+It is recorded rather than fixed for the same reason `_dmarc` was declined:
+apex SPF governs **all** mail for the domain, including the studio's Google
+Workspace inbox, and a wrong or incomplete record there causes legitimate mail
+to be marked as spam. That is a decision about the business's email, not a step
+in configuring a sending provider. If it is taken up, the first move is to read
+what Google Workspace expects, not to write a record.
+
+### ~~Still worth doing — verify the domain in Resend~~ — done, see above
 
 Today alerts can only reach the Resend account owner. Verifying
 `amora-studios.com` and setting `LEAD_ALERT_FROM` lifts that: any recipient,
