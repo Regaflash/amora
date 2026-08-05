@@ -122,6 +122,103 @@ content20251121100944_073243
 
 ---
 
+## הפקודה הפעילה — חיבור ה-CAPI בתרחיש 3756300
+
+נקודת הקצה בנויה, פרוסה ונבדקה (`supabase/functions/meta-capi`, חמש בדיקות מול
+המערכת החיה — ראו `docs/meta-capi-flow.md`). מה שנשאר הוא שני מודולים בתרחיש
+**`3756300` — "עדכון סטטוס לקוח במאני צאט"**, שהוא נקודת החיבור הנכונה משום
+שהוא מקבל **כל** שינוי סטטוס, ולא סטטוס אחד.
+
+### למה לא עשיתי את זה בעצמי
+
+`scenarios_update` מחליף בלוprint שלם. הבלוprint של `3756300` מכיל מודול
+`phonenumber` שנושא רשימת enum של כ-250 קודי מדינה ב-`metadata`, ושכתוב שלו
+דורש שאעתיק את כולה ידנית, ללא שגיאה, לתוך האוטומציה שמסנכרנת את הסטטוסים
+שלך ב-ManyChat. **כבר מחקתי מודול בחשבון הזה בכתיבה כזו, על בלוprint קטן
+בהרבה.** הסיכוי לטעות העתקה כאן אינו זניח, והנזק הוא אוטומציה עסקית חיה.
+שני מודולים שנוספים דרך הממשק לא נושאים את הסיכון הזה כלל.
+
+### הסוד — לא נמצא בריפו, בכוונה
+
+הריצו את זה ב-Supabase ← SQL Editor והעתיקו את הערך:
+
+```sql
+select value from private.settings where key = 'meta_capi_hook_secret';
+```
+
+### שני המודולים
+
+ב-Make אפשר להדביק מודול ישירות לקנבס (Ctrl+V). פתחו את התרחיש, הוסיפו
+**נתיב שלישי** לראוטר (זה שיושב אחרי מודול 2), והדביקו לתוכו את השניים לפי
+הסדר. הנתיב השלישי **בלי פילטר** — נקודת הקצה היא זו שמחליטה מה נשלח.
+
+מודול א — חיפוש הליד באוריגמי כדי לקרוא את `fld_1519`:
+
+```json
+{
+  "id": 20,
+  "module": "origami:search",
+  "version": 1,
+  "parameters": { "__IMTCONN__": 3523393 },
+  "mapper": {
+    "limit": "1",
+    "query": [[{ "a": "fld_1509", "b": "0{{8.phone}}", "o": "=" }]],
+    "orderdir": "desc",
+    "entityname": "e_89",
+    "searchMethod": "andxor",
+    "with_archive": 0
+  },
+  "onerror": [{ "id": 22, "module": "builtin:Ignore", "version": 1 }],
+  "metadata": { "designer": { "x": 900, "y": 600 } }
+}
+```
+
+מודול ב — שליחה לנקודת הקצה. **החליפו את `PASTE_SECRET_HERE`** בערך מה-SQL:
+
+```json
+{
+  "id": 21,
+  "module": "http:ActionSendData",
+  "version": 3,
+  "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+  "mapper": {
+    "url": "https://dkejuaildigikufrdiru.supabase.co/functions/v1/meta-capi",
+    "method": "post",
+    "headers": [{ "name": "x-amora-capi-secret", "value": "PASTE_SECRET_HERE" }],
+    "bodyType": "raw",
+    "contentType": "application/json",
+    "data": "{\"lead_id\":\"{{20.fld_1519}}\",\"status\":\"{{1.`סטטוס ליד`}}\"}",
+    "parseResponse": true,
+    "serializeUrl": false,
+    "shareCookies": false,
+    "rejectUnauthorized": true,
+    "followRedirect": true,
+    "useQuerystring": false,
+    "gzip": true,
+    "useMtls": false
+  },
+  "onerror": [{ "id": 23, "module": "builtin:Ignore", "version": 1 }],
+  "metadata": { "designer": { "x": 1200, "y": 600 } }
+}
+```
+
+**שלוש הגנות, כי זו אוטומציה חיה:** `handleErrors: false` אומר שתשובה שאינה
+2xx נרשמת כקוד סטטוס ולא ככשל; `builtin:Ignore` על שני המודולים אומר שגם כשל
+אמיתי לא מפיל את הריצה; והנתיב השלישי נפרד משני הקיימים, כך ששני המודולים של
+ManyChat אינם מושפעים בשום מקרה.
+
+**מה יקרה בפועל:** רוב שינויי הסטטוס יקבלו `200 {"skipped":true}` — זה תקין
+ומכוון. חמישה סטטוסים בלבד מייצרים אירוע.
+
+### ואז — ורק אז
+
+תגידו לי שזה מחובר, ואני מוסיף את פסקת ה-CAPI ל-`privacy.html`. הנוסח כתוב
+ומחכה ב-`docs/meta-capi-flow.md`. הוא **לא** נכנס לפני שאירוע אמיתי נשלח:
+עמוד שמצהיר על משהו שאינו קורה שגוי בדיוק כמו עמוד ששותק על משהו שקורה. הפסקה
+נכתבה היום, נבדקה, ונמשכה בחזרה מהאתר מהסיבה הזו בדיוק.
+
+---
+
 ## הפקודה הבאה — Search Console
 
 אפס שינוי קוד, אפס פריסה. המטרה: שמישהו ידע על מה `amora-studios.com` מוצג
