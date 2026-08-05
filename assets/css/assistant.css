@@ -284,3 +284,62 @@ html.form-in-view .am-launcher:not(.is-open) {
 @media (prefers-reduced-motion: reduce) {
   .am-typing__dot { animation: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Header mode — the launcher joins the mobile header bar instead of sitting on
+   the hero as an ivory card, which is what it looked like at 390px: a bordered
+   rectangle with a hard shadow, in a corner nothing else occupied. As a circle
+   in the bar it reads as site chrome.
+
+   The label is replaced by a single glyph, because a 44px circle has no room
+   for two words. The button keeps its aria-label, so what a screen reader
+   announces does not change with the visual mode.
+   --------------------------------------------------------------------------- */
+.am-launcher__icon { display: none; }
+
+.am-launcher--header {
+  position: static;
+  width: 44px;
+  height: 44px;
+  z-index: auto;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 253, 249, 0.45);
+  background: transparent;
+  color: #FFFDF9;
+  box-shadow: none;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  transition: color 400ms, border-color 400ms, background-color 200ms;
+}
+.am-launcher--header .am-launcher__label,
+.am-launcher--header .am-launcher__dot { display: none; }
+.am-launcher--header .am-launcher__icon { display: block; }
+
+.site-header:not(.is-scrolled) .am-launcher--header {
+  background: rgba(24, 22, 20, 0.42);
+  border-color: rgba(255, 253, 249, 0.5);
+}
+.site-header.is-scrolled .am-launcher--header {
+  color: var(--charcoal);
+  border-color: rgba(201, 174, 140, 0.6);
+}
+.am-launcher--header:hover { transform: none; }
+.am-launcher--header.is-open,
+.site-header.is-scrolled .am-launcher--header.is-open { border-color: var(--champagne); }
+
+/* The stand-down rule above exists because a launcher fixed to the bottom-left
+   was painted over the lead form's own inputs. In the header it is part of the
+   bar that overlays the top of every page by design, exactly as the burger and
+   the CTA beside it do — so the rule must not follow it there, or the header
+   would go visibly gap-toothed whenever the form scrolled into view. */
+html.form-in-view .am-launcher--header:not(.is-open) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Same state machine as the burger: circle over the hero, square when solid. */
+.site-header:not(.is-scrolled) .am-launcher--header { border-radius: 50%; }
+.site-header.is-scrolled .am-launcher--header { border-radius: 0; }

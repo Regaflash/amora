@@ -421,7 +421,12 @@ summary::-webkit-details-marker { display: none; }
   gap: 24px;
 }
 
-.brand { display: flex; align-items: center; gap: 12px; }
+/* flex-shrink:0 is load-bearing, not tidiness. The mobile bar gained two
+   44px controls (the assistant launcher and the accessibility trigger),
+   and as a shrinkable flex item the logo was crushed to 30px at 360px and
+   to nothing at 320px before anything else gave way. Measured, not
+   assumed. */
+.brand { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
 .brand__mark {
   width: 46px;
   height: 46px;
@@ -1961,4 +1966,24 @@ textarea.field__control { resize: vertical; }
   * { animation: none !important; transition: none !important; }
   html { scroll-behavior: auto; }
   .js.reveal-ready [data-reveal] { opacity: 1 !important; transform: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Very narrow phones. The mobile bar carries four controls now — the
+   availability CTA, the burger, the accessibility trigger and the assistant
+   launcher — and at 360px they clear the logo with 2px to spare. Below that
+   they did not: at 320px the launcher was measured at [-38..6], i.e. wholly
+   off the left edge of the screen.
+
+   Tightened rather than dropped. Every one of the four is either a legal
+   obligation or a conversion path, so hiding one to win space is not on the
+   table. 40px is still at the comfortable end of a touch target.
+   --------------------------------------------------------------------------- */
+@media (max-width: 359px) {
+  .nav-mobile { gap: 6px; }
+  .nav-mobile__cta { padding: 11px 10px; letter-spacing: .06em; }
+  .nav-mobile .burger,
+  .nav-mobile .a11y-fab--header,
+  .nav-mobile .am-launcher--header { width: 40px; height: 40px; }
+  .site-header__bar { gap: 10px; }
 }

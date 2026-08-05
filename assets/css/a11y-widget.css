@@ -560,3 +560,84 @@ html.a11y-spacing .a11y-ui .a11y-item__state { letter-spacing: .04em !important;
 
 /* Stop animations: the panel's entrance is an animation too. */
 html.a11y-no-motion .a11y-panel { animation: none !important; }
+
+/* ---------------------------------------------------------------------------
+   Header mode — the trigger sits in the mobile header bar, beside the burger
+   and the availability CTA, instead of floating over the bottom-right corner.
+   a11y-widget.js moves the BUTTON there when .nav-mobile exists; the panel
+   stays on body. The four legal pages have no such bar and keep every rule
+   above untouched.
+
+   It borrows the burger's geometry rather than inventing a third size, so the
+   two circles in that bar are the same object at a glance. 44px is also the
+   minimum comfortable touch target, which the old 54px cleared and this must
+   not fall below.
+   --------------------------------------------------------------------------- */
+.a11y-fab--header {
+  position: static;
+  width: 44px;
+  height: 44px;
+  z-index: auto;
+  /* border-STYLE, not just width. The rule that gave this button its border
+     was scoped to .a11y-ui, and the button no longer lives there — moving an
+     element out of an ancestor silently drops every rule scoped to it. It
+     measured `0px none` until this line replaced the width/colour pair. */
+  border: 1px solid rgba(255, 253, 249, 0.45);
+  background: transparent;
+  color: #FFFDF9;
+  box-shadow: none;
+  transition: color 400ms, border-color 400ms, background-color 200ms;
+}
+.a11y-fab--header .a11y-fab__icon { width: 22px; height: 22px; }
+
+/* Over the hero the bar's controls are translucent ink with a blur behind
+   them; once the header goes solid they become ink on ivory. Both states are
+   the burger's, matched here so nothing in the row drifts out of step. */
+.site-header:not(.is-scrolled) .a11y-fab--header {
+  background: rgba(24, 22, 20, 0.42);
+  border-color: rgba(255, 253, 249, 0.5);
+}
+.site-header.is-scrolled .a11y-fab--header {
+  color: var(--charcoal);
+  border-color: rgba(201, 174, 140, 0.6);
+}
+.a11y-fab--header[aria-expanded="true"],
+.site-header.is-scrolled .a11y-fab--header[aria-expanded="true"] {
+  border-color: var(--champagne);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header:not(.is-scrolled) .a11y-fab--header {
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
+  }
+}
+
+/* Shape follows the burger through both header states — a circle over the
+   hero, a square once the header goes solid. Held round in both, it was the
+   only circle in a row of rectangles after the first scroll. */
+.site-header:not(.is-scrolled) .a11y-fab--header { border-radius: 50%; }
+.site-header.is-scrolled .a11y-fab--header { border-radius: 0; }
+
+/* The focus ring has to be restated here, and this is the third thing the move
+   broke in the same way. `.a11y-fab:focus-visible` above is not scoped to
+   .a11y-ui, so it still matches — but it paints `var(--a11y-on-accent)`, and
+   that custom property is DECLARED on .a11y-ui. Outside that subtree it
+   resolves to nothing, the outline colour is invalid, and no ring is drawn at
+   all. verify.mjs caught it as `BUTTON.a11y-fab` missing a focus ring, on the
+   one control whose entire purpose is keyboard and assistive access.
+
+   Moving an element out of an ancestor drops the rules scoped to it AND the
+   custom properties declared on it. The border and the shape were the first
+   two; this was the one that mattered.
+
+   Colours follow the site's own convention rather than the widget's: ivory
+   over the hero, charcoal once the header is solid. */
+.site-header:not(.is-scrolled) .a11y-fab--header:focus-visible {
+  outline: 2px solid var(--ivory);
+  outline-offset: 3px;
+}
+.site-header.is-scrolled .a11y-fab--header:focus-visible {
+  outline: 2px solid var(--charcoal);
+  outline-offset: 3px;
+}

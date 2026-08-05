@@ -151,6 +151,30 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   arrives. That is the same outstanding owner item, now blocking something
   visible.
 
+- **The assistant launcher and the accessibility trigger live in the mobile
+  header bar**, beside the burger and the availability CTA, and share its
+  exact geometry and both of its states — circle over the hero, square once
+  `.site-header` gains `.is-scrolled`. `assistant.js` and `a11y-widget.js`
+  each move only their BUTTON into `.nav-mobile`; the panels stay on `body`,
+  because a fixed modal nested in the header would inherit its stacking
+  context. The four legal pages have no `.nav-mobile` and keep the
+  free-floating originals, so that fallback is live code, not a leftover.
+
+  **Moving an element out of an ancestor drops the rules scoped to it and the
+  custom properties declared on it.** That bit three times in one change:
+  the border vanished (`border-width` without `border-style` computes to
+  `0px none`), the shape stopped tracking the header, and — the one that
+  mattered — `.a11y-fab:focus-visible` kept matching but painted
+  `var(--a11y-on-accent)`, a property declared on `.a11y-ui`, so it resolved
+  to nothing and **no focus ring was drawn on the accessibility control at
+  all**. `verify.mjs` caught that; a screenshot would not have.
+
+  `.brand` carries `flex: 0 0 auto` because of this change: with two more
+  44px controls in the bar the logo was measured crushed to 30px at 360px and
+  to zero at 320px. Below 360px a media query tightens the row to 40px
+  controls — measured, because at 320px the launcher had been sitting at
+  `[-38..6]`, entirely off-screen.
+
 - Three files are GENERATED. Do not hand-edit them; rerun the tool and let
   `check.sh` confirm: `sitemap.xml` (`tools/gen-sitemap.py`), the ImageGallery
   JSON-LD block in `index.html` (`tools/gen-image-schema.py`), and the icon set
