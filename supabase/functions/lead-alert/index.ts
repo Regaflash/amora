@@ -202,7 +202,18 @@ Deno.serve(async (req: Request) => {
     console.error('lead-alert: provider rejected the send', {
       status: res.status, detail: detail.slice(0, 300), leadId: payload.record.id,
     });
-    return new Response('send failed', { status: 502 });
+    // The provider's own words travel back in the body, not only to a log.
+    // This function returned a bare "send failed" the first time it was tested
+    // end to end, and the reason -- which turned out to be a specific, fixable
+    // Resend restriction -- was sitting in a log stream that the platform's
+    // log API does not return. An error that cannot be read is an error that
+    // gets guessed at. The caller here is a database trigger, so this text
+    // lands in net._http_response and nowhere public.
+    return new Response(JSON.stringify({
+      error: 'send failed',
+      provider_status: res.status,
+      provider: detail.slice(0, 400),
+    }), { status: 502, headers: { 'content-type': 'application/json' } });
   }
 
   console.log('lead-alert: sent', { leadId: payload.record.id });

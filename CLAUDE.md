@@ -179,25 +179,24 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the visible copy and the copy Google is served could have parted in either
   direction and every check would still have passed. Same lesson as the lead
   alerts below: **a guarantee written here is not a guarantee that runs.**
-- **Lead alerts: deployed, and still one owner step from sending.** A trigger on
-  INSERT into `public.leads` (`docs/supabase-lead-alert-webhook.sql`) calls the
-  `lead-alert` Edge Function, which emails the studio. Both are live on
-  `dkejuaildigikufrdiru` and verified end to end. `RESEND_API_KEY`,
-  `LEAD_ALERT_TO` and `LEAD_ALERT_SECRET` are **not set**, so the function
-  answers `500 alert not configured` and no mail goes out yet. Status table and
-  the remaining steps: `docs/lead-alerts.md`.
+- **Lead alerts: every secret is set, and no email arrives.** Tested end to end
+  on 5.8.2026 by inserting a real row: the trigger fired, `lead-alert` ran, and
+  Resend returned **403** — *"You can only send testing emails to your own email
+  address (support@amora-studios.com)"*. The Resend account is amora's,
+  `LEAD_ALERT_TO` is `support@regaflash.com`, and no domain is verified, so the
+  sender falls back to Resend's shared `onboarding@resend.dev`, which may only
+  deliver to the account owner. Each setting is individually correct; they
+  disagree with each other.
 
-  This entry used to read "wired, not aspirational" and it was wrong, for
-  months. The function was in the repo; `public.leads` had no trigger and the
-  project had no Edge Functions deployed at all, while the site promised
-  "נחזור אליכם היום" in six places. **Repo state is not deploy state.** Do not
-  restate anything here as live without running the two verification queries at
-  the bottom of `docs/supabase-lead-alert-webhook.sql`, or
-  `mcp__Supabase__list_edge_functions`. `tools/check.sh` cannot see any of this
-  — it reads files, and the files were fine.
+  **Fix: point `LEAD_ALERT_TO` at `support@amora-studios.com`** (one field,
+  works at once), or verify the domain in Resend and set `LEAD_ALERT_FROM`.
+  Full detail and the DNS caution: `docs/lead-alerts.md`.
 
-## Still outstanding, owner-supplied only
-
+  This entry has now been wrong in both directions — it once claimed the
+  pipeline was live when no trigger existed, and then claimed three secrets
+  were unset when two had been set the day before. **The status of this
+  pipeline is not knowable by reading anything; insert a row and look at
+  `net._http_response`.**
 - A photo of the team at work — the `about` slot is a stand-in, and the section
   text talks about "the two of us" with no name or face anywhere on the site.
 - Legal review of `accessibility.html`, `privacy.html` and `terms.html` (all

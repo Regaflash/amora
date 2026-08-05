@@ -4,16 +4,51 @@
 
 | Piece | State |
 | --- | --- |
-| `lead-alert` Edge Function | **deployed** to `dkejuaildigikufrdiru`, `verify_jwt` off |
-| `on_lead_insert_alert` trigger on `public.leads` | **created** |
-| `LEAD_ALERT_SECRET` on the function | **not set — owner** |
-| `RESEND_API_KEY` on the function | **not set — owner** |
-| `LEAD_ALERT_TO` on the function | **not set — owner** |
+| `lead-alert` Edge Function | **deployed** (v10), `verify_jwt` off |
+| `on_lead_insert_alert` trigger on `public.leads` | **created and firing** ✓ |
+| `LEAD_ALERT_SECRET` | **set** (04.08) ✓ |
+| `RESEND_API_KEY` | **set** (05.08) ✓ |
+| `LEAD_ALERT_TO` | **set** (04.08) — but see below |
+| **an email actually arriving** | ❌ **no — one field disagrees with another** |
 
-Until the last three are set, an enquiry still reaches the database and still
-shows in `admin.html`, and the function answers `500 alert not configured` —
-which is deliberate, because an alert that returns 200 without sending is worse
-than none. **No email is sent until an owner completes steps 1 and 3 below.**
+### Tested end to end on 5.8.2026, and it failed
+
+Every box above was ticked, so the honest thing was to insert a real row and
+watch. The trigger fired, the function ran, Resend refused:
+
+> `403 validation_error` — *"You can only send testing emails to your own email
+> address (**support@amora-studios.com**). To send emails to other recipients,
+> please verify a domain at resend.com/domains, and change the `from` address
+> to an email using this domain."*
+
+Three facts that are each fine alone and broken together:
+
+- the Resend account belongs to **support@amora-studios.com**
+- `LEAD_ALERT_TO` is **support@regaflash.com**
+- no domain is verified on the account (`/domains` returns `[]`), so
+  `LEAD_ALERT_FROM` falls back to Resend's shared `onboarding@resend.dev`,
+  which may only deliver to the account owner
+
+**This is the whole reason the status table now has a last row.** Five green
+ticks described the configuration accurately and told us nothing about whether
+a single email would arrive. The only check worth anything was sending one.
+
+### Two ways to fix it
+
+**A — one field, works immediately.** Set `LEAD_ALERT_TO` to
+`support@amora-studios.com`. It is the Resend account owner, so the shared
+sender is allowed to deliver to it, and it is arguably the better destination
+anyway: the studio's own address rather than the agency's.
+
+**B — the durable one.** Verify `amora-studios.com` at resend.com/domains, then
+set `LEAD_ALERT_FROM` to an address on that domain. After that alerts can go to
+any recipient, and they arrive from the studio rather than from a Resend test
+sender. **Care with DNS:** `@` already carries Google MX and two
+`google-site-verification` TXT records. Resend's records are additive — add,
+never edit or replace, or the studio loses its mail.
+
+A is not a workaround to be embarrassed about; it is the correct destination
+plus a sender restriction that stops mattering once B is done.
 
 This table exists because the earlier version of this file described the setup
 as though it had been done. It had not: the function was in the repo and
