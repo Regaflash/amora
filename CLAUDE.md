@@ -86,8 +86,19 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - Outbound network is allowlisted: `github.com` and `registry.npmjs.org` work;
   `youtube.com`, `drive.google.com`, `fonts.googleapis.com`, `unpkg.com` are
   all 403. Anything the site needs must be vendored, not fetched at runtime.
-- Chat file attachments **do** land on disk at full resolution — that is a
-  working transport for images when a repo is unreachable.
+- **Chat file attachments do NOT land on disk.** This entry used to claim the
+  opposite — "they do land at full resolution, a working transport for images"
+  — and on 2026-08-05 that cost a wasted round trip: the owner attached the
+  logo master, it was visible in the conversation, and a search of the entire
+  filesystem for any recent file turned up nothing. An image can be *seen* and
+  still not be *processable*; there is no tool that writes a conversation
+  image to a file.
+- **To get a binary file into this environment, put it in the repo.** The
+  reliable route with no local git is GitHub's web UI: `Add file` →
+  `Upload files` → drop it → commit to a branch. `github.com` is allowlisted,
+  so it can be pulled from here immediately. Direct download from a CDN does
+  not work — `d8j0ntlcm91z4.cloudfront.net` returns 403 through the proxy,
+  retested the same day.
 
 ## Product decisions already made
 
