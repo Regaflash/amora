@@ -9,8 +9,13 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 19 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 28 runtime checks in a real browser
+1. tools/check.sh          # must exit 0 — 22 checks + a phone-format count
+   node tools/verify.mjs   # must exit 0 — 43 runtime checks in a real browser
+   # verify.mjs needs playwright-core and pngjs, which this repo deliberately
+   # does not vendor and has no package.json for:
+   #   npm install --no-save playwright-core pngjs
+   # Install both in ONE command — with no package.json, a second --no-save
+   # install removes the first package.
 2. Deploy this directory to Vercel. vercel.json and .vercelignore are already
    correct — do not add a build step, this is a static site with no
    dependencies.
@@ -75,9 +80,9 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 
 ### Known access limits from this environment
 
-- The Claude GitHub App does not have access to `Regaflash/amora`, so `add_repo`
-  fails and the repo cannot be pushed to from here. The owner pushes from their
-  own machine, or grants access at github.com/settings/installations.
+- The repo **is** reachable from this environment and can be pushed to and
+  opened PRs against. This entry used to say the opposite; it was true once and
+  is not now, and it was contradicted by a whole session of pushes.
 - Outbound network is allowlisted: `github.com` and `registry.npmjs.org` work;
   `youtube.com`, `drive.google.com`, `fonts.googleapis.com`, `unpkg.com` are
   all 403. Anything the site needs must be vendored, not fetched at runtime.
@@ -91,6 +96,24 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - RTL Hebrew throughout. Physical CSS properties are a recurring bug source.
 - No prices anywhere on the site — by the owner's brief. Cost questions route
   to the contact form.
+- **Regaflash is the owner's second business, and its product ships with every
+  Amora booking.** `regaflash.com` produces photo magnets carrying an AR
+  scanner: point a phone at the magnet and the photograph plays as video.
+  Owner-confirmed 2026-08-05 as included in *every* deal, not an upsell.
+
+  It appears in five places and they must stay consistent: the trust bar, the
+  package FAQ answer (**both copies** — the visible one and the FAQPage
+  JSON-LD, which `check.sh` compares byte-for-byte), the `cost.html`
+  inclusions list, and `assistant.js` (a `magnets` entry plus the `package`
+  answer). The link to `regaflash.com` lives in `.faq__more`, **not** in the
+  FAQ answer — a tag inside `.faq__a` breaks the byte-lock, which is the same
+  trap that put the `cost.html` link there.
+
+  `regaflash.com` is a different legal entity, so it does **not** belong in
+  the Organization block's `sameAs` — that property is for other profiles of
+  the *same* entity. It is a plain outbound link, opening in a new tab so the
+  visitor keeps the conversion page.
+
 - Testimonial portraits were deliberately removed: they showed real people who
   had not said the quoted words. Do not re-add without written permission.
 - The hero streams the studio's real footage from YouTube — `2DHdORDXVmo`
@@ -112,6 +135,22 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `404.html` is served by Vercel AT the address that was not found, so every
   asset it references must stay root-absolute — a relative href resolves
   against the dead path. That is a real bug that has already happened once.
+- **Every public page carries the same shell obligations**, and five of them
+  did not until 2026-08-05. `.skip-link` was styled globally in `styles.css`
+  from the start but only `index.html` and `cost.html` emitted the markup —
+  `accessibility.html` shipped without a skip link, which is the one page
+  where the omission is also an argument against itself. All seven now carry
+  a skip link, `<main id="main">`, `<link rel="manifest">` and `theme-color`.
+
+  `site.webmanifest` is referenced **root-absolute** for the same reason every
+  other `404.html` reference is: Vercel serves that page AT the address that
+  was not found, so a relative href resolves against the dead path. Note the
+  manifest ships **without a 512px icon** — the source logo is 150×150, so one
+  would be upscaled garbage. Chrome's install prompt wants 192 *and* 512, so
+  the profile is valid and useful but not installable until a real logo master
+  arrives. That is the same outstanding owner item, now blocking something
+  visible.
+
 - Three files are GENERATED. Do not hand-edit them; rerun the tool and let
   `check.sh` confirm: `sitemap.xml` (`tools/gen-sitemap.py`), the ImageGallery
   JSON-LD block in `index.html` (`tools/gen-image-schema.py`), and the icon set

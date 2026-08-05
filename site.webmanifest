@@ -1,0 +1,17 @@
+{
+  "name": "Amora Studio — צילום חתונות",
+  "short_name": "Amora Studio",
+  "description": "צילום וידאו וסטילס לחתונות ואירועים — תל אביב, פעילות בכל הארץ.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#F7F2EA",
+  "background_color": "#F7F2EA",
+  "icons": [
+    { "src": "/assets/img/icon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/assets/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/img/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
