@@ -25,3 +25,6 @@ Thumbs.db
 
 # Scratch worktrees from agent sessions.
 .claude/worktrees/
+
+# Local Claude Code permission grants — machine-scoped, never a repo-wide standing grant
+.claude/settings.local.json
