@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 22 checks + a phone-format count
+1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
    node tools/verify.mjs   # must exit 0 — 43 runtime checks in a real browser
    # verify.mjs needs playwright-core and pngjs, which this repo deliberately
    # does not vendor and has no package.json for:
