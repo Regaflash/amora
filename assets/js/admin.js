@@ -19,7 +19,12 @@
     supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZWp1YWlsZGlnaWt1ZnJkaXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0ODkxODgsImV4cCI6MjEwMTA2NTE4OH0.rN244HfLzw7iI2J9uF9lmRoW96aMAN117fVWvlCDWLE',
 
     // Signature used by the WhatsApp greeting.
-    studioName: 'Amora Studio'
+    studioName: 'Amora Studio',
+
+    // The couple-facing contract page (the `contract` Edge Function). The
+    // token appended to this URL is the whole authentication — treat a
+    // contract link like a signed cheque.
+    contractBase: 'https://dkejuaildigikufrdiru.supabase.co/functions/v1/contract?t='
   };
 
   var STORE_KEY = 'amora.crm.session';
@@ -34,6 +39,20 @@
                      mitzvah: 'בר / בת מצווה', other: 'אירוע אחר' };
   var COVERAGE_LABEL = { both: 'סטילס + וידאו', stills: 'סטילס בלבד',
                          video: 'וידאו בלבד', unsure: 'עוד לא בטוחים' };
+  // The sales pipeline. Order matters: it is the order in the select control.
+  var STATUS_ORDER = ['new', 'contacted', 'proposal', 'contract_sent', 'signed', 'lost'];
+  var STATUS_LABEL = { new: 'חדש', contacted: 'נוצר קשר', proposal: 'הצעה נשלחה',
+                       contract_sent: 'חוזה נשלח', signed: 'נחתם ✓', lost: 'לא נסגר' };
+  var CONTRACT_LABEL = { draft: 'חוזה — טיוטה', sent: 'חוזה נשלח, ממתין לחתימה',
+                         signed: 'חוזה חתום ✓', cancelled: 'חוזה בוטל' };
+  // source values written by the intake channels; anything else is the
+  // referrer host the site's own form recorded.
+  function sourceChannel(source) {
+    var s = String(source || '');
+    if (s.indexOf('google-ads') === 0) return { key: 'google', label: 'Google Ads' };
+    if (s.indexOf('meta-ads') === 0) return { key: 'meta', label: 'Meta' };
+    return { key: 'site', label: 'האתר' };
+  }
   var WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
@@ -177,6 +196,8 @@
   var state = {
     leads: [],
     total: null,      // exact count from Content-Range, when the header is exposed
+    contracts: {},    // lead_id → its newest contract row
+    pipelineReady: true,  // false while the DB migration has not run yet
     handled: 'open',
     type: 'all',
     sort: 'newest',
@@ -382,7 +403,10 @@
     var parts = ['היי ' + (lead.name || '') + ', כאן ' + CONFIG.studioName + '.'];
     var day = parseDay(lead.event_date);
     var subject = typeLabel(lead.event_type);
-    var line = 'קיבלנו את הפנייה שלכם מהאתר';
+    // An ad lead never saw the website; "מהאתר" would read as a mistake.
+    var line = sourceChannel(lead.source).key === 'site'
+      ? 'קיבלנו את הפנייה שלכם מהאתר'
+      : 'קיבלנו את הפנייה שלכם';
     if (subject) line += ' לגבי ' + subject;
     if (day) line += ' בתאריך ' + formatDay(day);
     parts.push(line + '.');
@@ -463,8 +487,12 @@
       else if (days < 0) badge.classList.add('crm-card__badge--past');
       badges.appendChild(badge);
     }
+    var channel = sourceChannel(lead.source);
+    badges.appendChild(el('span',
+      'crm-card__badge crm-card__badge--src crm-card__badge--src-' + channel.key,
+      channel.label));
     badges.appendChild(el('span', 'crm-card__badge crm-card__badge--status',
-      lead.handled ? 'טופל' : 'ממתין'));
+      STATUS_LABEL[lead.status] || (lead.handled ? 'טופל' : 'ממתין')));
     head.appendChild(badges);
     li.appendChild(head);
 
@@ -501,11 +529,105 @@
     addRow(dl, 'אזור', lead.area);
     addRow(dl, 'מה מצלמים', coverageLabel(lead.coverage));
     addRow(dl, 'הגיעו מ', lead.source);
+    addRow(dl, 'קמפיין', lead.campaign);
     if (dl.childNodes.length) li.appendChild(dl);
 
     if (lead.message) {
       var quote = el('p', 'crm-card__message', lead.message);
       li.appendChild(quote);
+    }
+
+    // Pipeline: the status select, when the migration has added the column.
+    if (state.pipelineReady && 'status' in lead) {
+      var statusWrap = el('div', 'crm-card__pipeline');
+      var statusLabelEl = el('label', 'crm-card__pipeline-label', 'סטטוס');
+      var statusSel = document.createElement('select');
+      statusSel.className = 'crm-card__status';
+      STATUS_ORDER.forEach(function (value) {
+        var opt = el('option', null, STATUS_LABEL[value]);
+        opt.value = value;
+        statusSel.appendChild(opt);
+      });
+      statusSel.value = STATUS_ORDER.indexOf(lead.status) === -1 ? 'new' : lead.status;
+      statusSel.addEventListener('change', function () {
+        setStatus(lead, statusSel.value, statusSel);
+      });
+      statusLabelEl.appendChild(statusSel);
+      statusWrap.appendChild(statusLabelEl);
+      li.appendChild(statusWrap);
+
+      // The note. Opens closed unless there already is one — a card is a
+      // phone-screen object and most leads never need a note.
+      var noteBox = document.createElement('details');
+      noteBox.className = 'crm-note';
+      if (lead.notes) noteBox.open = true;
+      var noteSummary = el('summary', 'crm-note__summary',
+        lead.notes ? 'פתק' : 'הוספת פתק');
+      noteBox.appendChild(noteSummary);
+      var noteArea = document.createElement('textarea');
+      noteArea.className = 'crm-note__area';
+      noteArea.rows = 3;
+      noteArea.maxLength = 4000;
+      noteArea.value = lead.notes || '';
+      noteBox.appendChild(noteArea);
+      var noteSave = el('button', 'crm-act', 'שמירת פתק');
+      noteSave.type = 'button';
+      noteSave.addEventListener('click', function () {
+        saveNotes(lead, noteArea.value.trim(), noteSave);
+      });
+      noteBox.appendChild(noteSave);
+      li.appendChild(noteBox);
+
+      // The contract block: create → send over WhatsApp → watch it get signed.
+      var contract = state.contracts[lead.id];
+      var cWrap = el('div', 'crm-contract');
+      if (!contract) {
+        var createBtn = el('button', 'crm-act crm-act--contract', 'יצירת חוזה');
+        createBtn.type = 'button';
+        createBtn.addEventListener('click', function () { openContractDialog(lead); });
+        cWrap.appendChild(createBtn);
+      } else {
+        var stateLine = el('p', 'crm-contract__state',
+          (CONTRACT_LABEL[contract.status] || contract.status) +
+          (contract.signed_at ? ' · ' + formatDay(new Date(contract.signed_at)) : '') +
+          (contract.status === 'sent' && contract.viewed_at ? ' · נצפה' : ''));
+        if (contract.status === 'signed') stateLine.classList.add('is-signed');
+        cWrap.appendChild(stateLine);
+
+        var cActions = el('div', 'crm-card__actions crm-contract__actions');
+
+        var openLink = el('a', 'crm-act', 'צפייה בחוזה');
+        openLink.href = contractLink(contract);
+        openLink.target = '_blank';
+        openLink.rel = 'noopener noreferrer';
+        cActions.appendChild(openLink);
+
+        var copyLink = el('button', 'crm-act', 'העתקת קישור');
+        copyLink.type = 'button';
+        copyLink.addEventListener('click', function () { copyText(contractLink(contract)); });
+        cActions.appendChild(copyLink);
+
+        if (contract.status !== 'signed' && contract.status !== 'cancelled') {
+          if (digits) {
+            var waSend = el('a', 'crm-act crm-act--wa', 'שליחה בוואטסאפ');
+            waSend.href = 'https://wa.me/' + digits + '?text=' +
+              encodeURIComponent(contractWaText(lead, contract));
+            waSend.target = '_blank';
+            waSend.rel = 'noopener noreferrer';
+            cActions.appendChild(waSend);
+          }
+          if (contract.status === 'draft') {
+            var sentBtn = el('button', 'crm-act crm-act--mark', 'סימון כנשלח');
+            sentBtn.type = 'button';
+            sentBtn.addEventListener('click', function () {
+              markContractSent(lead, contract, sentBtn);
+            });
+            cActions.appendChild(sentBtn);
+          }
+        }
+        cWrap.appendChild(cActions);
+      }
+      li.appendChild(cWrap);
     }
 
     li.appendChild(el('p', 'crm-card__stamp', relativeArrival(lead.created_at)));
@@ -716,9 +838,10 @@
       show(loadingEl, true);
     }
 
-    var path = '/rest/v1/leads' +
-      '?select=id,created_at,name,phone,email,event_date,date_tbd,event_type,area,coverage,message,source,handled' +
-      '&order=created_at.desc&limit=' + PAGE_LIMIT;
+    // select=* on purpose: the same page must work before and after the
+    // pipeline migration (docs/supabase-crm-pipeline.sql) adds columns. An
+    // explicit list would 400 on whichever side of the deploy it mismatched.
+    var path = '/rest/v1/leads?select=*&order=created_at.desc&limit=' + PAGE_LIMIT;
 
     return api(path, { headers: { Prefer: 'count=exact' } })
       .then(function (res) {
@@ -760,6 +883,7 @@
         // that would throw away keyboard focus and any text the owner had
         // selected in a lead's message.
         if (!silent || changed) render();
+        return loadContracts(silent);
       })
       .catch(function (err) {
         loading = false;
@@ -775,6 +899,292 @@
         showError('לא הצלחנו לטעון את הפניות. ייתכן שאין חיבור לרשת, ' +
           'או שסופאבייס לא זמין כרגע. אפשר לנסות שוב.');
       });
+  }
+
+  var lastContractsSignature = null;
+
+  /** Contracts ride alongside the leads. Failure here is deliberately quiet:
+   *  before docs/supabase-crm-pipeline.sql has run the table does not exist,
+   *  and the lead list — the part that loses money when it breaks — must keep
+   *  working exactly as before. */
+  function loadContracts(silent) {
+    return api('/rest/v1/contracts' +
+      '?select=id,lead_id,status,token,created_at,sent_at,viewed_at,signed_at,couple_name' +
+      '&order=created_at.desc&limit=' + PAGE_LIMIT, {})
+      .then(function (res) {
+        if (!res.ok) {
+          state.pipelineReady = res.status !== 404;
+          return null;
+        }
+        state.pipelineReady = true;
+        return res.json();
+      })
+      .then(function (rows) {
+        if (!Array.isArray(rows)) return;
+        var signature = JSON.stringify(rows);
+        if (signature === lastContractsSignature) return;
+        lastContractsSignature = signature;
+        var map = {};
+        rows.forEach(function (c) {
+          // Newest first from the server; keep only the newest per lead.
+          if (c.lead_id && !map[c.lead_id]) map[c.lead_id] = c;
+        });
+        state.contracts = map;
+        render();
+      })
+      .catch(function () { /* quiet: see above */ });
+  }
+
+  /** Timeline entries are nice-to-have; never let one break an action. */
+  function logEvent(leadId, contractId, type, detail) {
+    api('/rest/v1/lead_events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ lead_id: leadId, contract_id: contractId || null,
+                             type: type, detail: detail || null })
+    }).catch(function () {});
+  }
+
+  function setStatus(lead, next, control) {
+    var previous = lead.status || 'new';
+    if (next === previous) return;
+    lead.status = next;
+    // The pipeline and the old handled flag must not disagree: anything past
+    // "new" has been handled; back to "new" reopens it.
+    var handledNext = next !== 'new';
+    var handledPrev = lead.handled;
+    lead.handled = handledNext;
+    control.disabled = true;
+    pendingWrites++;
+    lastSignature = null;
+    render();
+
+    function settle() { pendingWrites = Math.max(0, pendingWrites - 1); }
+
+    api('/rest/v1/leads?id=eq.' + encodeURIComponent(lead.id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: next, handled: handledNext })
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      settle();
+      toast('הסטטוס עודכן: ' + (STATUS_LABEL[next] || next));
+      logEvent(lead.id, null, 'status_changed', (STATUS_LABEL[previous] || previous) +
+        ' ← ' + (STATUS_LABEL[next] || next));
+    }, function (err) {
+      settle();
+      lead.status = previous;
+      lead.handled = handledPrev;
+      render();
+      if (err && (err.expired || err.message === 'no-session')) {
+        endSession('פג תוקף החיבור. אפשר להיכנס שוב.');
+        return;
+      }
+      toast('העדכון לא נשמר. אפשר לנסות שוב.');
+    });
+  }
+
+  function saveNotes(lead, value, button) {
+    var previous = lead.notes || '';
+    lead.notes = value;
+    button.disabled = true;
+    pendingWrites++;
+    lastSignature = null;
+
+    function settle() { pendingWrites = Math.max(0, pendingWrites - 1); button.disabled = false; }
+
+    api('/rest/v1/leads?id=eq.' + encodeURIComponent(lead.id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ notes: value || null })
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      settle();
+      toast('הפתק נשמר');
+    }, function (err) {
+      settle();
+      lead.notes = previous;
+      if (err && (err.expired || err.message === 'no-session')) {
+        endSession('פג תוקף החיבור. אפשר להיכנס שוב.');
+        return;
+      }
+      toast('הפתק לא נשמר. אפשר לנסות שוב.');
+    });
+  }
+
+  /* ----------------------------------------------------------- contracts --- */
+
+  function contractLink(contract) {
+    return CONFIG.contractBase + contract.token;
+  }
+
+  function contractWaText(lead, contract) {
+    var parts = ['היי ' + (lead.name || '') + ', כאן ' + CONFIG.studioName + '.'];
+    parts.push('מצורף ההסכם שלנו לאירוע — אפשר לקרוא ולחתום ישירות מהנייד:');
+    parts.push(contractLink(contract));
+    parts.push('אם משהו לא ברור, אנחנו כאן לכל שאלה.');
+    return stripBidi(parts.join('\n'));
+  }
+
+  function markContractSent(lead, contract, button) {
+    button.disabled = true;
+    pendingWrites++;
+    function settle() { pendingWrites = Math.max(0, pendingWrites - 1); }
+
+    api('/rest/v1/contracts?id=eq.' + encodeURIComponent(contract.id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'sent', sent_at: new Date().toISOString() })
+    }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      settle();
+      contract.status = 'sent';
+      lastContractsSignature = null;
+      logEvent(lead.id, contract.id, 'contract_sent', 'החוזה סומן כנשלח');
+      if ((lead.status || 'new') !== 'signed') setStatus(lead, 'contract_sent', button);
+      else render();
+      toast('החוזה סומן כנשלח');
+    }, function () {
+      settle();
+      button.disabled = false;
+      toast('העדכון לא נשמר. אפשר לנסות שוב.');
+    });
+  }
+
+  /** The create-contract dialog. Built once, filled per lead. Plain DOM, same
+   *  rules as every card: values go in via textContent/value, never HTML. */
+  var dialogEl = null;
+
+  function fieldRow(labelText, inputEl) {
+    var wrap = el('label', 'field');
+    wrap.appendChild(el('span', 'field__label', labelText));
+    inputEl.className = 'field__control';
+    wrap.appendChild(inputEl);
+    return wrap;
+  }
+
+  function input(type, name, value) {
+    var node = document.createElement('input');
+    node.type = type;
+    node.name = name;
+    if (value !== undefined && value !== null) node.value = value;
+    return node;
+  }
+
+  function openContractDialog(lead) {
+    closeContractDialog();
+
+    var overlay = el('div', 'crm-dialog');
+    var box = el('form', 'crm-dialog__box');
+    box.setAttribute('novalidate', 'novalidate');
+
+    box.appendChild(el('h2', 'crm-dialog__title', 'חוזה חדש — ' + (lead.name || '')));
+    box.appendChild(el('p', 'crm-dialog__note',
+      'המחיר נשאר בחוזה בלבד — הוא לא מופיע בשום מקום באתר.'));
+
+    var fName = input('text', 'couple_name', lead.name || '');
+    var fPhone = input('tel', 'phone', lead.phone || '');
+    var fEmail = input('email', 'email', lead.email || '');
+    var fDate = input('date', 'event_date', lead.event_date || '');
+    var fVenue = input('text', 'venue', '');
+    var fPackage = input('text', 'package', 'צילום סטילס + וידאו · שני צלמים · אירוע מלא');
+    var fHours = input('text', 'hours', '');
+    var fPrice = input('number', 'price_total', '');
+    fPrice.min = '0'; fPrice.step = '50';
+    var fDeposit = input('number', 'deposit', '');
+    fDeposit.min = '0'; fDeposit.step = '50';
+
+    box.appendChild(fieldRow('שם הלקוחות (כפי שיופיע בחוזה)', fName));
+    box.appendChild(fieldRow('טלפון', fPhone));
+    box.appendChild(fieldRow('אימייל (לא חובה)', fEmail));
+    box.appendChild(fieldRow('תאריך האירוע', fDate));
+    box.appendChild(fieldRow('מקום האירוע (לא חובה)', fVenue));
+    box.appendChild(fieldRow('החבילה', fPackage));
+    box.appendChild(fieldRow('שעות צילום (לא חובה)', fHours));
+    box.appendChild(fieldRow('סך התמורה בש״ח (לא חובה)', fPrice));
+    box.appendChild(fieldRow('מקדמה בש״ח (לא חובה)', fDeposit));
+
+    var errEl = el('p', 'form__failure', '');
+    errEl.hidden = true;
+    box.appendChild(errEl);
+
+    var actions = el('div', 'crm-dialog__actions');
+    var cancel = el('button', 'crm-act', 'ביטול');
+    cancel.type = 'button';
+    cancel.addEventListener('click', closeContractDialog);
+    var create = el('button', 'crm-act crm-act--mark', 'יצירת חוזה');
+    create.type = 'submit';
+    actions.appendChild(cancel);
+    actions.appendChild(create);
+    box.appendChild(actions);
+
+    box.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = fName.value.trim();
+      if (name.length < 2) {
+        errEl.textContent = 'צריך שם לקוחות.';
+        errEl.hidden = false;
+        return;
+      }
+      create.disabled = true;
+      create.textContent = 'יוצרים…';
+      errEl.hidden = true;
+
+      var row = {
+        lead_id: lead.id,
+        couple_name: name,
+        phone: fPhone.value.trim() || null,
+        email: fEmail.value.trim() || null,
+        event_date: fDate.value || null,
+        event_type: lead.event_type ? typeLabel(lead.event_type) : null,
+        venue: fVenue.value.trim() || null,
+        package: fPackage.value.trim() || null,
+        hours: fHours.value.trim() || null,
+        price_total: fPrice.value === '' ? null : Number(fPrice.value),
+        deposit: fDeposit.value === '' ? null : Number(fDeposit.value)
+      };
+
+      api('/rest/v1/contracts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(row)
+      }).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      }).then(function (rows) {
+        var contract = Array.isArray(rows) ? rows[0] : rows;
+        if (!contract || !contract.token) throw new Error('no token');
+        state.contracts[lead.id] = contract;
+        lastContractsSignature = null;
+        logEvent(lead.id, contract.id, 'contract_created', 'נוצר חוזה');
+        closeContractDialog();
+        render();
+        toast('החוזה נוצר. עכשיו אפשר לשלוח אותו בוואטסאפ.');
+      }).catch(function (err) {
+        create.disabled = false;
+        create.textContent = 'יצירת חוזה';
+        if (err && (err.expired || err.message === 'no-session')) {
+          endSession('פג תוקף החיבור. אפשר להיכנס שוב.');
+          return;
+        }
+        errEl.textContent = 'החוזה לא נוצר. אם זו הפעם הראשונה — ייתכן שהמיגרציה ' +
+          '(docs/supabase-crm-pipeline.sql) עוד לא הורצה.';
+        errEl.hidden = false;
+      });
+    });
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) closeContractDialog();
+    });
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    dialogEl = overlay;
+    fName.focus();
+  }
+
+  function closeContractDialog() {
+    if (dialogEl && dialogEl.parentNode) dialogEl.parentNode.removeChild(dialogEl);
+    dialogEl = null;
   }
 
   function setHandled(lead, next, button) {

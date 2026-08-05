@@ -294,6 +294,92 @@
 .crm-act--mark:hover { background: var(--sand); }
 .crm-act[disabled] { opacity: .55; cursor: wait; }
 
+/* ------------------------------------------------- pipeline & contracts --- */
+
+.crm-card__badge--src { border-color: transparent; }
+.crm-card__badge--src-site { background: var(--cream); color: var(--mocha); }
+.crm-card__badge--src-google { background: #e8f0e7; color: #2e5a33; }
+.crm-card__badge--src-meta { background: #e7ecf4; color: #2c4a73; }
+
+.crm-card__pipeline { display: flex; align-items: center; gap: 10px; }
+.crm-card__pipeline-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--mocha);
+  letter-spacing: .08em;
+}
+.crm-card__status {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--ivory);
+  color: var(--charcoal);
+}
+.crm-card__status[disabled] { opacity: .55; cursor: wait; }
+
+.crm-note { border: 1px dashed var(--line); border-radius: 2px; padding: 8px 12px; }
+.crm-note__summary { font-size: 12px; letter-spacing: .08em; color: var(--mocha); cursor: pointer; }
+.crm-note__area {
+  display: block;
+  width: 100%;
+  margin: 10px 0 8px;
+  padding: 10px;
+  font: inherit;
+  font-size: 14px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--ivory);
+  color: var(--charcoal);
+  resize: vertical;
+}
+
+.crm-contract { border-block-start: 1px solid var(--line); padding-block-start: 12px; }
+.crm-contract__state { margin: 0 0 8px; font-size: 13px; color: var(--mocha); }
+.crm-contract__state.is-signed { color: #2e5a33; font-weight: 600; }
+.crm-act--contract { border-style: dashed; }
+
+/* The create-contract dialog. One overlay, one column of the site's own
+   field styles — nothing here that styles.css does not already know. */
+.crm-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(28, 26, 24, 0.55);
+  overflow-y: auto;
+}
+.crm-dialog__box {
+  width: min(520px, 100%);
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 22px;
+  display: grid;
+  gap: 12px;
+}
+.crm-dialog__title { margin: 0; font-size: 1.15rem; }
+.crm-dialog__note { margin: 0; font-size: 13px; color: var(--mocha); }
+.crm-dialog__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-block-start: 6px;
+}
+
+@media print {
+  .crm-card__pipeline,
+  .crm-note,
+  .crm-contract { display: none; }
+}
+
 /* --------------------------------------------------------------- toast --- */
 
 .crm__toast {

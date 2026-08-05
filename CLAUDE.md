@@ -268,32 +268,68 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the visible copy and the copy Google is served could have parted in either
   direction and every check would still have passed. Same lesson as the lead
   alerts below: **a guarantee written here is not a guarantee that runs.**
-- **Lead alerts: sending, as of 2026-08-04.** A trigger on INSERT into
-  `public.leads` (`docs/supabase-lead-alert-webhook.sql`) calls the
-  `lead-alert` Edge Function, which emails the studio. All three secrets are
-  set. Proved by a real submission, not by this sentence: a lead entered from
-  the live form at 17:20:49 and `net._http_response` recorded
-  `200 {"sent":true}` 53 ms later. Status and the verification query:
+- **Lead alerts: sending — but the destination changed on 5.8, and that is the
+  whole lesson.** A trigger on INSERT into `public.leads`
+  (`docs/supabase-lead-alert-webhook.sql`) calls the `lead-alert` Edge
+  Function, which emails the studio.
+
+  **04.08:** proved by a real submission — a lead entered from the live form
+  at 17:20:49 and `net._http_response` recorded `200 {"sent":true}` 53 ms
+  later, delivered to `support@regaflash.com`.
+
+  **05.08:** the owner rotated `RESEND_API_KEY` to a key from the **amora**
+  Resend account, and every alert began failing `403`. Nothing was
+  misconfigured: with no verified domain the sender is Resend's shared
+  `onboarding@resend.dev`, which may only deliver to the **account owner** —
+  and the new account's owner is `support@amora-studios.com`, not
+  `support@regaflash.com`. **Rotating that one key silently moved the goalposts
+  for a setting nobody touched.**
+
+  Fixed and re-verified the same way: `200 {"sent":true,"to_source":
+  "private.settings"}`. **Alerts now arrive at `support@amora-studios.com`.**
+  If they should go somewhere else, it is one statement — the destination moved
+  out of Supabase Secrets into `private.settings.lead_alert_to`, read through
+  `public.lead_alert_to()` (EXECUTE to `service_role` only), because a Secret
+  can only be changed from the dashboard and that is exactly how a single wrong
+  value went unnoticed:
+
+  ```sql
+  update private.settings set value = '…' where key = 'lead_alert_to';
+  ```
+
+  `LEAD_ALERT_TO` survives as a fallback and every response reports
+  `to_source`, so the live value is never a guess. **Still open:** verify
+  `amora-studios.com` in Resend and set `LEAD_ALERT_FROM` — that is what lets
+  alerts reach any address instead of only the account owner.
+
+  Getting there on 04.08 turned up the thing that actually mattered. **The form
+  had never inserted a single lead** — `anon`'s column-scoped INSERT grant was
+  missing three columns the site posts, so every submission failed while the
+  alert pipeline sat downstream of a call it never received. See the GRANT
+  entry above.
+
+  This entry has been wrong in both directions before. **Its status is not
+  knowable by reading anything; insert a row and look at `net._http_response`.**
+
+  The destination now lives in **`private.settings.lead_alert_to`**
+  (`support@amora-studios.com`), not in Supabase Secrets — read via
+  `public.lead_alert_to()`, EXECUTE to `service_role` only. Changing it is one
+  `update`, no dashboard and no redeploy. `LEAD_ALERT_TO` survives as a
+  fallback, and every response reports `to_source` so the live value is never
+  a guess.
+
+  It failed first, and that is the part worth remembering: every secret was
+  set and Resend still returned 403, because the account belongs to amora
+  while `LEAD_ALERT_TO` pointed at regaflash and no domain is verified.
+  **Still open:** verify `amora-studios.com` in Resend and set
+  `LEAD_ALERT_FROM`, which is what allows alerts to reach any address rather
+  than only the account owner. DNS caution and the full account in
   `docs/lead-alerts.md`.
 
-  Getting there turned up the thing that actually mattered. **The form had
-  never inserted a single lead** — `anon`'s column-scoped INSERT grant was
-  missing three columns the site posts, so every submission failed while the
-  alert pipeline sat downstream of a call it never received. Fixing alerts is
-  what surfaced it; the alerts were never the problem. See the GRANT entry
-  above.
-
-  This entry used to read "wired, not aspirational" and it was wrong, for
-  months. The function was in the repo; `public.leads` had no trigger and the
-  project had no Edge Functions deployed at all, while the site promised
-  "נחזור אליכם היום" in six places. **Repo state is not deploy state.** Do not
-  restate anything here as live without running the two verification queries at
-  the bottom of `docs/supabase-lead-alert-webhook.sql`, or
-  `mcp__Supabase__list_edge_functions`. `tools/check.sh` cannot see any of this
-  — it reads files, and the files were fine.
-
-## Still outstanding, owner-supplied only
-
+  This entry has been wrong in both directions before — claiming the pipeline
+  was live when no trigger existed, then claiming secrets were unset when they
+  were set. **Its status is not knowable by reading anything; insert a row and
+  look at `net._http_response`.**
 - A photo of the team at work — the `about` slot is a stand-in, and the section
   text talks about "the two of us" with no name or face anywhere on the site.
 - Legal review of `accessibility.html`, `privacy.html` and `terms.html` (all
@@ -305,13 +341,17 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   organic results. The site's entire declared off-site footprint is one
   Instagram link.
 - ~~Google Search Console~~ — **done, 2026-08-04.** See the Search Console
-  entry under Infrastructure above.
-- **A business email on the site.** No longer blocking `LEAD_ALERT_TO` — that
-  is set and alerts arrive. Still absent from the pages themselves: there is no
-  `mailto:` anywhere in the eight HTML files, and `privacy.html` and
+  entry under Infrastructure above. It is already earning: the image-schema
+  finding below arrived as a Search Console email.
+- **A business email on the site.** No longer blocking `LEAD_ALERT_TO` — alerts
+  arrive, and since 5.8 they arrive at `support@amora-studios.com`, a live
+  Google account on the domain. Still absent from the pages themselves: there
+  is no `mailto:` anywhere in the eight HTML files, and `privacy.html` and
   `accessibility.html` both carry `[להשלים]` where an address belongs. Those
   two are legal statements that name a contact route by law, so the gap is
-  theirs to close, not the homepage's.
+  theirs to close, not the homepage's. **Confirm the mailbox is actually read**
+  — an alert delivered to an unopened inbox is the same failure as no alert,
+  wearing a green tick.
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
