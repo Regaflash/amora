@@ -275,6 +275,25 @@
     var portrait = window.matchMedia('(max-aspect-ratio: 1/1)');
     var root = document.documentElement;
 
+    // Warm the connection while the rest of the page is still loading. The
+    // frame is not built until load + 200ms — deliberately, so it never
+    // competes with the LCP paint — which means DNS, TCP and TLS to YouTube are
+    // all still cold at the moment the src is finally set. On a phone that is
+    // routinely 200-500ms before a single byte of video moves.
+    //
+    // Gated behind the same test as the build itself, and that gating is the
+    // point: this opens a socket, and it must not open one for a visitor the
+    // hero is going to skip anyway. Someone who asked for reduced motion, or
+    // turned motion off in the accessibility menu, still never contacts
+    // YouTube. A preconnect carries no request, no path and no cookie.
+    if (!suppressed()) {
+      var warm = document.createElement('link');
+      warm.rel = 'preconnect';
+      warm.href = 'https://www.youtube-nocookie.com';
+      warm.crossOrigin = '';
+      document.head.appendChild(warm);
+    }
+
     var wrap = null;      // .hero__yt — the clipping box
     var frame = null;     // the iframe inside it
     var current = null;   // 'wide' | 'vertical' — which cut is loaded
