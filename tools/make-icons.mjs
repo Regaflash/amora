@@ -88,9 +88,14 @@ console.log(`favicon.ico            ${icoSizes.join('/')} px`);
 
 // No standalone 48px PNG: favicon.ico already carries one, and an icon file
 // nothing links to is the kind of thing this pass exists to remove.
+// 512 exists because Chrome's install prompt requires 192 AND 512. With the
+// old 150px master it would have been an upscale, so the manifest shipped
+// without it and the site was not installable. A real 4096px master arrived
+// 2026-08-05 and that constraint went away.
 const files = [
   ['assets/img/icon-96.png', 96],
   ['assets/img/icon-192.png', 192],
+  ['assets/img/icon-512.png', 512],
   ['assets/img/apple-touch-icon.png', 180],
 ];
 for (const [rel, size] of files) {
