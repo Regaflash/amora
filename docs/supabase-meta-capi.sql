@@ -1,0 +1,63 @@
+-- Meta CAPI — the shared secret the endpoint authenticates with.
+--
+-- Applied to dkejuaildigikufrdiru on 2026-08-05 as migration
+-- `meta_capi_hook_secret`. Kept here because docs/ is the readable record of
+-- what the database looks like; the database itself is the authority.
+--
+-- Two credentials, two homes, on purpose:
+--   META_CAPI_TOKEN   a Meta platform credential with real reach -> Supabase
+--                     Secrets. Never in Postgres, never in a Make blueprint.
+--   this hook secret  a low-privilege shared value that Make must also hold.
+--                     It can cause a lead-status event to be posted for one
+--                     dataset and nothing else -- it reads nothing and spends
+--                     nothing. Living in the database means it is generated
+--                     here, never passes through a chat window, and rotates
+--                     with one UPDATE instead of a dashboard visit and a
+--                     redeploy.
+--
+-- private is not an exposed schema, so an edge function cannot read the table
+-- over REST. A SECURITY DEFINER function in public is the supported way
+-- through, and EXECUTE goes to service_role alone. This mirrors
+-- public.google_lead_webhook_key() rather than inventing a second pattern.
+
+insert into private.settings (key, value)
+values (
+  'meta_capi_hook_secret',
+  replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')
+)
+on conflict (key) do nothing;
+
+create or replace function public.meta_capi_hook_secret()
+returns text
+language sql
+stable
+security definer
+set search_path to ''
+as $$
+  select value from private.settings where key = 'meta_capi_hook_secret';
+$$;
+
+revoke all on function public.meta_capi_hook_secret() from public, anon, authenticated;
+grant execute on function public.meta_capi_hook_secret() to service_role;
+
+
+-- Rotation. Take the new value to the Make HTTP module in the same sitting --
+-- the endpoint caches per instance, so the old value keeps working for a few
+-- minutes and then stops.
+--
+--   update private.settings
+--      set value = replace(gen_random_uuid()::text, '-', '')
+--                  || replace(gen_random_uuid()::text, '-', '')
+--    where key = 'meta_capi_hook_secret';
+
+
+-- Verification. Run as a non-privileged role to prove the secret is not
+-- reachable from the client keys:
+--
+--   set local role anon;
+--   select public.meta_capi_hook_secret();   -- must raise permission denied
+--   reset role;
+--
+-- A check run as postgres proves nothing here. That mistake shipped a broken
+-- column grant in this project once already -- see the note at the bottom of
+-- docs/supabase-crm.sql.
