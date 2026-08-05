@@ -434,12 +434,27 @@ summary::-webkit-details-marker { display: none; }
   object-fit: cover;
 }
 
+/* flex:1 + centre, rather than letting space-between fling the links to the
+   far edge. The bar has two children on desktop — the logo and this nav — so
+   space-between pinned one to each end and left a 600px hole down the middle
+   of a 1320px shell. Growing the nav to fill the remaining track and centring
+   inside it puts the links under the middle of the page, with the logo still
+   anchored to its own edge. Below 760px .nav is display:none and .nav-mobile
+   takes over, so none of this touches the phone layout. */
 .nav {
   display: flex;
   align-items: center;
   gap: clamp(14px, 2vw, 30px);
   flex-wrap: wrap;
-  justify-content: flex-end;
+  flex: 1;
+  justify-content: center;
+  /* Centring inside the remaining track leaves the links 35px off the page's
+     true centre, because the track starts where the logo ends. 35px is exactly
+     half of the logo (46px) plus the bar's gap (24px), both fixed — measured
+     identical at 1024, 1280, 1440 and 1920. Padding the inline-end (the left,
+     in RTL) by the full 70px shrinks the content box from that side and moves
+     the midpoint back onto the page centre. */
+  padding-inline-end: 70px;
 }
 .nav__link {
   font-size: var(--t-small);
