@@ -222,6 +222,8 @@
   var YT_PING_EVERY = 500;
   var YT_PING_MAX = 12;
   var YT_MAX_FAILS = 2;          // give up asking after this many silent frames
+  var YT_RETRY_DELAY = 1500;     // before the second attempt, so a blip is not
+                                 // retried into the same failing second
 
   /** Everything the player needs, in the URL. Loading YouTube's IFrame API
    *  script would put a third-party bundle on the critical path of a page that
@@ -281,6 +283,7 @@
     var visible = true;   // is the hero on screen?
     var fails = 0;
     var proofTimer = null, pingTimer = null, pings = 0, swapTimer = null;
+    var retryTimer = null;
 
     /** Three ways a visitor can say "not this". The OS setting; the floating
      *  widget's "stop animations"; the widget's high-contrast mode, which
@@ -315,6 +318,7 @@
     function stopTimers() {
       if (proofTimer) { clearTimeout(proofTimer); proofTimer = null; }
       if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+      if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
     }
 
     function destroy() {
@@ -439,6 +443,23 @@
         // player spending someone's data, and the poster is a complete hero.
         fails++;
         destroy();
+        // YT_MAX_FAILS is 2, i.e. the frame is meant to get a second chance.
+        // Nothing was ever scheduling it. After the first silence the hero sat
+        // on its poster until the visitor happened to scroll away and back,
+        // which is what fires sync() again — measured as one request, destroy
+        // at 12s, then nothing at all for the next 21 seconds.
+        //
+        // That is the whole of "it works sometimes". A warm connection answers
+        // inside the window and a cold mobile one does not, and the difference
+        // between those two outcomes was a retry the code already believed it
+        // was making. Note what this rules out: a rights or embedding block
+        // would fail every single time, not intermittently.
+        if (fails < YT_MAX_FAILS) {
+          retryTimer = setTimeout(function () {
+            retryTimer = null;
+            if (shouldPlay() && !wrap) build(want());
+          }, YT_RETRY_DELAY);
+        }
       }, YT_PROOF_TIMEOUT);
     }
 
