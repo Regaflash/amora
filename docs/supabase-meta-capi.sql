@@ -89,3 +89,32 @@ grant execute on function public.meta_capi_hook_secret() to service_role;
 --
 -- The function reports which source it used as `to_source` on every response,
 -- so the env fallback can never quietly win.
+
+
+-- ---------------------------------------------------------------------------
+-- Lead alert sender. Applied 2026-08-05 as `lead_alert_from_in_settings`,
+-- after amora-studios.com was verified in Resend at 18:14.
+--
+-- Until verification the sender was Resend's shared onboarding@resend.dev,
+-- which may deliver ONLY to the Resend account owner -- the restriction that
+-- broke alerts earlier the same day. A verified domain lifts it.
+--
+--   insert into private.settings (key, value)
+--   values ('lead_alert_from', 'Amora Studio <leads@amora-studios.com>')
+--   on conflict (key) do update set value = excluded.value;
+--
+--   create or replace function public.lead_alert_from()
+--   returns text language sql stable security definer set search_path to ''
+--   as $$ select value from private.settings where key = 'lead_alert_from'; $$;
+--
+--   revoke all on function public.lead_alert_from() from public, anon, authenticated;
+--   grant execute on function public.lead_alert_from() to service_role;
+--
+-- The address needs no mailbox behind it: lead-alert sets reply_to to the
+-- first destination, so replies land somewhere real.
+--
+-- lead_alert_to is split on commas, so a second recipient is one statement:
+--
+--   update private.settings
+--      set value = 'support@amora-studios.com, support@regaflash.com'
+--    where key = 'lead_alert_to';

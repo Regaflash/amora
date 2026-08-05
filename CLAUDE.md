@@ -298,9 +298,22 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   ```
 
   `LEAD_ALERT_TO` survives as a fallback and every response reports
-  `to_source`, so the live value is never a guess. **Still open:** verify
-  `amora-studios.com` in Resend and set `LEAD_ALERT_FROM` — that is what lets
-  alerts reach any address instead of only the account owner.
+  `to_source`, so the live value is never a guess.
+
+  **`amora-studios.com` was verified in Resend at 18:14 the same day**, which
+  lifted both limits: alerts can reach any recipient, and they are sent from
+  the studio rather than a shared test address. The sender lives beside the
+  destination as `private.settings.lead_alert_from`
+  (`Amora Studio <leads@amora-studios.com>`), and **`lead_alert_to` is split on
+  commas**, so adding a second inbox — regaflash alongside amora, say — is an
+  UPDATE and not a code change. Re-verified with a real row:
+  `200 {"sent":true,...,"recipients":1}`.
+
+  Recorded but deliberately untouched: the domain has **no apex SPF record at
+  all**, although its MX points at Google. Apex SPF governs every piece of mail
+  the domain sends, so a wrong one marks the studio's own Gmail as spam. Same
+  reasoning as declining `_dmarc` — read first, and treat it as a decision
+  about the business's mail rather than a provider setting.
 
   Getting there on 04.08 turned up the thing that actually mattered. **The form
   had never inserted a single lead** — `anon`'s column-scoped INSERT grant was

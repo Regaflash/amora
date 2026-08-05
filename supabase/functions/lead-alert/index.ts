@@ -44,12 +44,12 @@ interface Lead {
 
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
 const ALERT_TO_ENV = Deno.env.get('LEAD_ALERT_TO');
-const ALERT_FROM = Deno.env.get('LEAD_ALERT_FROM') ?? 'Amora Studio <onboarding@resend.dev>';
+const ALERT_FROM_ENV = Deno.env.get('LEAD_ALERT_FROM');
 const HOOK_SECRET = Deno.env.get('LEAD_ALERT_SECRET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-// WHERE THE DESTINATION LIVES, AND WHY IT MOVED
+// WHERE THE DESTINATION AND SENDER LIVE, AND WHY THEY MOVED
 //
 // On 2026-08-05 every secret was set and no alert arrived: LEAD_ALERT_TO held
 // support@regaflash.com while the Resend account belongs to
@@ -58,20 +58,21 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 // wrong value, and the only way to change it is the Supabase dashboard --
 // which means a person has to do it, which is how it sat wrong unnoticed.
 //
-// A destination address is configuration, not a credential. It now lives in
-// private.settings, readable only through a SECURITY DEFINER function granted
-// to service_role, and it changes with one UPDATE.
+// An address is configuration, not a credential. Both now live in
+// private.settings, readable only through SECURITY DEFINER functions granted
+// to service_role, and both change with one UPDATE.
 //
 // Precedence is explicit: the database row wins, the env var is the fallback.
-// The success response says which source was used, so nobody has to guess
-// which of the two is live -- the failure mode being fixed here was precisely
-// two settings disagreeing with nothing to say which one won.
-let cachedTo: string | null = null;
+// Every response says which source was used, so nobody has to guess which is
+// live -- the failure being fixed here was precisely two settings disagreeing
+// with nothing to say which one won.
+const cache = new Map<string, string>();
 
-async function alertTo(): Promise<{ to: string | null; source: string }> {
-  if (cachedTo) return { to: cachedTo, source: 'private.settings (cached)' };
+async function setting(rpc: string): Promise<string | null> {
+  const hit = cache.get(rpc);
+  if (hit) return hit;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/lead_alert_to`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${rpc}`, {
       method: 'POST',
       headers: {
         apikey: SERVICE_KEY,
@@ -80,20 +81,48 @@ async function alertTo(): Promise<{ to: string | null; source: string }> {
       },
       body: '{}',
     });
-    if (res.ok) {
-      const v = await res.json();
-      if (typeof v === 'string' && v.includes('@')) {
-        cachedTo = v;
-        return { to: v, source: 'private.settings' };
-      }
-    } else {
-      console.error('lead-alert: destination lookup http', { status: res.status });
+    if (!res.ok) {
+      console.error('lead-alert: setting lookup http', { rpc, status: res.status });
+      return null;
     }
+    const v = await res.json();
+    if (typeof v === 'string' && v.includes('@')) {
+      cache.set(rpc, v);
+      return v;
+    }
+    return null;
   } catch (e) {
-    console.error('lead-alert: destination lookup threw', String(e));
+    console.error('lead-alert: setting lookup threw', { rpc, e: String(e) });
+    return null;
+  }
+}
+
+async function alertTo(): Promise<{ to: string[] | null; source: string }> {
+  const row = await setting('lead_alert_to');
+  // Comma-separated, because verifying amora-studios.com in Resend on
+  // 2026-08-05 lifted the one-recipient restriction. Before that the shared
+  // onboarding@resend.dev sender could only reach the account owner, so a
+  // second address was impossible rather than merely unconfigured. Adding one
+  // is now an UPDATE, not a code change.
+  const split = (v: string) => v.split(',').map((s) => s.trim()).filter((s) => s.includes('@'));
+  if (row) {
+    const list = split(row);
+    if (list.length) return { to: list, source: 'private.settings' };
   }
   // Falling back is not silent: the source travels in the response.
-  return { to: ALERT_TO_ENV ?? null, source: 'LEAD_ALERT_TO env (fallback)' };
+  const env = ALERT_TO_ENV ? split(ALERT_TO_ENV) : [];
+  return { to: env.length ? env : null, source: 'LEAD_ALERT_TO env (fallback)' };
+}
+
+async function alertFrom(): Promise<{ from: string; source: string }> {
+  const row = await setting('lead_alert_from');
+  if (row) return { from: row, source: 'private.settings' };
+  if (ALERT_FROM_ENV) return { from: ALERT_FROM_ENV, source: 'LEAD_ALERT_FROM env (fallback)' };
+  // Last resort only. This shared sender may deliver ONLY to the Resend
+  // account owner, so reaching this line means alerts are one wrong
+  // destination away from silently failing 403 -- exactly what happened before
+  // the domain was verified. It is reported, never assumed.
+  return { from: 'Amora Studio <onboarding@resend.dev>', source: 'built-in shared sender (UNVERIFIED)' };
 }
 
 // The lead fields are typed by a stranger — anyone on the internet can submit
@@ -215,6 +244,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const dest = await alertTo();
+  const sender = await alertFrom();
 
   if (!RESEND_KEY || !dest.to) {
     // Fail loudly in the logs rather than silently swallowing a lead alert —
@@ -238,9 +268,9 @@ Deno.serve(async (req: Request) => {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      from: ALERT_FROM,
-      to: [ALERT_TO],
-      reply_to: ALERT_TO,
+      from: sender.from,
+      to: ALERT_TO,
+      reply_to: ALERT_TO[0],
       subject: mail.subject,
       text: mail.text,
       html: mail.html,
@@ -269,11 +299,16 @@ Deno.serve(async (req: Request) => {
       provider_status: res.status,
       provider: detail.slice(0, 400),
       to_source: dest.source,
+      from_source: sender.source,
     }), { status: 502, headers: { 'content-type': 'application/json' } });
   }
 
-  console.log('lead-alert: sent', { leadId: payload.record.id, source: dest.source });
-  return new Response(JSON.stringify({ sent: true, to_source: dest.source }), {
+  console.log('lead-alert: sent', {
+    leadId: payload.record.id, to: dest.source, from: sender.source, recipients: ALERT_TO.length,
+  });
+  return new Response(JSON.stringify({
+    sent: true, to_source: dest.source, from_source: sender.source, recipients: ALERT_TO.length,
+  }), {
     status: 200, headers: { 'content-type': 'application/json' },
   });
 });
