@@ -17,6 +17,7 @@
      resolve to /old/link/that/assets/css/... and the page would arrive
      unstyled, unfonted and without the accessibility widget. Only a top-level
      typo would have worked. Do not make these relative again. -->
+<link rel="manifest" href="/site.webmanifest" />
 <link rel="icon" href="/favicon.ico" sizes="48x48" />
 <link rel="icon" href="/assets/img/icon-96.png" type="image/png" sizes="96x96" />
 <link rel="icon" href="/assets/img/icon-192.png" type="image/png" sizes="192x192" />
@@ -75,7 +76,8 @@
 <script src="/assets/js/a11y-widget.js"></script>
 </head>
 <body>
-  <main class="nf">
+  <a class="skip-link" href="#main">דילוג לתוכן</a>
+<main id="main" class="nf">
     <img class="nf__mark" src="/assets/img/logo.jpg" alt="Amora Studio" width="72" height="72" />
     <p class="nf__kicker">404</p>
     <h1 class="nf__title">הדף הזה כבר לא כאן</h1>

@@ -421,7 +421,12 @@ summary::-webkit-details-marker { display: none; }
   gap: 24px;
 }
 
-.brand { display: flex; align-items: center; gap: 12px; }
+/* flex-shrink:0 is load-bearing, not tidiness. The mobile bar gained two
+   44px controls (the assistant launcher and the accessibility trigger),
+   and as a shrinkable flex item the logo was crushed to 30px at 360px and
+   to nothing at 320px before anything else gave way. Measured, not
+   assumed. */
+.brand { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
 .brand__mark {
   width: 46px;
   height: 46px;
@@ -429,12 +434,27 @@ summary::-webkit-details-marker { display: none; }
   object-fit: cover;
 }
 
+/* flex:1 + centre, rather than letting space-between fling the links to the
+   far edge. The bar has two children on desktop — the logo and this nav — so
+   space-between pinned one to each end and left a 600px hole down the middle
+   of a 1320px shell. Growing the nav to fill the remaining track and centring
+   inside it puts the links under the middle of the page, with the logo still
+   anchored to its own edge. Below 760px .nav is display:none and .nav-mobile
+   takes over, so none of this touches the phone layout. */
 .nav {
   display: flex;
   align-items: center;
   gap: clamp(14px, 2vw, 30px);
   flex-wrap: wrap;
-  justify-content: flex-end;
+  flex: 1;
+  justify-content: center;
+  /* Centring inside the remaining track leaves the links 35px off the page's
+     true centre, because the track starts where the logo ends. 35px is exactly
+     half of the logo (46px) plus the bar's gap (24px), both fixed — measured
+     identical at 1024, 1280, 1440 and 1920. Padding the inline-end (the left,
+     in RTL) by the full 70px shrinks the content box from that side and moves
+     the midpoint back onto the page centre. */
+  padding-inline-end: 70px;
 }
 .nav__link {
   font-size: var(--t-small);
@@ -448,7 +468,10 @@ summary::-webkit-details-marker { display: none; }
   font-size: 12px;
   letter-spacing: .14em;
   padding: 10px 20px;
-  border: 1px solid var(--champagne);
+  /* No border. The outlined box read as a stray rectangle sitting on the hero
+     footage rather than as a button. The padding stays, so the link keeps its
+     own space in the row, and the champagne fill on hover still marks it out
+     as the primary action. */
   color: #FFFDF9;
   background: transparent;
   transition: background 300ms, color 300ms;
@@ -488,7 +511,13 @@ summary::-webkit-details-marker { display: none; }
 .site-header.is-scrolled .burger[aria-expanded="true"] { border-color: var(--champagne); }
 .burger span { display: block; width: 20px; height: 1px; background: currentColor; }
 
-.progress { height: 1px; background: var(--line); }
+/* The scroll-progress track. It is a real indicator, not trim, so it is kept —
+   but over the hero it painted a full-width hairline straight across the
+   footage. The track is hidden while the header is transparent and returns
+   once the header goes solid, which is where a rule under a bar belongs. The
+   fill itself loses nothing: at the top of the page it is 0% wide anyway. */
+.progress { height: 1px; background: var(--line); transition: background 400ms var(--ease); }
+.site-header:not(.is-scrolled) .progress { background: transparent; }
 .progress__bar { height: 1px; width: 0%; background: var(--champagne); }
 
 /* Mobile menu overlay */
@@ -1765,6 +1794,13 @@ summary::-webkit-details-marker { display: none; }
 .field { display: grid; gap: var(--sp-2); }
 .field__label { font-size: var(--t-micro); letter-spacing: .16em; color: var(--mocha); }
 .field__opt { opacity: .7; letter-spacing: normal; }
+/* Same weight and idiom as .field__opt beside it — the form already qualifies
+   labels in parentheses, so requirement is said the way optionality already
+   was, rather than with an asterisk that needs a legend to decode. Champagne
+   ink rather than lowered opacity: this one is a constraint the visitor has to
+   act on, not an aside. #806142 on the form's ivory panel measures 5.58:1, and
+   5.08:1 on cream where cost.html renders the same form. */
+.field__req { color: var(--champagne-ink); letter-spacing: normal; }
 /* The "no date yet" opt-out. Sits in the date field's own grid cell so the
    two read as one control; the shared :focus-visible rule already gives the
    box the charcoal ring the rest of this form uses. */
@@ -2002,4 +2038,24 @@ textarea.field__control { resize: vertical; }
   * { animation: none !important; transition: none !important; }
   html { scroll-behavior: auto; }
   .js.reveal-ready [data-reveal] { opacity: 1 !important; transform: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Very narrow phones. The mobile bar carries four controls now — the
+   availability CTA, the burger, the accessibility trigger and the assistant
+   launcher — and at 360px they clear the logo with 2px to spare. Below that
+   they did not: at 320px the launcher was measured at [-38..6], i.e. wholly
+   off the left edge of the screen.
+
+   Tightened rather than dropped. Every one of the four is either a legal
+   obligation or a conversion path, so hiding one to win space is not on the
+   table. 40px is still at the comfortable end of a touch target.
+   --------------------------------------------------------------------------- */
+@media (max-width: 359px) {
+  .nav-mobile { gap: 6px; }
+  .nav-mobile__cta { padding: 11px 10px; letter-spacing: .06em; }
+  .nav-mobile .burger,
+  .nav-mobile .a11y-fab--header,
+  .nav-mobile .am-launcher--header { width: 40px; height: 40px; }
+  .site-header__bar { gap: 10px; }
 }

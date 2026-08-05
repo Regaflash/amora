@@ -24,6 +24,7 @@
 <meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 <meta name="theme-color" content="#F7F2EA" />
+<link rel="manifest" href="/site.webmanifest" />
 <link rel="icon" href="favicon.ico" sizes="48x48" />
 <link rel="icon" href="assets/img/icon-96.png" type="image/png" sizes="96x96" />
 <link rel="icon" href="assets/img/icon-192.png" type="image/png" sizes="192x192" />
@@ -186,7 +187,7 @@
    "name": "מה כוללת חבילת החתונה המלאה?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם. אלבום מודפס וצילומי Save the Date אפשר להוסיף."
+    "text": "כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, סרט חתונה של 3–5 דקות, טיזר קצר לאינסטגרם ומגנטים עם סורק AR שהופך כל תמונה לסרטון. אלבום מודפס וצילומי Save the Date אפשר להוסיף."
    }
   },
   {
@@ -575,6 +576,12 @@
       <span class="trust__item">אספקה תוך 30 יום</span>
       <span class="trust__dot" aria-hidden="true"></span>
       <span class="trust__item">זמינות בכל הארץ</span>
+      <span class="trust__dot" aria-hidden="true"></span>
+      <!-- Included in every booking, not an upsell — owner-confirmed 2026-08-05.
+           The magnets are produced by Regaflash, the studio's sister business; the
+           link to it lives in .faq__more, because a tag inside .faq__a would break
+           the byte-lock between the FAQ answers and the FAQPage JSON-LD. -->
+      <span class="trust__item">מגנטים שמתעוררים לחיים</span>
     </div>
   </section>
 
@@ -1038,7 +1045,7 @@
       </details>
       <details class="faq__item">
         <summary class="faq__q">מה כוללת חבילת החתונה המלאה?<span class="faq__sign" aria-hidden="true">+</span></summary>
-        <p class="faq__a">כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם. אלבום מודפס וצילומי Save the Date אפשר להוסיף.</p>
+        <p class="faq__a">כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, סרט חתונה של 3–5 דקות, טיזר קצר לאינסטגרם ומגנטים עם סורק AR שהופך כל תמונה לסרטון. אלבום מודפס וצילומי Save the Date אפשר להוסיף.</p>
       </details>
       <details class="faq__item">
         <summary class="faq__q">מה המחיר?<span class="faq__sign" aria-hidden="true">+</span></summary>
@@ -1060,6 +1067,7 @@
              byte-identical to the FAQPage JSON-LD, and tools/ invariant checks
              that one-for-one. Adding a link inside an answer broke it once. -->
         <p class="faq__more"><a class="link-underline" href="cost.html">מה בדיוק משפיע על מחיר צילום חתונה ←</a></p>
+        <p class="faq__more"><a class="link-underline" href="https://regaflash.com" target="_blank" rel="noopener">המגנטים שלנו, ואיך הם מתעוררים לחיים — Regaflash ←</a></p>
       </div>
     </div>
   </section>
@@ -1089,13 +1097,22 @@
           <p class="form__title">בדיקת זמינות</p>
 
           <label class="field">
-            <span class="field__label">שם מלא</span>
+            <!-- The four aria-required fields carry a visible marker too. They
+                 had none: only the OPTIONAL fields were annotated, and not even
+                 all of them — "מה מצלמים" is optional and unmarked while "סוג
+                 האירוע" beside it is required and looked identical. A screen
+                 reader was told by aria-required; a sighted visitor found out
+                 by being rejected. WCAG 3.3.2. Reported from a real attempt to
+                 fill this form, which stalled on exactly that.
+                 aria-hidden because aria-required already says it to AT, and
+                 without it the requirement is announced twice. -->
+            <span class="field__label">שם מלא <span class="field__req" aria-hidden="true">(חובה)</span></span>
             <input class="field__control" name="name" type="text" autocomplete="name" data-field="name" aria-required="true" aria-describedby="err-name" />
             <span class="field__error" id="err-name" data-error="name"></span>
           </label>
 
           <label class="field">
-            <span class="field__label">טלפון</span>
+            <span class="field__label">טלפון <span class="field__req" aria-hidden="true">(חובה)</span></span>
             <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
             <span class="field__error" id="err-phone" data-error="phone"></span>
           </label>
@@ -1114,7 +1131,7 @@
             <!-- A <div> rather than a <label>: the opt-out below needs a label
                  of its own, and nesting one label inside another is invalid. -->
             <div class="field">
-              <label class="field__label" for="lead-date">תאריך האירוע</label>
+              <label class="field__label" for="lead-date">תאריך האירוע <span class="field__req" aria-hidden="true">(חובה)</span></label>
               <input class="field__control" id="lead-date" name="date" type="date" data-field="date" aria-required="true" aria-describedby="err-date" />
               <label class="field__opt-in">
                 <input type="checkbox" name="date_tbd" value="1" data-field="date_tbd" data-date-tbd />
@@ -1123,7 +1140,7 @@
               <span class="field__error" id="err-date" data-error="date"></span>
             </div>
             <label class="field">
-              <span class="field__label">סוג האירוע</span>
+              <span class="field__label">סוג האירוע <span class="field__req" aria-hidden="true">(חובה)</span></span>
               <select class="field__control" name="type" data-field="type" aria-required="true" aria-describedby="err-type">
                 <option value="">בחרו</option>
                 <option value="wedding">חתונה</option>

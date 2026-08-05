@@ -98,9 +98,18 @@
       chip: 'מה כוללת החבילה?',
       keys: ['מה כולל', 'כוללת', 'חבילה', 'מה מקבלים', 'מה נכנס', 'מה יש בפנים', 'כלול'],
       a: 'כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, ' +
-         'סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם.\n' +
+         'סרט חתונה של 3–5 דקות, טיזר קצר לאינסטגרם ומגנטים עם סורק AR שהופך כל תמונה לסרטון.\n' +
          'אלבום מודפס וצילומי Save the Date אפשר להוסיף.',
-      next: ['delivery', 'photographers', 'price']
+      next: ['magnets', 'delivery', 'photographers']
+    },
+    {
+      id: 'magnets',
+      chip: 'יש מגנטים?',
+      keys: ['מגנט', 'מגנטים', 'מגנטים בחתונה', 'סורק', 'AR', 'מציאות רבודה', 'תמונה שזזה', 'מתעורר', 'מתעוררים לחיים'],
+      a: 'כן, ובכל עסקה — לא כתוספת בתשלום.\n' +
+         'הם מגיעים עם סורק AR: מכוונים את הטלפון למגנט והתמונה הופכת לסרטון.\n' +
+         'את זה מייצר Regaflash, העסק האח שלנו.',
+      next: ['package', 'delivery', 'price']
     },
     {
       id: 'gallery',
@@ -368,8 +377,24 @@
     launcher.setAttribute('aria-label', 'פתיחת עוזר האתר — שאלות נפוצות');
     launcher.appendChild(el('span', 'am-launcher__dot'));
     launcher.appendChild(el('span', 'am-launcher__label', 'יש שאלה?'));
+    // The circle's glyph. Only one of icon/label is ever visible — see the
+    // --header rules in assistant.css.
+    launcher.appendChild(el('span', 'am-launcher__icon', '?'));
     launcher.addEventListener('click', function () { setOpen(!open); });
-    document.body.appendChild(launcher);
+
+    // Preferred home is the mobile header bar, beside the burger and the
+    // availability CTA, so the launcher reads as site chrome rather than as a
+    // card dropped on the hero. Only the BUTTON moves; the panel stays a child
+    // of body, because a fixed modal nested inside the header would inherit its
+    // stacking context. Pages without that bar (the legal shell) keep the
+    // free-floating launcher, which is why the fallback is not dead code.
+    var bar = document.querySelector('.nav-mobile');
+    if (bar) {
+      launcher.classList.add('am-launcher--header');
+      bar.appendChild(launcher);
+    } else {
+      document.body.appendChild(launcher);
+    }
   }
 
   function buildPanel() {

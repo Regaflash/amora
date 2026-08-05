@@ -278,6 +278,42 @@ await page.waitForTimeout(200);
   await ctx.close();
 }
 
+// ------------------------------- required fields say so to the eye as well --
+// WCAG 3.3.2. aria-required tells a screen reader; it tells a sighted visitor
+// nothing, and this form marked only the OPTIONAL fields — not even all of
+// them. "מה מצלמים" is optional and unmarked while "סוג האירוע" sits beside it
+// required and looks identical, so the only way to learn which was which was to
+// submit and be rejected. Found when a real attempt to fill the form stalled on
+// exactly that, twice, before reaching the network.
+//
+// Both pages that carry the form are checked, derived rather than listed: the
+// homepage and cost.html hold separate copies of the same markup, and a fix
+// applied to one of them is the drift this repo keeps producing.
+{
+  const pages = ['/', '/cost.html'];
+  const bad = [];
+  for (const url of pages) {
+    const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    await p.goto(BASE + url, { waitUntil: 'load' });
+    await p.waitForTimeout(600);
+    bad.push(...await p.evaluate((where) => {
+      const out = [];
+      for (const ctrl of document.querySelectorAll('[data-form] [aria-required="true"]')) {
+        const field = ctrl.closest('.field');
+        const label = field && field.querySelector('.field__label');
+        const marker = label && label.querySelector('.field__req');
+        const visible = marker && getComputedStyle(marker).display !== 'none'
+                               && marker.textContent.trim().length > 0;
+        if (!visible) out.push(`${where} ${ctrl.getAttribute('data-field') || ctrl.name}`);
+      }
+      return out;
+    }, url));
+    await p.close();
+  }
+  ok('every required field is marked required to the eye, not just to aria',
+     bad.length === 0, bad.length ? bad : 'all marked on both forms', 'none unmarked');
+}
+
 // ------------------------------------------------------------ target sizes --
 // WCAG 2.2 SC 2.5.8. The exceptions are real and narrow: the honeypot is bot
 // bait no user can reach, and words inside a sentence are explicitly exempt.
@@ -446,6 +482,18 @@ await page.waitForTimeout(200);
 // The accessibility FAB is exempt on purpose: it is the accessibility control
 // and must stay reachable, and it covers only the trailing ~54px of a field
 // from the opposite edge. Hiding it would trade one defect for a worse one.
+//
+// A control that has been adopted into the site header is also skipped, and
+// that is a narrowing of scope rather than a hole. What this test guards is a
+// FLOAT — an element in a corner nobody expects, appearing over a field the
+// visitor is aiming at. The header is the opposite: a fixed bar that overlays
+// the top of every page on purpose, on every scroll position, and .burger and
+// .nav-mobile__cta have always sat in it covering whatever passes underneath
+// without that being a defect. Once .am-launcher joined them it became the
+// same object, and holding it to the float rule would have meant blanking a
+// button out of the header bar whenever the form scrolled past — a visible
+// gap where a control should be. On the four legal pages the launcher and the
+// FAB still float, and there the rule still applies to them.
 {
   const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
   await p.goto(BASE + '/', { waitUntil: 'load' });
@@ -463,6 +511,8 @@ await page.waitForTimeout(200);
       for (const sel of ['.wa-float', '.am-launcher']) {
         const n = document.querySelector(sel);
         if (!n) continue;
+        // In the header it is chrome, not a float — see the note above.
+        if (n.closest('.site-header')) continue;
         const cs = getComputedStyle(n);
         if (cs.pointerEvents === 'none' || cs.opacity === '0') continue;
         const b = n.getBoundingClientRect();

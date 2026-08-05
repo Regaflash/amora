@@ -9,8 +9,13 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 19 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 28 runtime checks in a real browser
+1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
+   node tools/verify.mjs   # must exit 0 — 43 runtime checks in a real browser
+   # verify.mjs needs playwright-core and pngjs, which this repo deliberately
+   # does not vendor and has no package.json for:
+   #   npm install --no-save playwright-core pngjs
+   # Install both in ONE command — with no package.json, a second --no-save
+   # install removes the first package.
 2. Deploy this directory to Vercel. vercel.json and .vercelignore are already
    correct — do not add a build step, this is a static site with no
    dependencies.
@@ -31,17 +36,43 @@ The owner's accounts are already wired together:
   It is **not tracked**: `.gitignore` holds the patterns, `.vercelignore`
   repeats them, and `tools/check.sh` fails if any of it returns to HEAD.
 - **Vercel** — connected to that GitHub account. This is where the site is
-  **hosted**; deploys should target Vercel.
-- **Hostinger** — holds the **DNS**. Nameservers are `ns1.dns-parking.com` /
-  `ns2.dns-parking.com`, and the records live at
-  `hpanel.hostinger.com/domains/dns`, not in the Vercel dashboard. `www` is a
-  CNAME to vercel-dns, which is how both facts are true at once. This entry
-  used to say Vercel "holds the domain", and a browser agent sent to the
-  Vercel dashboard for a DNS change would have found nothing there.
-  **MX on `@` points to Google**, so the domain has working mail — see the
-  business-email note below.
+  hosted. Deploys should target Vercel. It does **not** hold the domain: this
+  entry used to say it did, and it was wrong. Vercel lists
+  `amora-studios.com` as "registered with a third party" and exposes no DNS
+  tab for it.
+- **Hostinger** — the registrar, and where DNS actually lives. Every DNS
+  record for `amora-studios.com` is edited there, not in the Vercel
+  dashboard: the `A` record pointing at Vercel, the `www` CNAME, the Google
+  Workspace `MX`, and both `google-site-verification` TXT records. Anything
+  that says "add a DNS record in Vercel" is an instruction that cannot be
+  followed.
 - **Supabase** — connected to the same GitHub account. Available as the
   backend for the lead form (see `docs/supabase-leads.sql`).
+
+- **Google Search Console** — verified 2026-08-04. The property is a
+  **Domain** property (`sc-domain:amora-studios.com`), verified by DNS TXT at
+  Hostinger, so it covers apex, `www`, every subdomain and both protocols in
+  one record. `sitemap.xml` is submitted and the three indexable URLs have
+  been through Request Indexing.
+
+  Two consequences worth knowing before touching it again:
+
+  - **A Domain property has no URL prefix, so the Sitemaps field needs the
+    full URL.** Entering `sitemap.xml` — correct for a URL-prefix property —
+    is rejected with "Invalid sitemap address". Submit
+    `https://www.amora-studios.com/sitemap.xml`.
+  - **There are two `google-site-verification` TXT records and only one is
+    ours.** `oz_ZtTvod…` is this property. `kyZHK2Va…` predates it and is not
+    ours to remove — the domain's `MX` points at `SMTP.GOOGLE.COM`, so it is
+    most likely the Google Workspace domain verification, and deleting it
+    risks mail. TXT is multi-value: add alongside, never replace.
+
+  `/` reported "Indexed, though blocked by robots.txt" once. It was stale
+  crawl data, not a bug — Test Live URL returned `Crawl allowed: Yes`, and
+  `urllib.robotparser` confirms Googlebot may fetch `/`, `/cost.html` and
+  `/camera-3d.html`. Note that `Google-Extended` is disallowed by design and
+  is **not** Googlebot; it governs model training only and has no effect on
+  crawling or indexing. Do not "fix" it.
 
 Because the host is Vercel, header rules live in **`vercel.json`**, not in
 `_headers` — Vercel does not read Netlify/Cloudflare's `_headers` format. The
@@ -49,9 +80,9 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 
 ### Known access limits from this environment
 
-- The Claude GitHub App does not have access to `Regaflash/amora`, so `add_repo`
-  fails and the repo cannot be pushed to from here. The owner pushes from their
-  own machine, or grants access at github.com/settings/installations.
+- The repo **is** reachable from this environment and can be pushed to and
+  opened PRs against. This entry used to say the opposite; it was true once and
+  is not now, and it was contradicted by a whole session of pushes.
 - Outbound network is allowlisted: `github.com` and `registry.npmjs.org` work;
   `youtube.com`, `drive.google.com`, `fonts.googleapis.com`, `unpkg.com` are
   all 403. Anything the site needs must be vendored, not fetched at runtime.
@@ -65,6 +96,24 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - RTL Hebrew throughout. Physical CSS properties are a recurring bug source.
 - No prices anywhere on the site — by the owner's brief. Cost questions route
   to the contact form.
+- **Regaflash is the owner's second business, and its product ships with every
+  Amora booking.** `regaflash.com` produces photo magnets carrying an AR
+  scanner: point a phone at the magnet and the photograph plays as video.
+  Owner-confirmed 2026-08-05 as included in *every* deal, not an upsell.
+
+  It appears in five places and they must stay consistent: the trust bar, the
+  package FAQ answer (**both copies** — the visible one and the FAQPage
+  JSON-LD, which `check.sh` compares byte-for-byte), the `cost.html`
+  inclusions list, and `assistant.js` (a `magnets` entry plus the `package`
+  answer). The link to `regaflash.com` lives in `.faq__more`, **not** in the
+  FAQ answer — a tag inside `.faq__a` breaks the byte-lock, which is the same
+  trap that put the `cost.html` link there.
+
+  `regaflash.com` is a different legal entity, so it does **not** belong in
+  the Organization block's `sameAs` — that property is for other profiles of
+  the *same* entity. It is a plain outbound link, opening in a new tab so the
+  visitor keeps the conversion page.
+
 - Testimonial portraits were deliberately removed: they showed real people who
   had not said the quoted words. Do not re-add without written permission.
 - The hero streams the studio's real footage from YouTube — `2DHdORDXVmo`
@@ -86,6 +135,46 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `404.html` is served by Vercel AT the address that was not found, so every
   asset it references must stay root-absolute — a relative href resolves
   against the dead path. That is a real bug that has already happened once.
+- **Every public page carries the same shell obligations**, and five of them
+  did not until 2026-08-05. `.skip-link` was styled globally in `styles.css`
+  from the start but only `index.html` and `cost.html` emitted the markup —
+  `accessibility.html` shipped without a skip link, which is the one page
+  where the omission is also an argument against itself. All seven now carry
+  a skip link, `<main id="main">`, `<link rel="manifest">` and `theme-color`.
+
+  `site.webmanifest` is referenced **root-absolute** for the same reason every
+  other `404.html` reference is: Vercel serves that page AT the address that
+  was not found, so a relative href resolves against the dead path. Note the
+  manifest ships **without a 512px icon** — the source logo is 150×150, so one
+  would be upscaled garbage. Chrome's install prompt wants 192 *and* 512, so
+  the profile is valid and useful but not installable until a real logo master
+  arrives. That is the same outstanding owner item, now blocking something
+  visible.
+
+- **The assistant launcher and the accessibility trigger live in the mobile
+  header bar**, beside the burger and the availability CTA, and share its
+  exact geometry and both of its states — circle over the hero, square once
+  `.site-header` gains `.is-scrolled`. `assistant.js` and `a11y-widget.js`
+  each move only their BUTTON into `.nav-mobile`; the panels stay on `body`,
+  because a fixed modal nested in the header would inherit its stacking
+  context. The four legal pages have no `.nav-mobile` and keep the
+  free-floating originals, so that fallback is live code, not a leftover.
+
+  **Moving an element out of an ancestor drops the rules scoped to it and the
+  custom properties declared on it.** That bit three times in one change:
+  the border vanished (`border-width` without `border-style` computes to
+  `0px none`), the shape stopped tracking the header, and — the one that
+  mattered — `.a11y-fab:focus-visible` kept matching but painted
+  `var(--a11y-on-accent)`, a property declared on `.a11y-ui`, so it resolved
+  to nothing and **no focus ring was drawn on the accessibility control at
+  all**. `verify.mjs` caught that; a screenshot would not have.
+
+  `.brand` carries `flex: 0 0 auto` because of this change: with two more
+  44px controls in the bar the logo was measured crushed to 30px at 360px and
+  to zero at 320px. Below 360px a media query tightens the row to 40px
+  controls — measured, because at 320px the launcher had been sitting at
+  `[-38..6]`, entirely off-screen.
+
 - Three files are GENERATED. Do not hand-edit them; rerun the tool and let
   `check.sh` confirm: `sitemap.xml` (`tools/gen-sitemap.py`), the ImageGallery
   JSON-LD block in `index.html` (`tools/gen-image-schema.py`), and the icon set
@@ -179,10 +268,48 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the visible copy and the copy Google is served could have parted in either
   direction and every check would still have passed. Same lesson as the lead
   alerts below: **a guarantee written here is not a guarantee that runs.**
-- **Lead alerts: live and verified 5.8.2026.** A real row inserted into
-  `public.leads` produced `200 {"sent":true,"to_source":"private.settings"}`
-  in `net._http_response`, and the row was deleted. This is the first time an
-  alert has actually been delivered.
+- **Lead alerts: sending — but the destination changed on 5.8, and that is the
+  whole lesson.** A trigger on INSERT into `public.leads`
+  (`docs/supabase-lead-alert-webhook.sql`) calls the `lead-alert` Edge
+  Function, which emails the studio.
+
+  **04.08:** proved by a real submission — a lead entered from the live form
+  at 17:20:49 and `net._http_response` recorded `200 {"sent":true}` 53 ms
+  later, delivered to `support@regaflash.com`.
+
+  **05.08:** the owner rotated `RESEND_API_KEY` to a key from the **amora**
+  Resend account, and every alert began failing `403`. Nothing was
+  misconfigured: with no verified domain the sender is Resend's shared
+  `onboarding@resend.dev`, which may only deliver to the **account owner** —
+  and the new account's owner is `support@amora-studios.com`, not
+  `support@regaflash.com`. **Rotating that one key silently moved the goalposts
+  for a setting nobody touched.**
+
+  Fixed and re-verified the same way: `200 {"sent":true,"to_source":
+  "private.settings"}`. **Alerts now arrive at `support@amora-studios.com`.**
+  If they should go somewhere else, it is one statement — the destination moved
+  out of Supabase Secrets into `private.settings.lead_alert_to`, read through
+  `public.lead_alert_to()` (EXECUTE to `service_role` only), because a Secret
+  can only be changed from the dashboard and that is exactly how a single wrong
+  value went unnoticed:
+
+  ```sql
+  update private.settings set value = '…' where key = 'lead_alert_to';
+  ```
+
+  `LEAD_ALERT_TO` survives as a fallback and every response reports
+  `to_source`, so the live value is never a guess. **Still open:** verify
+  `amora-studios.com` in Resend and set `LEAD_ALERT_FROM` — that is what lets
+  alerts reach any address instead of only the account owner.
+
+  Getting there on 04.08 turned up the thing that actually mattered. **The form
+  had never inserted a single lead** — `anon`'s column-scoped INSERT grant was
+  missing three columns the site posts, so every submission failed while the
+  alert pipeline sat downstream of a call it never received. See the GRANT
+  entry above.
+
+  This entry has been wrong in both directions before. **Its status is not
+  knowable by reading anything; insert a row and look at `net._http_response`.**
 
   The destination now lives in **`private.settings.lead_alert_to`**
   (`support@amora-studios.com`), not in Supabase Secrets — read via
@@ -213,22 +340,18 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   thing no code in this repo can produce: the local pack renders above the
   organic results. The site's entire declared off-site footprint is one
   Instagram link.
-- ~~**Google Search Console**~~ — **done, and it was done before this file
-  noticed.** The `amora-studios.com` Domain property was verified on
-  2026-08-04 by Rega Flash; two `google-site-verification` TXT records already
-  sit on `@` at Hostinger. Confirmed twice over: a read-only browser check,
-  and Google's own "you recently verified this Domain property" mail. It is
-  already earning — the image-schema finding below came from it.
-- **A business email — the address exists; what is missing is the decision to
-  use it.** `support@amora-studios.com` is a live Google account: it appears
-  as the sender of a Drive share in the studio's own mail. That is enough to
-  unblock `LEAD_ALERT_TO`, which has been waiting on "an address" for months
-  while the address existed. Still genuinely missing: `RESEND_API_KEY`, and a
-  decision on whether this address goes on the site as a `mailto:` — there is
-  still none in the eight HTML pages. **Do not set `LEAD_ALERT_TO` without
-  asking the owner to confirm the mailbox is monitored**; a lead alert sent to
-  an unread inbox is the same failure as no alert at all, wearing a green
-  tick.
+- ~~Google Search Console~~ — **done, 2026-08-04.** See the Search Console
+  entry under Infrastructure above. It is already earning: the image-schema
+  finding below arrived as a Search Console email.
+- **A business email on the site.** No longer blocking `LEAD_ALERT_TO` — alerts
+  arrive, and since 5.8 they arrive at `support@amora-studios.com`, a live
+  Google account on the domain. Still absent from the pages themselves: there
+  is no `mailto:` anywhere in the eight HTML files, and `privacy.html` and
+  `accessibility.html` both carry `[להשלים]` where an address belongs. Those
+  two are legal statements that name a contact route by law, so the gap is
+  theirs to close, not the homepage's. **Confirm the mailbox is actually read**
+  — an alert delivered to an unopened inbox is the same failure as no alert,
+  wearing a green tick.
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
