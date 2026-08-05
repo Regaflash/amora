@@ -299,6 +299,23 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   would create a second Make scenario feeding the same dataset — double
   counting against a path that already works.
 
+  **Confirmed in the UI the same evening:** all four appear in the dataset,
+  active, source "Conversions API", one each, with an activity point at 19:00
+  on 5.8 and **zero errors or warnings**. The chain is verified end to end,
+  receive side included.
+
+  **And the finding that matters most came with it: the "Used by" column is
+  empty on all four.** The events arrive and are stored, and **no campaign
+  optimises against them.** That is the difference between Meta knowing what
+  happened to a lead and Meta buying on it — the whole point of the work. It
+  needs the ad set set to optimise for **Conversion Leads**, which is a
+  campaign setting and a media-budget decision, not code. The campaign is off,
+  so it waits regardless.
+
+  Event Match Quality is blank for all four, and that is expected rather than
+  broken: the score is built from events in the last 24-48 hours and needs
+  volume. Four events produce no score.
+
   **Two things are NOT proven and must not be written up as if they were.**
   The `event_id` de-duplication guard: Meta dedupes silently and returns
   `events_received: 1` either way, so the API cannot distinguish a counted
