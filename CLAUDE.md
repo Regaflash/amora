@@ -135,6 +135,22 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `404.html` is served by Vercel AT the address that was not found, so every
   asset it references must stay root-absolute — a relative href resolves
   against the dead path. That is a real bug that has already happened once.
+- **Every public page carries the same shell obligations**, and five of them
+  did not until 2026-08-05. `.skip-link` was styled globally in `styles.css`
+  from the start but only `index.html` and `cost.html` emitted the markup —
+  `accessibility.html` shipped without a skip link, which is the one page
+  where the omission is also an argument against itself. All seven now carry
+  a skip link, `<main id="main">`, `<link rel="manifest">` and `theme-color`.
+
+  `site.webmanifest` is referenced **root-absolute** for the same reason every
+  other `404.html` reference is: Vercel serves that page AT the address that
+  was not found, so a relative href resolves against the dead path. Note the
+  manifest ships **without a 512px icon** — the source logo is 150×150, so one
+  would be upscaled garbage. Chrome's install prompt wants 192 *and* 512, so
+  the profile is valid and useful but not installable until a real logo master
+  arrives. That is the same outstanding owner item, now blocking something
+  visible.
+
 - Three files are GENERATED. Do not hand-edit them; rerun the tool and let
   `check.sh` confirm: `sitemap.xml` (`tools/gen-sitemap.py`), the ImageGallery
   JSON-LD block in `index.html` (`tools/gen-image-schema.py`), and the icon set
