@@ -309,8 +309,8 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   optimises against them.** That is the difference between Meta knowing what
   happened to a lead and Meta buying on it — the whole point of the work. It
   needs the ad set set to optimise for **Conversion Leads**, which is a
-  campaign setting and a media-budget decision, not code. The campaign is off,
-  so it waits regardless.
+  campaign setting and a media-budget decision, not code. It is deliberately
+  **not** being switched yet — see the ad-account entry below for why.
 
   Event Match Quality is blank for all four, and that is expected rather than
   broken: the score is built from events in the last 24-48 hours and needs
@@ -323,10 +323,47 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   straight to the endpoint, bypassing Make. What is verified is the endpoint,
   not that a real status change fires it.
 
-  **The campaign is off**, and the last `6821619` run was 4.8 18:27 while
-  `fld_1519` was only mapped 5.8 12:45 — so no lead in Origami carries a Meta
-  id at all. Until a new lead arrives, a status change returns
-  `skipped: no usable meta lead id`, correctly.
+  This entry used to end "**the campaign is off**, so no lead in Origami
+  carries a Meta id at all". **Both halves were false within a day**, and the
+  correction is the reason the ad account is now read rather than assumed —
+  see `docs/meta-ads-account.md` for the full read.
+
+- **The Amora campaign is ON, and it has been buying leads since 4.8.** Read
+  from the Meta Ads connector on 6.8, not inferred: `לידים | אמורה | קהל +
+  קריאייטיב מנצחים | 08.26` (`120255009878340242`) is `ACTIVE`,
+  `OUTCOME_LEADS`, campaign-budget ₪60/day, with one live ad set
+  (`120255009886760242`, `ארצי | 22-40 | תחומי עניין חתונות | מנצח`). It spent
+  ≈₪113 over 4–6.8 and recorded **two leads**. A sibling Regaflash campaign
+  (`120255009455970242`, ₪130/day) runs beside it in the same ad account.
+
+  So the "waits for the campaign to be turned on" reasoning is gone, and the
+  Conversion Leads switch has to be argued on its own merits. **It is still a
+  no, for three reasons that are about volume rather than wiring:** switching
+  `optimization_goal` restarts the ad set's learning phase; the ad set has two
+  leads in total, which is nothing to learn from; and the CRM events Meta would
+  optimise against are four test events on Meta's own verification lead, none
+  on a real one. Turning it on now would reset a barely-started ad set to
+  optimise for a signal that does not yet exist.
+
+  **The gate is a real qualified event, not a date.** When status changes on
+  genuine Meta leads have been landing for a week or two, revisit it —
+  `mcp__Windsor_ai__execute_action` `update_adset` takes `optimization_goal`,
+  so the switch itself is one call.
+
+- **The trigger fired for the first time on 5.8 — and stopped one module
+  short.** `3756300` ran at 21:27Z consuming **6 operations**, the first run
+  after the CAPI branch was added at 15:24. Six is exactly
+  webhook + phone + ManyChat-find + create + set-field + `origami:search`;
+  the seventh module, the POST to `meta-capi`, is missing, and the Edge
+  Function logs confirm no invocation between 18:17Z and 23:36Z.
+
+  **So the branch runs and the Origami search returns nothing.** The search is
+  `e_89` where `fld_1509 = 0{{8.phone}}`; the same run also took the
+  *create-subscriber* route, meaning the contact was new to ManyChat too. Both
+  point the same way: that status change was for someone not in `e_89` under
+  that phone format. **`skipped: no usable meta lead id` was never reached —
+  the request that would have produced it was never sent.** Do not record the
+  trigger as proven until an invocation appears in the Edge Function log.
 
 - **Lead alerts: sending — but the destination changed on 5.8, and that is the
   whole lesson.** A trigger on INSERT into `public.leads`
