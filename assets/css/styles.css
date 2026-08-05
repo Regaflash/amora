@@ -1477,6 +1477,58 @@ summary::-webkit-details-marker { display: none; }
   margin: 0 auto var(--sp-7);
   text-wrap: pretty;
 }
+/* ------------------------------------------------------ language switch --- */
+/* Built by assets/js/i18n.js, so it never exists with JavaScript off — which
+   is correct: without JS there is nothing it could do. Sized past the 24x24
+   floor verify.mjs enforces for tap targets. */
+
+.lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--rule-dark);
+  border-radius: 999px;
+}
+.lang__btn {
+  min-width: 34px;
+  min-height: 28px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: .08em;
+  line-height: 1;
+  color: currentColor;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: .72;
+  transition: opacity 200ms var(--ease), background 200ms var(--ease);
+}
+.lang__btn:hover { opacity: 1; }
+.lang__btn[aria-pressed="true"] {
+  opacity: 1;
+  background: var(--champagne);
+  color: var(--charcoal);
+}
+/* The header sits on the hero before it solidifies, so the control inherits
+   the header's own colour rather than fixing one. */
+.site-header[data-solid] .lang,
+[data-header-solid] .lang { border-color: var(--rule); }
+
+.lang-mobile { margin-block: var(--sp-4, 18px); }
+.lang-mobile .lang { border-color: var(--rule); }
+.lang-mobile .lang__btn { min-height: 44px; min-width: 52px; font-size: 0.875rem; }
+
+/* While strings are in flight the page is still fully readable Hebrew, so the
+   only cue is a soft one. Nothing moves, nothing is hidden. */
+[data-translating] .lang__btn[aria-pressed="true"] { opacity: .55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lang__btn { transition: none; }
+}
+
 /* .quotes__avatar and its <picture> wrapper are gone on purpose. The
    testimonial portraits showed real people who had not said the quoted
    words; the markup was removed first, then the image files and their
