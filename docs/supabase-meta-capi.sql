@@ -118,3 +118,8 @@ grant execute on function public.meta_capi_hook_secret() to service_role;
 --   update private.settings
 --      set value = 'support@amora-studios.com, support@regaflash.com'
 --    where key = 'lead_alert_to';
+--
+-- Applied 2026-08-05: both inboxes now receive. Verified with a real row --
+-- recipients: 2. The regaflash address is not the Resend account owner, so
+-- that send was impossible before the domain was verified; it is the first
+-- thing to actually exercise the lifted restriction.

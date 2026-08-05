@@ -8,7 +8,7 @@
 | `on_lead_insert_alert` trigger on `public.leads` | **firing** ✓ |
 | `LEAD_ALERT_SECRET` | **set** — 2026-08-04 |
 | `RESEND_API_KEY` | **set** — 2026-08-04, **rotated 2026-08-05** |
-| destination (`private.settings.lead_alert_to`) | `support@amora-studios.com` |
+| destination (`private.settings.lead_alert_to`) | `support@amora-studios.com, support@regaflash.com` |
 | sender (`private.settings.lead_alert_from`) | `Amora Studio <leads@amora-studios.com>` ✓ |
 | `amora-studios.com` verified in Resend | **yes — 2026-08-05 18:14** ✓ |
 | **an email actually arriving** | **yes — re-verified 5.8.2026** ✓ |
@@ -160,6 +160,37 @@ update private.settings
 
 That capability did not exist before today: with the shared sender, a second
 recipient was *impossible*, not merely unconfigured.
+
+### Two recipients — set 2026-08-05, and it proves what verification bought
+
+`lead_alert_to` now holds **both** inboxes:
+
+```
+support@amora-studios.com, support@regaflash.com
+```
+
+Verified with a real row: `200 {"sent":true,"to_source":"private.settings",
+"from_source":"private.settings","recipients":2}`. Row deleted.
+
+**That send is the proof, not a formality.** `support@regaflash.com` is *not*
+the Resend account owner, so this exact message was impossible earlier the same
+day — the shared sender would have refused it with `403`. It goes through now
+only because `amora-studios.com` is verified. Everything before this was
+delivered to the account owner's own inbox, which never tested the constraint.
+
+### The stale `LEAD_ALERT_TO` secret — risk downgraded, not gone
+
+Supabase Secrets still carries `LEAD_ALERT_TO = support@regaflash.com`. It is
+**not** in use: the database row wins, and every response says so via
+`to_source`. It matters only if the row is ever deleted.
+
+Its danger changed today. Before the domain was verified, falling back to that
+value meant **every alert failing 403 in silence**. Now it would merely deliver
+to one inbox instead of two — a quiet loss of the amora address, not a dead
+pipeline.
+
+Worth aligning when someone is next in the dashboard; no longer urgent. There
+is no API for Supabase Secrets, so it cannot be done from code.
 
 ### Delivery baseline — read out of Resend and the inbox, 2026-08-05 evening
 
