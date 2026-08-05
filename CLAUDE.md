@@ -268,6 +268,38 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the visible copy and the copy Google is served could have parted in either
   direction and every check would still have passed. Same lesson as the lead
   alerts below: **a guarantee written here is not a guarantee that runs.**
+- **Meta CAPI: connected and accepted, 5.8.2026.** Origami status changes flow
+  through Make `3756300` → `supabase/functions/meta-capi` → Graph API. Four
+  events were sent against Meta's own CRM verification lead
+  (`1513375167229002`, issued by the Test Events tab) and **all four came back
+  `events_received: 1` with `messages: []`** — `LeadContacted`,
+  `LeadConverted`, `LeadQualified`, `LeadDisqualified`. That exercises every
+  branch of the mapping table.
+
+  **The dataset question is closed.** `2851332215058775` was taken on trust
+  from a pasted URL; it is confirmed twice over — Meta's own CRM wizard opens
+  at `data_source_id=2851332215058775` for this business, and the dataset
+  accepted the events. Its name says "Regaflash" because the Amora campaign
+  runs inside the Regaflash ad account (`600899502539771`, business
+  `501463492690274`).
+
+  **Do not complete Meta's CRM partner wizard.** It offers to wire Make as an
+  official partner; Origami is not in its supported list, and finishing it
+  would create a second Make scenario feeding the same dataset — double
+  counting against a path that already works.
+
+  **Two things are NOT proven and must not be written up as if they were.**
+  The `event_id` de-duplication guard: Meta dedupes silently and returns
+  `events_received: 1` either way, so the API cannot distinguish a counted
+  event from a discarded duplicate. And the trigger itself: these four went
+  straight to the endpoint, bypassing Make. What is verified is the endpoint,
+  not that a real status change fires it.
+
+  **The campaign is off**, and the last `6821619` run was 4.8 18:27 while
+  `fld_1519` was only mapped 5.8 12:45 — so no lead in Origami carries a Meta
+  id at all. Until a new lead arrives, a status change returns
+  `skipped: no usable meta lead id`, correctly.
+
 - **Lead alerts: sending — but the destination changed on 5.8, and that is the
   whole lesson.** A trigger on INSERT into `public.leads`
   (`docs/supabase-lead-alert-webhook.sql`) calls the `lead-alert` Edge
