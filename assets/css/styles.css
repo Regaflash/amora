@@ -468,7 +468,10 @@ summary::-webkit-details-marker { display: none; }
   font-size: 12px;
   letter-spacing: .14em;
   padding: 10px 20px;
-  border: 1px solid var(--champagne);
+  /* No border. The outlined box read as a stray rectangle sitting on the hero
+     footage rather than as a button. The padding stays, so the link keeps its
+     own space in the row, and the champagne fill on hover still marks it out
+     as the primary action. */
   color: #FFFDF9;
   background: transparent;
   transition: background 300ms, color 300ms;
@@ -508,7 +511,13 @@ summary::-webkit-details-marker { display: none; }
 .site-header.is-scrolled .burger[aria-expanded="true"] { border-color: var(--champagne); }
 .burger span { display: block; width: 20px; height: 1px; background: currentColor; }
 
-.progress { height: 1px; background: var(--line); }
+/* The scroll-progress track. It is a real indicator, not trim, so it is kept —
+   but over the hero it painted a full-width hairline straight across the
+   footage. The track is hidden while the header is transparent and returns
+   once the header goes solid, which is where a rule under a bar belongs. The
+   fill itself loses nothing: at the top of the page it is 0% wide anyway. */
+.progress { height: 1px; background: var(--line); transition: background 400ms var(--ease); }
+.site-header:not(.is-scrolled) .progress { background: transparent; }
 .progress__bar { height: 1px; width: 0%; background: var(--champagne); }
 
 /* Mobile menu overlay */
