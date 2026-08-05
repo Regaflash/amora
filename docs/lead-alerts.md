@@ -64,6 +64,61 @@ Precedence is explicit and **the function reports which source it used**
 nothing to say which won; the fix must not reproduce that shape. The row wins;
 `LEAD_ALERT_TO` remains a fallback.
 
+### Verifying the domain in Resend — the account trap and the MX trap
+
+Two things went wrong or nearly went wrong on 2026-08-05, both worth keeping.
+
+**The account trap.** Resend's free plan allows **one** domain. The regaflash
+account already has `regaflash.com` verified, so `Add domain` there returns
+*"Upgrade to add new domains — Pro $20/mo"*. That is not a reason to upgrade:
+`amora-studios.com` belongs in the **amora** account, which has no domain and
+therefore no plan limit. If a paywall appears, the account is wrong, not the
+plan.
+
+**The MX trap — it is real, and it is one toggle away.** A domain in Resend has
+an *Enable Receiving* switch. Turning it on demands an `MX` record **on `@`**
+(`inbound-smtp.eu-west-1.amazonaws.com`). The apex already carries Google
+Workspace `MX`. Adding a second apex MX at equal or better priority silently
+diverts the studio's mail; replacing it loses mail outright.
+
+**Receiving is not needed for verification or for sending. Leave it off.**
+The `MX` that *is* required sits on the `send` subdomain, not the apex.
+
+The three records that matter, all additive, none touching `@`:
+
+| # | Type | Name | Purpose |
+| --- | --- | --- | --- |
+| 1 | TXT | `resend._domainkey` | DKIM public key |
+| 2 | MX | `send` (priority 10) | bounce/complaint feedback |
+| 3 | TXT | `send` | SPF for the sending subdomain |
+
+Because 2 and 3 live on `send`, the apex SPF and the Google `MX` are untouched.
+
+**Copy the DKIM value with the Copy button — never retype or reconstruct it.**
+One wrong character fails verification without saying why.
+
+**Check each record after saving.** Some panels append the domain to whatever
+you type, turning `resend._domainkey` into
+`resend._domainkey.amora-studios.com.amora-studios.com`. Read it back.
+
+### DMARC — deliberately not added
+
+Resend also offers an optional `_dmarc` TXT record (`v=DMARC1; p=none;`). It
+was declined on 2026-08-05, for reasons that outlive this setup:
+
+- **`_dmarc` must be a single record.** A domain with two is treated as having
+  *no* policy — strictly worse than not adding one. Whether `_dmarc` already
+  exists here has never been established: the DNS inventory captured record
+  types and names only, and this environment cannot query TXT records.
+- **DMARC governs the whole domain's mail**, including the studio's Google
+  Workspace inbox. That is a decision about the business's email reputation,
+  not a step in configuring a sending provider.
+- **`p=none` with no `rua=mailto:` produces no reports and enforces nothing.**
+  It is a placeholder, and there is no hurry to place it.
+
+If it is wanted later, the first step is to *read* `_dmarc` and confirm nothing
+is there — not to add one.
+
 ### Still worth doing — verify the domain in Resend
 
 Today alerts can only reach the Resend account owner. Verifying
