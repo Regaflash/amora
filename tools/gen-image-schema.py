@@ -22,11 +22,28 @@
 #                     of thing that gets caught later.
 #   copyrightNotice   terms.html asserts copyright in these words.
 #   license           terms.html, which is where the terms actually are.
+#   creditText        how the photograph should be credited when it is shown.
+#                     "Amora Studio" is simply true, and it is the same name
+#                     already in copyrightNotice and on the Organization node.
 #
 # Deliberately NOT emitted: acquireLicensePage. Together with `license` it is
 # what earns Google's "Licensable" badge, and that badge tells a searcher the
 # image can be licensed. These are photographs of other people's weddings and
 # the studio does not sell them. The badge would be a lie told in markup.
+#
+# SEARCH CONSOLE WILL ASK FOR IT ANYWAY. On 2026-08-05 it emailed
+# "2 Image metadata structured data issues": missing acquireLicensePage and
+# missing creditText. Both are flagged non-critical -- Google's own words are
+# that they "don't prevent the page or feature from appearing".
+#
+# creditText was added, because it is true. acquireLicensePage was refused,
+# because it is not: there is no page where a visitor can license these
+# photographs, and pointing the field at terms.html to silence a warning would
+# assert a service the studio does not offer. A structured-data warning is a
+# suggestion from a crawler, not a defect report, and it does not outrank a
+# decision about what the business actually sells. If this mail arrives again,
+# the answer is still no -- and the remaining warning is the expected state,
+# not an outstanding task.
 
 import io, os, re, sys
 
@@ -96,6 +113,7 @@ for i, (slot, alt, url) in enumerate(items):
         f'   "name": "{esc(alt)}",',
         f'   "creator": {{ "@id": "{ORIGIN}/#business" }},',
         '   "copyrightNotice": "© Amora Studio",',
+        '   "creditText": "Amora Studio",',
         f'   "license": "{ORIGIN}/terms.html"',
         '  }' + tail,
     ]
