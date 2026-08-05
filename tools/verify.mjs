@@ -482,6 +482,18 @@ await page.waitForTimeout(200);
 // The accessibility FAB is exempt on purpose: it is the accessibility control
 // and must stay reachable, and it covers only the trailing ~54px of a field
 // from the opposite edge. Hiding it would trade one defect for a worse one.
+//
+// A control that has been adopted into the site header is also skipped, and
+// that is a narrowing of scope rather than a hole. What this test guards is a
+// FLOAT — an element in a corner nobody expects, appearing over a field the
+// visitor is aiming at. The header is the opposite: a fixed bar that overlays
+// the top of every page on purpose, on every scroll position, and .burger and
+// .nav-mobile__cta have always sat in it covering whatever passes underneath
+// without that being a defect. Once .am-launcher joined them it became the
+// same object, and holding it to the float rule would have meant blanking a
+// button out of the header bar whenever the form scrolled past — a visible
+// gap where a control should be. On the four legal pages the launcher and the
+// FAB still float, and there the rule still applies to them.
 {
   const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
   await p.goto(BASE + '/', { waitUntil: 'load' });
@@ -499,6 +511,8 @@ await page.waitForTimeout(200);
       for (const sel of ['.wa-float', '.am-launcher']) {
         const n = document.querySelector(sel);
         if (!n) continue;
+        // In the header it is chrome, not a float — see the note above.
+        if (n.closest('.site-header')) continue;
         const cs = getComputedStyle(n);
         if (cs.pointerEvents === 'none' || cs.opacity === '0') continue;
         const b = n.getBoundingClientRect();

@@ -416,6 +416,19 @@
 
     fab = ui.querySelector('.a11y-fab');
     panel = ui.querySelector('.a11y-panel');
+
+    // The trigger belongs with the other site controls, in the mobile header
+    // bar. Only the BUTTON moves: the panel stays inside `ui` on body, because
+    // a fixed modal nested in the header would inherit its stacking context and
+    // its overflow. Tab order survives the move — the header is the first thing
+    // after the skip link either way, which is the property the placement above
+    // was chosen for. The four legal pages have no such bar and keep the
+    // free-floating trigger.
+    var bar = document.querySelector('.nav-mobile');
+    if (bar) {
+      fab.classList.add('a11y-fab--header');
+      bar.appendChild(fab);
+    }
     sizeValue = ui.querySelector('[data-a11y-size-value]');
 
     fab.addEventListener('click', function () { setOpen(panel.hidden); });
