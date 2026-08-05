@@ -219,7 +219,55 @@ Verifying the domain did not rescue a broken send — it removed a constraint
 that had already been worked around by pointing at the owner's own inbox. What
 verification actually buys is **any recipient**, not this one.
 
-### Still unverified: the authentication headers
+### ✓ Authentication headers read, 2026-08-05 — and they change the DMARC call
+
+From Gmail's *show original* on the 18:35 alert:
+
+```
+SPF:    PASS  (54.240.6.53)
+DKIM:   PASS  (amora-studios.com)
+DMARC:  FAIL
+```
+
+The raw `Authentication-Results` from `mx.google.com` shows
+`dkim=pass header.i=@amora-studios.com header.s=resend`, `dkim=pass
+header.i=@amazonses.com`, and `spf=pass` for
+`smtp.mailfrom=…@send.amora-studios.com`.
+
+**Both records added at Hostinger are working in the field, not merely in
+Resend's dashboard.** The DKIM selector `resend` signs `d=amora-studios.com`,
+and SPF passes on the `send` subdomain exactly as designed — the apex was never
+touched.
+
+**There is no `dmarc=` line in the header at all.** Google did not reject a
+policy; it had nothing to evaluate, because the domain publishes no `_dmarc`
+record. The FAIL is the absence of a record, not a fault in the send.
+
+### This is now a decision, not an unknown
+
+`_dmarc` was declined earlier for two reasons, and reading the headers
+dissolved both:
+
+- *"We don't know whether a record already exists"* — **we do now.** Google
+  looked and found none. The duplicate-record hazard that made adding one
+  dangerous does not apply.
+- *"DMARC governs all the domain's mail"* — true, but `p=none` **enforces
+  nothing**. No message is rejected or quarantined under it; it only declares a
+  policy and, with `rua=`, requests reports.
+
+And the headers show something that was not knowable before: the `From:` domain
+is `amora-studios.com` and DKIM signs `d=amora-studios.com`, so **the two are
+aligned**. A published `p=none` would therefore evaluate to **PASS**, not FAIL.
+
+**The precondition that was set — read before writing — has been met.** Whether
+to publish `v=DMARC1; p=none;` is now an ordinary decision for the owner rather
+than a gap in what anybody knows. It is still their call, and it is still about
+the whole domain's mail, including Google Workspace.
+
+**The apex SPF question is unchanged and still deferred.** Nothing here needs
+it: alert mail passes SPF on `send.amora-studios.com`. Apex SPF governs what
+Google Workspace sends, which is a separate matter that this evidence does not
+touch.
 
 Whether Gmail recorded `SPF=PASS`, `DKIM=PASS` and a DMARC result was **not**
 established. Reading it needs Gmail's "show original" view, which was not
