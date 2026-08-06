@@ -997,6 +997,23 @@
     renderSlide();
   }
 
+  /* ---------------------------------------- gallery glimpse (cost page) --- */
+
+  // The cost page's six-frame glimpse is the same sideways strip on a phone,
+  // with the same lazy defect as the services plates and the gallery strip:
+  // loading="lazy" measures vertical distance, and frames that are only
+  // off-screen sideways never load. Same one-shot fix.
+  var glimpse = $('.glimpse');
+  if (glimpse && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries, obs) {
+      if (!entries[0].isIntersecting) return;
+      $$('img', glimpse).forEach(function (img) {
+        if (img.getAttribute('loading') === 'lazy') img.loading = 'eager';
+      });
+      obs.disconnect();
+    }, { rootMargin: '800px 0px' }).observe(glimpse);
+  }
+
   /* ------------------------------------------------- services carousel --- */
 
   // The strip itself is pure CSS scroll-snap and works with this file deleted.

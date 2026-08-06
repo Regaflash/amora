@@ -612,6 +612,41 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ----------------------------------------- the cost page shows the work --
+// The page that answers "how much" argued the studio's case in words while
+// showing none of the photographs. Six frames now sit beside the "ask any
+// studio for a full album" paragraph, as plain links to the gallery — the
+// lightbox lives on the homepage, so a button here would be the dead-control
+// trap. A phone gets the same scroll-snap strip as the gallery; a desktop
+// gets a grid inside the prose measure.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const m = await p.evaluate(() => {
+    const g = document.querySelector('.glimpse');
+    const links = [...g.querySelectorAll('.glimpse__link')];
+    return {
+      frames: links.length,
+      rendered: links.filter((a) => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0; }).length,
+      swipeable: g.scrollWidth > g.clientWidth + 1,
+      allToGallery: links.every((a) => a.getAttribute('href') === 'index.html#gallery'),
+    };
+  });
+  ok('the cost glimpse renders all six frames', m.frames === 6 && m.rendered === 6,
+     `${m.rendered}/${m.frames}`, '6/6');
+  ok('at 390px the cost glimpse is a strip', m.swipeable, m.swipeable, 'scrollable');
+  ok('every glimpse frame leads to the gallery', m.allToGallery, m.allToGallery, true);
+  await p.setViewportSize({ width: 1440, height: 900 });
+  await p.waitForTimeout(400);
+  ok('at 1440px the cost glimpse is a grid, not a strip',
+     await p.evaluate(() => {
+       const g = document.querySelector('.glimpse');
+       return g.scrollWidth <= g.clientWidth + 1;
+     }), true, 'not scrollable');
+  await p.close();
+}
+
 // ------------------------------------- the floats vs. the form they feed --
 // Adjacency is not the bug; occlusion is. The WhatsApp button and the
 // assistant launcher are both fixed to the bottom-left, and at 390px they were

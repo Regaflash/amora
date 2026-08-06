@@ -1229,6 +1229,47 @@ summary::-webkit-details-marker { display: none; }
 
 .gallery__footer { display: flex; justify-content: center; margin-top: clamp(44px, 5vw, 76px); }
 
+/* --------------------------------------------- gallery glimpse (cost page) --- */
+/* Six frames on the page that answers "how much": it argued the studio's case
+   in words while showing none of the work. Plain links to the homepage
+   gallery, not lightbox buttons — the lightbox lives there. Desktop is a
+   modest grid inside the prose measure; a phone gets the same scroll-snap
+   strip vocabulary as the gallery itself, bled to the screen edges with the
+   services strip's negative-margin pattern (.legal pads by the same
+   --gutter). */
+.glimpse {
+  list-style: none;
+  margin: var(--sp-5) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 1.5vw, 16px);
+}
+.glimpse__link { display: block; overflow: hidden; }
+.glimpse__photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  transition: transform 900ms var(--ease);
+}
+.glimpse__link:hover .glimpse__photo { transform: scale(1.03); }
+@media (max-width: 560px) {
+  .glimpse {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .glimpse::-webkit-scrollbar { display: none; }
+  .glimpse__item { flex: 0 0 72%; scroll-snap-align: start; }
+}
+
 /* Lightbox */
 .lightbox {
   position: fixed;
