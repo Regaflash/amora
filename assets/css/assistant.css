@@ -248,7 +248,7 @@ html.form-in-view .am-launcher:not(.is-open) {
   font-size: 12px;
   letter-spacing: .12em;
   background: var(--champagne);
-  color: #1C1A18;
+  color: var(--charcoal);
   border: 1px solid var(--champagne);
   border-radius: 2px;
   cursor: pointer;
@@ -307,7 +307,7 @@ html.form-in-view .am-launcher:not(.is-open) {
   padding: 0;
   border: 1px solid rgba(255, 253, 249, 0.45);
   background: transparent;
-  color: #FFFDF9;
+  color: var(--ivory);
   box-shadow: none;
   font: inherit;
   font-size: 20px;

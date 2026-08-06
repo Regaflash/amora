@@ -293,8 +293,8 @@ summary::-webkit-details-marker { display: none; }
   cursor: pointer;
   transition: background 320ms, color 320ms, transform 320ms, border-color 320ms;
 }
-.btn--solid { background: var(--champagne); color: #1C1A18; }
-.btn--solid:hover { background: var(--sand); color: #1C1A18; transform: translateY(-2px); }
+.btn--solid { background: var(--champagne); color: var(--charcoal); }
+.btn--solid:hover { background: var(--sand); color: var(--charcoal); transform: translateY(-2px); }
 
 /* ---------------------------------------------------------------------------
    Glass over the film.
@@ -322,12 +322,12 @@ summary::-webkit-details-marker { display: none; }
 .hero__actions .btn--solid {
   background: rgba(201, 174, 140, 0.34);
   border-color: rgba(201, 174, 140, 0.9);
-  color: #FFFDF9;
+  color: var(--ivory);
 }
 .hero__actions .btn--solid:hover {
   background: rgba(201, 174, 140, 0.52);
   border-color: var(--champagne);
-  color: #FFFDF9;
+  color: var(--ivory);
 }
 .hero__actions .btn--ghost-light {
   background: rgba(255, 253, 249, 0.10);
@@ -335,7 +335,7 @@ summary::-webkit-details-marker { display: none; }
 }
 .hero__actions .btn--ghost-light:hover {
   background: rgba(255, 253, 249, 0.2);
-  border-color: #FFFDF9;
+  border-color: var(--ivory);
 }
 
 /* Dark glass here, light glass on the hero buttons, and the difference is
@@ -367,10 +367,10 @@ summary::-webkit-details-marker { display: none; }
 
 .btn--ghost-light {
   background: transparent;
-  color: #FFFDF9;
+  color: var(--ivory);
   border-color: rgba(255, 253, 249, 0.45);
 }
-.btn--ghost-light:hover { background: rgba(255, 253, 249, 0.12); border-color: #FFFDF9; color: #FFFDF9; }
+.btn--ghost-light:hover { background: rgba(255, 253, 249, 0.12); border-color: var(--ivory); color: var(--ivory); }
 
 .btn--outline {
   background: transparent;
@@ -459,7 +459,7 @@ summary::-webkit-details-marker { display: none; }
 .nav__link {
   font-size: var(--t-small);
   letter-spacing: .04em;
-  color: #FFFDF9;
+  color: var(--ivory);
   transition: color 400ms;
 }
 .site-header.is-scrolled .nav__link { color: var(--charcoal); }
@@ -472,13 +472,13 @@ summary::-webkit-details-marker { display: none; }
      footage rather than as a button. The padding stays, so the link keeps its
      own space in the row, and the champagne fill on hover still marks it out
      as the primary action. */
-  color: #FFFDF9;
+  color: var(--ivory);
   background: transparent;
   transition: background 300ms, color 300ms;
 }
 .site-header.is-scrolled .nav__cta { color: var(--charcoal); }
 .nav__cta:hover,
-.site-header.is-scrolled .nav__cta:hover { background: var(--champagne); color: #1C1A18; }
+.site-header.is-scrolled .nav__cta:hover { background: var(--champagne); color: var(--charcoal); }
 
 .nav-mobile { display: none; align-items: center; gap: 10px; }
 .nav-mobile__cta {
@@ -486,7 +486,7 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .12em;
   padding: 11px 16px;
   border: 1px solid var(--champagne);
-  color: #FFFDF9;
+  color: var(--ivory);
   white-space: nowrap;
   transition: color 400ms;
 }
@@ -503,7 +503,7 @@ summary::-webkit-details-marker { display: none; }
   border-radius: 0;
   cursor: pointer;
   padding: 0 11px;
-  color: #FFFDF9;
+  color: var(--ivory);
   transition: color 400ms, border-color 400ms;
 }
 .site-header.is-scrolled .burger { color: var(--charcoal); border-color: rgba(201, 174, 140, 0.6); }
@@ -567,7 +567,7 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .16em;
   padding: 19px 24px;
   background: var(--champagne);
-  color: #1C1A18;
+  color: var(--charcoal);
   text-align: center;
   margin-top: var(--sp-6);
 }
@@ -767,7 +767,7 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: -0.025em;
   font-size: var(--t-display);
   line-height: 0.98;
-  color: #FFFDF9;
+  color: var(--ivory);
   margin: 0 0 var(--sp-6);
   text-wrap: balance;
 }
@@ -1388,7 +1388,7 @@ summary::-webkit-details-marker { display: none; }
   padding: var(--section-y) var(--gutter);
   text-align: center;
 }
-.film .h2 { color: #FFFDF9; }
+.film .h2 { color: var(--ivory); }
 .film .chapter__deck { color: rgba(255, 253, 249, 0.72); max-width: 40ch; }
 /* No frame round the still, on a ground this dark it only draws a box. */
 .film__frame {
@@ -1882,7 +1882,7 @@ summary::-webkit-details-marker { display: none; }
   line-height: 1.08;
   letter-spacing: -0.015em;
   margin: 0 0 var(--sp-5);
-  color: #FFFDF9;
+  color: var(--ivory);
   text-wrap: balance;
 }
 .contact__text {
@@ -2025,7 +2025,7 @@ textarea.field__control { resize: vertical; }
   border-radius: 0;
   cursor: pointer;
   background: var(--champagne);
-  color: #1C1A18;
+  color: var(--charcoal);
   transition: background 300ms;
 }
 .form__submit:hover { background: var(--sand); }
@@ -2136,7 +2136,7 @@ textarea.field__control { resize: vertical; }
   gap: 8px;
   padding: 14px 20px;
   background: var(--champagne);
-  color: #1C1A18;
+  color: var(--charcoal);
   border-radius: 0;
   box-shadow: 0 6px 24px rgba(28, 26, 24, 0.18);
   transition: opacity 400ms, transform 400ms;
