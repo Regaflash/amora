@@ -1225,6 +1225,21 @@ summary::-webkit-details-marker { display: none; }
     aspect-ratio: var(--ar);
     scroll-snap-align: start;
   }
+  /* One gesture's worth of proof that the strip moves. main.js adds
+     .is-hinting once — the first time the strip fills half the viewport and
+     nobody has swiped it yet — and the frames lean a real advance's worth
+     into the reading direction, then settle. The transform rides the items,
+     not the scroller: translating the scroll container drags its clip box
+     along and reveals nothing, while content moving inside the scrollport
+     shows an honest slice of the next frame. Never scrollLeft — its sign in
+     an RTL scroller differs between engines. html.a11y-no-motion and the OS
+     preference both collapse animations globally, so the hint obeys them
+     with no code of its own. */
+  @keyframes masonry-hint {
+    0%, 100% { transform: translateX(0); }
+    38%, 62% { transform: translateX(16px); }
+  }
+  .masonry.is-hinting .masonry__item { animation: masonry-hint 1100ms var(--ease); }
 }
 
 /* The strip's position, in the lightbox's own vocabulary — "3 / 18", not

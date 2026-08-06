@@ -284,6 +284,74 @@ await page.waitForTimeout(200);
   await page.waitForTimeout(250);
 }
 
+// ------------------------------------------- gallery deep links (#gallery-…) --
+// A filtered gallery is a state worth sending: /#gallery-prep must land
+// filtered and scrolled, a chip press must leave a copyable address behind,
+// and clearing back to "הכל" must not eat a utm_* tag — the form's `source`
+// field reads it at submit.
+{
+  await page.goto(BASE + '/?utm_source=verify#gallery-prep', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  const prep = await page.locator('.masonry__item[data-cat="prep"]').count();
+  const shown = await page.locator('.masonry__item:not([hidden])').count();
+  ok('#gallery-prep lands filtered',
+     (await page.locator('.chip[data-filter="prep"]').getAttribute('aria-pressed')) === 'true'
+       && shown === prep,
+     { pressed: true, shown }, { pressed: true, shown: prep });
+  const galleryTop = await page.evaluate(
+    () => document.querySelector('#gallery').getBoundingClientRect().top);
+  ok('#gallery-prep lands scrolled to the gallery',
+     galleryTop > -300 && galleryTop < 500, `${Math.round(galleryTop)}px`, 'near viewport top');
+
+  await page.locator('.chip[data-filter="weddings"]').click();
+  await page.waitForTimeout(200);
+  ok('a chip press leaves a copyable address',
+     new URL(page.url()).hash === '#gallery-weddings', new URL(page.url()).hash, '#gallery-weddings');
+
+  await page.evaluate(() => { location.hash = '#gallery-events'; });
+  await page.waitForTimeout(300);
+  ok('hashchange re-filters a live page',
+     (await page.locator('.chip[data-filter="events"]').getAttribute('aria-pressed')) === 'true',
+     'events pressed', 'events pressed');
+
+  await page.locator('.chip[data-filter="all"]').click();
+  await page.waitForTimeout(200);
+  const u = new URL(page.url());
+  ok('"הכל" clears the fragment but keeps the campaign tag',
+     u.hash === '' && u.search === '?utm_source=verify', u.hash + ' ' + u.search, ' ?utm_source=verify');
+}
+
+// ----------------------------------------------------- the swipe hint, phone --
+// The peek shows a sliver of the next frame; only motion proves the strip
+// moves. Once, when the strip first fills half the viewport untouched, the
+// frames lean and settle (.is-hinting). Two sides to hold: it fires — and
+// cleans up — for a visitor with no motion preference, and it never lands at
+// all under prefers-reduced-motion (the main `page` context emulates reduce).
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  const appeared = await np.waitForFunction(
+    () => document.querySelector('[data-masonry]').classList.contains('is-hinting'),
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  ok('the strip hints once when it first arrives', appeared, appeared, true);
+  const cleaned = await np.waitForFunction(
+    () => !document.querySelector('[data-masonry]').classList.contains('is-hinting'),
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  ok('the hint ends and cleans up after itself', cleaned, cleaned, true);
+  await ctx.close();
+}
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  await page.waitForTimeout(1400);
+  ok('reduced motion suppresses the hint entirely',
+     await page.evaluate(
+       () => !document.querySelector('[data-masonry]').classList.contains('is-hinting')),
+     true, true);
+}
+
 // ------------------------------------------------- the "no date yet" hatch --
 {
   await page.goto(BASE + '/', { waitUntil: 'load' });

@@ -600,8 +600,44 @@
   }
 
   chips.forEach(function (chip) {
-    chip.addEventListener('click', function () { applyFilter(chip.dataset.filter); });
+    chip.addEventListener('click', function () {
+      applyFilter(chip.dataset.filter);
+      // The address bar mirrors the filter, so any filtered view can be
+      // copied and sent. replaceState, not location.hash: no history entry
+      // per chip press, and no native anchor scroll for a fragment that is
+      // not an element id. Clearing keeps pathname AND search — the form's
+      // `source` field reads utm_* tags at submit, and "הכל" must not eat
+      // the campaign tag that brought the visitor here.
+      if (history.replaceState) {
+        history.replaceState(null, '', chip.dataset.filter === 'all'
+          ? location.pathname + location.search
+          : '#gallery-' + chip.dataset.filter);
+      }
+    });
   });
+
+  // The chips filter for whoever is standing in front of them; a link could
+  // not. #gallery-<cat> lands filtered and scrolled — "תראי את גלריית ההכנות"
+  // becomes /#gallery-prep in a WhatsApp message. Unknown categories (and
+  // #gallery itself, a real anchor) fall through untouched; the browser never
+  // scrolls to these fragments on its own precisely because they are not
+  // element ids, so the load path scrolls the section into view itself — no
+  // `behavior` key, the stylesheet keeps answering html.a11y-no-motion and
+  // the OS preference. announceCount speaks on this load path, and should:
+  // the visitor asked for a filtered gallery and the live region says so.
+  function filterFromHash() {
+    var m = /^#gallery-([a-z]+)$/.exec(location.hash);
+    if (!m || m[1] === 'all') return false;
+    var known = chips.some(function (c) { return c.dataset.filter === m[1]; });
+    if (!known) return false;
+    applyFilter(m[1]);
+    return true;
+  }
+  if (filterFromHash()) {
+    var gallerySection = $('#gallery');
+    if (gallerySection) gallerySection.scrollIntoView();
+  }
+  window.addEventListener('hashchange', filterFromHash);
 
   /** Widest candidate in the picture, preferring WebP. The thumbnail's own
    *  currentSrc is the ~500px variant sized for the masonry column — far too
@@ -805,6 +841,31 @@
       });
       obs.disconnect();
     }, { rootMargin: '800px 0px' }).observe(strip);
+
+    // A first-time visitor sees 86% of one frame and a sliver of the next.
+    // The peek says "more exists"; only motion proves the strip moves. Once,
+    // the first time the strip fills half the viewport and nobody has swiped
+    // it, the frames lean one gesture's worth into the reading direction and
+    // settle back (@keyframes masonry-hint). CSS owns the motion and
+    // html.a11y-no-motion already collapses it; the OS preference is checked
+    // here too so the class never even lands. Behaviour-based desktop guard,
+    // same as stripAfterFilter: a wall that does not scroll gets no hint.
+    var stripTouched = false;
+    strip.addEventListener('scroll', function () { stripTouched = true; },
+      { once: true, passive: true });
+    if (!reducedMotion) {
+      new IntersectionObserver(function (entries, obs) {
+        if (!entries[0].isIntersecting) return;
+        obs.disconnect();
+        if (stripTouched || strip.scrollWidth <= strip.clientWidth + 1) return;
+        strip.classList.add('is-hinting');
+        // animationend bubbles up from the items; the first one ends them all.
+        strip.addEventListener('animationend', function onEnd() {
+          strip.classList.remove('is-hinting');
+          strip.removeEventListener('animationend', onEnd);
+        });
+      }, { threshold: 0.5 }).observe(strip);
+    }
 
     if (items.length > 1) {
       stripCount = document.createElement('p');
