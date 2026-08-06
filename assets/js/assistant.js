@@ -224,8 +224,12 @@
       // בוואטסאפ" matched the delivery entry and answered with photo turnaround
       // times. Longer keys win, so this outranks the shorter delivery match.
       keys: ['ליצור קשר', 'טלפון', 'וואטסאפ', 'להתקשר', 'מייל', 'אינסטגרם', 'לדבר איתכם', 'לדבר עם בן אדם', 'נציג', 'עונים להודעה', 'אתכם קשר'],
+      // 'מייל' was in the keys from the start, and until 6.8.2026 the answer
+      // had no e-mail in it -- a visitor who typed the word got a phone number.
+      // support@amora-studios.com is a live mailbox on the domain (it is where
+      // the lead alerts land), so the gap was an omission, not a policy.
       a: 'בטלפון 050-3662699, בוואטסאפ, או דרך טופס בדיקת הזמינות באתר — ונחזור אליכם היום.\n' +
-         'גם באינסטגרם, @amora___studio.',
+         'במייל: support@amora-studios.com. גם באינסטגרם, @amora___studio.',
       actions: ['wa', 'tel', 'form'],
       next: ['availability', 'price']
     }
