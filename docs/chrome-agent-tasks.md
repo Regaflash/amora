@@ -506,6 +506,59 @@ https://business.facebook.com/events_manager2/list/dataset/2851332215058775/over
 
 ---
 
+## 🤖 מוכנה להרצה — שתי רשומות TXT בהוסטינגר (SPF + DMARC)
+
+ההמלצה מגובה בקריאת DNS חיה מ-6.8 (שאילתת UDP ל-8.8.8.8, מתועדת
+ב-`docs/completion-board.md`): ב-apex יש רק את שני אימותי הגוגל — **אין
+SPF בכלל** — ואין `_dmarc`. ה-MX מצביע ל-Google, כלומר כל מייל מה-Gmail
+של הדומיין יוצא בלי הרשאת SPF. `p=none` = ניטור בלבד; שום מייל לא ייחסם.
+
+```
+אתה עוזר לי בתפעול Amora Studio.
+
+חוקים: מותר להוסיף בדיוק שתי רשומות TXT חדשות, ושום דבר מעבר.
+אל תמחק ואל תערוך אף רשומה קיימת — במיוחד לא A, CNAME, MX, או שתי
+רשומות google-site-verification (TXT הוא רב-ערכי: מוסיפים לצד, לא
+מחליפים). אל תיגע ב-Vercel — ה-DNS של הדומיין חי בהוסטינגר בלבד.
+אם משהו נראה אחרת ממה שתיארתי — עצור ותאר לי מה אתה רואה.
+
+היכנס ל-hpanel.hostinger.com → Domains → amora-studios.com → DNS / Name Servers.
+
+רשומה 1 — SPF ב-apex:
+  Type:  TXT
+  Name:  @
+  Value: v=spf1 include:_spf.google.com ~all
+  TTL:   ברירת המחדל
+
+לפני שמירה: ודא שאין כבר רשומת TXT שמתחילה ב-v=spf1 על @.
+אם יש — עצור ודווח לי מה כתוב בה. אסור ששתי רשומות v=spf1 יחיו על
+אותו שם.
+
+רשומה 2 — DMARC בניטור בלבד:
+  Type:  TXT
+  Name:  _dmarc
+  Value: v=DMARC1; p=none; rua=mailto:support@amora-studios.com
+  TTL:   ברירת המחדל
+
+לפני שמירה: ודא שאין כבר רשומה על השם _dmarc. אם יש — עצור ודווח.
+
+אימות: אחרי השמירה, גלוש אל
+https://toolbox.googleapps.com/apps/dig/#TXT/amora-studios.com
+וצלם לי את התוצאה. אחר כך אותו דבר עבור
+https://toolbox.googleapps.com/apps/dig/#TXT/_dmarc.amora-studios.com
+
+דווח לי: אילו רשומות הוספת, מה בדיוק הערכים ששמרת, ומה שתי בדיקות
+ה-dig החזירו. אם ה-dig עוד לא מראה את הרשומות — זה תקין (TTL), כתוב
+מתי בדקת.
+```
+
+**סעיף רשות באותה ריצה — יישור `LEAD_ALERT_TO` בדשבורד של Supabase.**
+הסוד אינו בשימוש (היעד חי ב-`private.settings`), אבל fallback שמצביע
+רק על regaflash הוא מוקש. אם כבר בדפדפן: supabase.com → פרויקט amora →
+Edge Functions → Secrets → לעדכן את `LEAD_ALERT_TO` ל:
+`support@amora-studios.com, support@regaflash.com`. לא ליצור סוד חדש,
+לא למחוק אחרים.
+
 ## 🧑 נדחה — פרופיל עסקי בגוגל
 
 הבעלים החליט לדחות. התהליך נעצר במסך "הזן כתובת דואר לאימות", שדורש כתובת
