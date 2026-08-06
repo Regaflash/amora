@@ -212,16 +212,49 @@ Deno.serve(async (req: Request) => {
   for (const it of capped) uniq.set(it.h, it.s);
   const hashes = [...uniq.keys()];
 
-  const hit = await rest(
-    `/translations?select=hash,target&lang=eq.${lang}&hash=in.(${hashes.map((h) => `"${h}"`).join(',')})`,
-    { method: 'GET' },
-  );
-  if (hit.ok) {
-    const rows = await hit.json().catch(() => []);
-    if (Array.isArray(rows)) for (const r of rows) out[r.hash] = r.target;
-  } else {
-    console.error('translate: cache read failed', { status: hit.status });
-  }
+  // Chunked, in parallel, and each one inside a try.
+  //
+  // A whole page arrives in one call, so the original single `hash=in.(...)`
+  // put every hash in one query string: 240 hashes of 64 hex characters is a
+  // ~16 KB URL. Measured 6.8 by calling this endpoint from pg_net, which is
+  // the only way to reach it from the build environment: 240 items returned
+  // **500**, three items returned **200** with the right rows. The site sends
+  // a whole page, so the language switch was dead for every visitor while the
+  // three-item probe used during development kept passing.
+  //
+  // It is a 500 rather than a status code because this is the one `fetch` in
+  // the request path that was not wrapped, and an unguarded throw inside the
+  // handler is an Internal Server Error. OPTIONS kept returning 200 throughout
+  // -- the module booted fine and died on the first real work.
+  //
+  // Both halves of the fix earn their place. 30 hashes is a ~2 KB URL, clear
+  // of any gateway's request-line limit. The try means that if this ever fails
+  // again for a reason nobody predicted, the visitor gets a page translated by
+  // the model instead of an error page, and the reason rides back in `note`
+  // instead of dying in a log. **A cache read is an optimisation, and an
+  // optimisation must never be able to fail the request.**
+  const CHUNK = 30;
+  const cacheNote: string[] = [];
+  const chunks: string[][] = [];
+  for (let i = 0; i < hashes.length; i += CHUNK) chunks.push(hashes.slice(i, i + CHUNK));
+
+  await Promise.all(chunks.map(async (slice) => {
+    try {
+      const hit = await rest(
+        `/translations?select=hash,target&lang=eq.${lang}&hash=in.(${slice.map((h) => `"${h}"`).join(',')})`,
+        { method: 'GET' },
+      );
+      if (hit.ok) {
+        const rows = await hit.json().catch(() => []);
+        if (Array.isArray(rows)) for (const r of rows) out[r.hash] = r.target;
+      } else {
+        cacheNote.push(`cache read ${hit.status}`);
+      }
+    } catch (e) {
+      cacheNote.push(`cache read threw: ${String(e).slice(0, 120)}`);
+    }
+  }));
+  if (cacheNote.length) console.error('translate: cache read failed', { lang, cacheNote });
 
   const missing = hashes.filter((h) => !(h in out));
   if (!missing.length) {
@@ -229,7 +262,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // 2 - one batched model call for the misses
-  const note: string[] = [];
+  const note: string[] = [...cacheNote];
   const sources = missing.map((h) => uniq.get(h)!);
   let model = 'gemini-2.5-flash';
   let translated = await viaGemini(LANGS[lang], sources, note);
