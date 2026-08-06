@@ -612,6 +612,27 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ------------------------------------------- the buttons keep their pills --
+// The 8.2026 refresh made every action button a pill and every square icon
+// button a circle (owner's call). A future "clean-up" flattening radii is the
+// exact regression this guards: sampled on the shared 390px page, one probe
+// per shape family.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  const flat = await page.evaluate(() =>
+    ['.btn', '.form__submit', '.wa-float', '.burger', '.lightbox__close']
+      .map((s) => {
+        const el = document.querySelector(s);
+        if (!el) return `${s} missing`;
+        const r = parseFloat(getComputedStyle(el).borderRadius);
+        return r >= 20 ? null : `${s} radius=${r}px`;
+      })
+      .filter(Boolean));
+  ok('action buttons are pills, icon buttons are circles',
+     flat.length === 0, flat.length ? flat : 'all rounded', 'no flattened control');
+}
+
 // ----------------------------------------- the cost page shows the work --
 // The page that answers "how much" argued the studio's case in words while
 // showing none of the photographs. Six frames now sit beside the "ask any

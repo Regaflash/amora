@@ -63,11 +63,18 @@
     padding: 15px 28px;
     text-decoration: none;
     border: 1px solid #C9AE8C;
+    /* Literal, not var(--r-pill): this page is self-contained and never loads
+       styles.css — served AT the address that was not found, it keeps zero
+       dependencies. Same pill/press language as the site, restated. */
+    border-radius: 999px;
     color: #1C1A18;
-    transition: background 320ms, color 320ms;
+    transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1),
+                color 220ms cubic-bezier(0.4, 0, 0.2, 1),
+                transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   .nf__btn--solid { background: #1C1A18; border-color: #1C1A18; color: #FFFDF9; }
-  .nf__btn:hover { background: #C9AE8C; border-color: #C9AE8C; color: #FFFDF9; }
+  .nf__btn:hover { background: #C9AE8C; border-color: #C9AE8C; color: #FFFDF9; transform: translateY(-2px); }
+  .nf__btn:active { transform: translateY(1px); }
   .nf__btn:focus-visible { outline: 3px solid #1C1A18; outline-offset: 3px; }
   .nf__links { margin: 26px 0 0; font-size: 14px; }
   .nf__links a { color: #4A3F35; margin: 0 8px; }
