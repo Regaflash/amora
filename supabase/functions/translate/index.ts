@@ -261,20 +261,48 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ t: out, cached: hashes.length, fresh: 0 }), { headers: JSON_HEADERS });
   }
 
-  // 2 - one batched model call for the misses
+  // 2 - the model, in parallel batches rather than one call for the page
+  //
+  // Measured 6.8 against the real homepage payload, not a synthetic one:
+  // **60 strings on a cold cache took 12.4 seconds.** The homepage sends 206.
+  // One call for all of them is the whole page's latency in series, and an
+  // earlier attempt at 240 never came back inside a minute. Batches of 50 run
+  // concurrently, so the wall clock is roughly one batch instead of the sum.
+  //
+  // Robustness matters as much as speed here. `parseArray` demands exactly as
+  // many strings back as it sent, in order -- a reasonable demand of 50 items
+  // and a fragile one of 206. And when a batch does fail, the page loses that
+  // batch rather than everything: the remaining strings still translate, and
+  // the failed ones stay Hebrew, which is what the client does with anything
+  // missing from the map anyway.
   const note: string[] = [...cacheNote];
-  const sources = missing.map((h) => uniq.get(h)!);
-  let model = 'gemini-2.5-flash';
-  let translated = await viaGemini(LANGS[lang], sources, note);
-  if (!translated) {
-    model = 'cerebras/gpt-oss-120b';
-    translated = await viaCerebras(LANGS[lang], sources, note);
+  const MODEL_CHUNK = 50;
+  const batches: string[][] = [];
+  for (let i = 0; i < missing.length; i += MODEL_CHUNK) {
+    batches.push(missing.slice(i, i + MODEL_CHUNK));
   }
 
-  if (!translated) {
-    // Every provider failed. Return the hits we have; the client leaves the
-    // rest in Hebrew. A partly translated page beats a broken one -- and the
-    // reason travels with the response instead of dying in a log nobody reads.
+  const rows: Array<{ hash: string; lang: string; source: string; target: string; model: string }> = [];
+
+  await Promise.all(batches.map(async (batch) => {
+    const sources = batch.map((h) => uniq.get(h)!);
+    let model = 'gemini-2.5-flash';
+    let translated = await viaGemini(LANGS[lang], sources, note);
+    if (!translated) {
+      model = 'cerebras/gpt-oss-120b';
+      translated = await viaCerebras(LANGS[lang], sources, note);
+    }
+    if (!translated) return;              // this batch stays Hebrew
+    batch.forEach((h, i) => {
+      rows.push({ hash: h, lang, source: uniq.get(h)!, target: translated![i], model });
+    });
+  }));
+
+  if (!rows.length) {
+    // Every provider failed on every batch. Return the cache hits we have; the
+    // client leaves the rest in Hebrew. A partly translated page beats a broken
+    // one -- and the reason travels with the response instead of dying in a log
+    // nobody reads.
     console.error('translate: all providers failed', { lang, missing: missing.length, note });
     return new Response(
       JSON.stringify({ t: out, cached: hashes.length - missing.length, fresh: 0, note }),
@@ -284,9 +312,6 @@ Deno.serve(async (req: Request) => {
 
   // 3 - write through. Best effort: a failed insert must not cost the visitor
   //     their translation, only the next visitor's speed.
-  const rows = missing.map((h, i) => ({
-    hash: h, lang, source: uniq.get(h)!, target: translated![i], model,
-  }));
   for (const r of rows) out[r.hash] = r.target;
 
   await rest('/translations?on_conflict=hash,lang', {
@@ -295,9 +320,17 @@ Deno.serve(async (req: Request) => {
     body: JSON.stringify(rows),
   }).catch((e) => console.error('translate: cache write failed', e));
 
-  console.log('translate: done', { lang, cached: hashes.length - missing.length, fresh: missing.length, model });
+  const missed = missing.length - rows.length;
+  console.log('translate: done', {
+    lang, cached: hashes.length - missing.length, fresh: rows.length, batches: batches.length, missed,
+  });
   return new Response(
-    JSON.stringify({ t: out, cached: hashes.length - missing.length, fresh: missing.length }),
+    JSON.stringify({
+      t: out,
+      cached: hashes.length - missing.length,
+      fresh: rows.length,
+      ...(missed ? { missed, note } : {}),
+    }),
     { headers: JSON_HEADERS },
   );
 });
