@@ -233,9 +233,32 @@
       else menu.appendChild(wrap);
     }
 
+    /* ?lang=en|ru|ar is the deep link: it lets an ad, an Instagram bio or a
+       Business Profile land a visitor directly in their language — without
+       it the only route to a translation is two taps into the menu. The
+       parameter outranks the saved choice (a shared link should show what
+       the sender saw), is persisted like a manual pick, and is then removed
+       from the address bar so copying the URL onward shares the page, not
+       the sender's language. No history entry is added. */
+    var fromUrl = null;
+    try {
+      var q = new URLSearchParams(location.search).get('lang');
+      if (q && ENABLED.some(function (l) { return l.code === q; })) {
+        fromUrl = q;
+        /* Persist here, not only inside translate(): ?lang=he must also win
+           over a previously saved language, and translate() is never called
+           for Hebrew. */
+        try { localStorage.setItem(STORE, q); } catch (e2) { /* private mode */ }
+        var clean = new URL(location.href);
+        clean.searchParams.delete('lang');
+        history.replaceState(history.state, '', clean);
+      }
+    } catch (e) { /* old browser: the menu still works */ }
+
     var saved;
     try { saved = localStorage.getItem(STORE); } catch (e) { saved = null; }
-    var start = saved && ENABLED.some(function (l) { return l.code === saved; }) ? saved : 'he';
+    var start = fromUrl ||
+      (saved && ENABLED.some(function (l) { return l.code === saved; }) ? saved : 'he');
     paint(start);
     if (start !== 'he') translate(start);
   }

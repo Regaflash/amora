@@ -218,6 +218,19 @@
       next: ['photographers', 'process', 'gallery']
     },
     {
+      id: 'languages',
+      // Facts only: the SITE reads in four languages via the switch in the
+      // menu. What language the studio answers the phone in is not known to
+      // this file and is not claimed — WhatsApp is offered instead, where
+      // any language works in writing.
+      chip: 'באיזה שפות האתר?',
+      keys: ['אנגלית', 'רוסית', 'ערבית', 'שפה', 'שפות', 'לתרגם', 'תרגום', 'english', 'russian', 'arabic', 'по-русски', 'русский', 'عربي', 'العربية'],
+      a: 'את האתר אפשר לקרוא בעברית, English, Русский ו-العربية — בורר השפות נמצא בתפריט למעלה.\n' +
+         'ובוואטסאפ אפשר לכתוב לנו בכל שפה שנוחה לכם.',
+      actions: ['wa'],
+      next: ['availability', 'contact']
+    },
+    {
       id: 'contact',
       chip: 'איך יוצרים אתכם קשר?',
       // 'עונים להודעה' must be here: without it "תוך כמה זמן עונים להודעה
