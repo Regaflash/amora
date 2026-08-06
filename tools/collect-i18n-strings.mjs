@@ -3,7 +3,15 @@
 // per public page, without touching the network.
 //
 //   npm install --no-save playwright-core pngjs   # ONE command — see below
-//   node tools/collect-i18n-strings.mjs > strings.json
+//   node tools/collect-i18n-strings.mjs > tools/i18n-strings.json   # refresh
+//   node tools/collect-i18n-strings.mjs --check     # exit 1 if copy drifted
+//
+// --check is the same contract as tools/gen-image-schema.py --check: the
+// committed tools/i18n-strings.json is the manifest of what the translation
+// cache was warmed FOR, and a fresh collection that differs means someone
+// changed page copy without re-warming. verify.mjs runs this as one of its
+// checks, so the drift fails the deploy gate instead of silently costing the
+// first visitor in every language a ~15s model call.
 //
 // WHEN TO RUN: after any copy change on a public page, to re-warm the
 // translation cache so the first visitor in each language reads from the
@@ -125,6 +133,29 @@ for (const url of PAGES) {
   const chars = items.reduce((a, i) => a + i.s.length, 0);
   console.error(`${url.padEnd(18)} ${String(items.length).padStart(4)} unique strings, ${chars} chars`);
 }
-console.log(JSON.stringify(out));
 await browser.close();
 server.close();
+
+if (process.argv.includes('--check')) {
+  const MANIFEST = resolve(ROOT, 'tools/i18n-strings.json');
+  const committed = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  const drift = [];
+  for (const page of new Set([...Object.keys(committed), ...Object.keys(out)])) {
+    const was = new Map((committed[page] ?? []).map((i) => [i.h, i.s]));
+    const now = new Map((out[page] ?? []).map((i) => [i.h, i.s]));
+    for (const [h, s] of was) if (!now.has(h)) drift.push(`${page}  removed: ${JSON.stringify(s)}`);
+    for (const [h, s] of now) if (!was.has(h)) drift.push(`${page}  added:   ${JSON.stringify(s)}`);
+  }
+  if (drift.length) {
+    console.error('page copy drifted from tools/i18n-strings.json:');
+    for (const line of drift) console.error('  ' + line);
+    console.error(
+      '\nfix: node tools/collect-i18n-strings.mjs > tools/i18n-strings.json,\n' +
+      're-warm the cache (docs/translation-flow.md), commit both together.');
+    process.exit(1);
+  }
+  console.error('page copy matches the warmed translation manifest');
+  process.exit(0);
+}
+
+console.log(JSON.stringify(out));

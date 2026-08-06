@@ -826,6 +826,28 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ------------------------------------------------------------- translations --
+// The translation cache was warmed for the exact strings the pages carried on
+// 6.8.2026, recorded in tools/i18n-strings.json. Copy that drifts from that
+// manifest silently costs the first visitor in every language a ~15s model
+// call instead of a warm read — and nothing else would notice, because the
+// Hebrew page looks fine. A promise in a doc ("re-warm after editing copy")
+// is not a promise that runs, so the collector's --check runs here, inside
+// the gate. On failure: re-run the collector into the manifest, re-warm the
+// cache (docs/translation-flow.md), and commit both in the same change.
+{
+  const { execFileSync } = await import('node:child_process');
+  let pass = true, detail = 'match';
+  try {
+    execFileSync('node', [path.join(ROOT, 'tools/collect-i18n-strings.mjs'), '--check'],
+      { stdio: ['ignore', 'ignore', 'pipe'], timeout: 120000 });
+  } catch (e) {
+    pass = false;
+    detail = String(e.stderr || e.message).trim().split('\n').slice(0, 6).join(' | ');
+  }
+  ok('page copy matches the warmed translation manifest', pass, detail, 'match');
+}
+
 // ------------------------------------------------------------------- report --
 const failed = results.filter((r) => !r.pass);
 for (const r of results) {
