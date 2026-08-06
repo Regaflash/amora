@@ -28,3 +28,14 @@ Thumbs.db
 
 # Local Claude Code permission grants — machine-scoped, never a repo-wide standing grant
 .claude/settings.local.json
+
+# Images dropped at the repo root. check.sh already fails on them — "אין
+# תמונות גולמיות ב-HEAD" — but it runs here, and GitHub's web uploader does
+# not: a master dropped through `Add file` → `Upload files` went straight to
+# main and left it red until someone happened to run the checks locally.
+# This is the second layer, so the mistake cannot be committed in the first
+# place. Everything the site serves lives under assets/.
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
