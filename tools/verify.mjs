@@ -203,6 +203,43 @@ await page.waitForTimeout(200);
      said.includes(String(shown)) && said.includes(String(total)), said, `${shown} of ${total}`);
 }
 
+// ------------------------------------------------ the gallery strip, phone --
+// Below 560px the wall becomes a scroll-snap strip. Three things to hold: it
+// actually scrolls (a wall that kept wrapping would stack eighteen full-width
+// frames into eleven screens of page), the counter main.js builds tells the
+// truth in both numerator and denominator, and a filter scrolls the strip
+// home — without it the visitor is left mid-strip staring at frame 7 of a set
+// that now has 3. The counter is compared by textContent, never visual order:
+// this page is RTL and "1 / 18" renders through bidi.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  const g = page.locator('[data-masonry]');
+  ok('at 390px the gallery is a strip, not a wall',
+     await g.evaluate((el) => el.scrollWidth > el.clientWidth + 1), true, 'scrollable');
+  const total = await page.locator('.masonry__item').count();
+  ok('the strip counter starts at the first frame',
+     (await page.locator('.gallery__count').textContent()) === `1 / ${total}`,
+     await page.locator('.gallery__count').textContent(), `1 / ${total}`);
+
+  await page.locator('.chip[data-filter="weddings"]').click();
+  await page.waitForTimeout(400);
+  const kept = await page.locator('.masonry__item:not([hidden])').count();
+  ok('filtering rewrites the counter denominator',
+     (await page.locator('.gallery__count').textContent()) === `1 / ${kept}`,
+     await page.locator('.gallery__count').textContent(), `1 / ${kept}`);
+  // Home in RTL is the right edge: the first surviving frame's right edge
+  // sits at the container's right edge minus the scroll padding.
+  const home = await page.evaluate(() => {
+    const g = document.querySelector('[data-masonry]');
+    const first = g.querySelector('.masonry__item:not([hidden])');
+    return Math.abs(g.getBoundingClientRect().right - first.getBoundingClientRect().right);
+  });
+  ok('filtering scrolls the strip home', home <= 40, `${Math.round(home)}px from home`, '<=40px');
+  await page.locator('.chip[data-filter="all"]').click();
+  await page.waitForTimeout(250);
+}
+
 // ------------------------------------------------- the "no date yet" hatch --
 {
   await page.goto(BASE + '/', { waitUntil: 'load' });
@@ -275,6 +312,28 @@ await page.waitForTimeout(200);
      strip.swipeable, strip.swipeable, 'scrollable');
   ok('with JS off, no carousel dots are left undriven',
      strip.dots === 0, strip.dots, 0);
+
+  // The gallery strip lives by the same two rules: CSS scroll-snap, so it
+  // still swipes with scripting off, and a JS-built indicator, so no "3 / 18"
+  // counter exists that nothing is driving.
+  const gal = await np.evaluate(() => {
+    const g = document.querySelector('[data-masonry]');
+    return {
+      total: g.children.length,
+      rendered: [...g.children].filter((c) => {
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }).length,
+      swipeable: g.scrollWidth > g.clientWidth + 1,
+      counters: document.querySelectorAll('.gallery__count').length,
+    };
+  });
+  ok('with JS off, every gallery frame still renders',
+     gal.rendered === gal.total && gal.total === 18, `${gal.rendered}/${gal.total}`, '18/18');
+  ok('with JS off, the gallery strip still swipes',
+     gal.swipeable, gal.swipeable, 'scrollable');
+  ok('with JS off, no gallery counter is left undriven',
+     gal.counters === 0, gal.counters, 0);
   await ctx.close();
 }
 
@@ -467,7 +526,46 @@ await page.waitForTimeout(200);
     .filter((x) => x !== null));
   ok('every service plate has its photograph before it is swiped to',
      blank.length === 0, blank.length ? `blank: plate ${blank.join(', ')}` : 'all loaded', 'none blank');
+
+  // The gallery strip has the same sideways-lazy defect and the same fix, at
+  // eighteen frames instead of five. A waitForFunction rather than a fixed
+  // sleep: eighteen images on this link legitimately take a few seconds, and
+  // a timer tuned to today's weights is exactly the flake this file warns
+  // about.
+  await p.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  const galleryLoaded = await p
+    .waitForFunction(() => [...document.querySelectorAll('.masonry__photo')]
+      .every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 10000 })
+    .then(() => true, () => false);
+  ok('every gallery frame has its photograph before it is swiped to',
+     galleryLoaded, galleryLoaded ? 'all 18 loaded' : 'some frames still blank', 'none blank');
   await ctx.close();
+}
+
+// -------------------------------------------- the carousel stays on the phone --
+// The strip exists because 150px rows wasted the gallery on a phone; the wall
+// exists because a 1440px screen shows twelve frames at once and a carousel
+// would show one. The media query is the only thing keeping them apart, so a
+// desktop viewport asserts the wall did not quietly become a strip and the
+// phone counter did not leak onto it.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const d = await p.evaluate(() => {
+    const g = document.querySelector('[data-masonry]');
+    const c = document.querySelector('.gallery__count');
+    const r = c && c.getBoundingClientRect();
+    return {
+      scrolls: g.scrollWidth > g.clientWidth + 1,
+      counterBox: !!(r && r.width > 0 && r.height > 0),
+    };
+  });
+  ok('at 1440px the gallery is still a wall', d.scrolls === false,
+     d.scrolls ? 'the wall scrolls sideways' : 'wall', 'wall');
+  ok('the strip counter does not appear on the wall', d.counterBox === false,
+     d.counterBox ? 'counter has a box at 1440px' : 'hidden', 'hidden');
+  await p.close();
 }
 
 // ------------------------------------- the floats vs. the form they feed --

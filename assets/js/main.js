@@ -585,6 +585,7 @@
     });
     closeLightbox();
     announceCount();
+    stripAfterFilter();
   }
 
   // A chip press silently rewrites the grid from 18 tiles to 3 or 4. aria-pressed
@@ -716,6 +717,85 @@
     if (e.key === 'ArrowRight') step(-1);
     if (e.key === 'ArrowLeft') step(1);
   });
+
+  /* ---------------------------------------------- gallery strip (phone) --- */
+
+  // Below 560px styles.css turns the wall into a scroll-snap strip; like the
+  // services strip it is pure CSS and works with this file deleted. This adds
+  // only what CSS cannot do: un-lazying frames that are off-screen sideways
+  // (the same defect and the same fix as the services plates), a "3 / 18"
+  // counter in the lightbox's vocabulary (eighteen dots is not an indicator),
+  // and a scroll home when a filter collapses the strip under the visitor.
+  var strip = $('[data-masonry]');
+  var stripCount = null;
+  var stripRatios = items.map(function () { return 0; });
+  var stripBest = 0;
+
+  function paintStripCount() {
+    if (!stripCount) return;
+    var vis = visibleItems();
+    var idx = vis.indexOf(items[stripBest]);
+    // -1 means the best-covered frame was just filtered out; the strip has
+    // just been scrolled home by stripAfterFilter, so "1 / N" is the truth.
+    stripCount.textContent = (idx < 0 ? 1 : idx + 1) + ' / ' + vis.length;
+  }
+
+  function stripAfterFilter() {
+    // Behaviour-based, not a media query: on the desktop wall the list does
+    // not scroll and this is a no-op. scrollIntoView, not scrollLeft (its
+    // sign and origin in an RTL scroller differ between engines); no
+    // `behavior` key, so the stylesheet keeps answering html.a11y-no-motion
+    // and the OS preference; block:'nearest' so the page itself stays put —
+    // the filter chips sit directly above the strip.
+    if (strip && strip.scrollWidth > strip.clientWidth + 1) {
+      var first = $('.masonry__item:not([hidden]) .masonry__btn', strip);
+      if (first) first.scrollIntoView({ inline: 'start', block: 'nearest' });
+    }
+    paintStripCount();
+  }
+
+  if (strip && 'IntersectionObserver' in window) {
+    // Same reasoning as the services plates: loading="lazy" measures vertical
+    // distance, and no amount of vertical scrolling approaches a frame that
+    // is only off-screen sideways. On the wall all eighteen loaded during the
+    // scroll-past anyway — this restores that budget, it does not add to it.
+    new IntersectionObserver(function (entries, obs) {
+      if (!entries[0].isIntersecting) return;
+      $$('.masonry__photo', strip).forEach(function (img) {
+        if (img.getAttribute('loading') === 'lazy') img.loading = 'eager';
+      });
+      obs.disconnect();
+    }, { rootMargin: '800px 0px' }).observe(strip);
+
+    if (items.length > 1) {
+      stripCount = document.createElement('p');
+      stripCount.className = 'gallery__count';
+      // The <ul> already announces "item N of 18", and the gallery has a live
+      // region of its own — a second announcement here would talk over both.
+      stripCount.setAttribute('aria-hidden', 'true');
+
+      // root is the strip's own scrollport, so this is correct wherever the
+      // page is scrolled — and tracks a half-finished swipe instead of
+      // jumping only once the snap lands. Hidden frames are skipped so the
+      // numerator is a position within the filtered set.
+      var stripIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          stripRatios[items.indexOf(e.target)] = e.intersectionRatio;
+        });
+        var best = -1, bestR = -1;
+        items.forEach(function (li, i) {
+          if (li.hidden) return;
+          if (stripRatios[i] > bestR) { bestR = stripRatios[i]; best = i; }
+        });
+        if (best >= 0) stripBest = best;
+        paintStripCount();
+      }, { root: strip, threshold: [0, 0.25, 0.5, 0.75, 1] });
+      items.forEach(function (li) { stripIO.observe(li); });
+
+      strip.parentNode.insertBefore(stripCount, strip.nextSibling);
+      paintStripCount();
+    }
+  }
 
   /* --------------------------------------------------- showreel (YouTube) --- */
 
