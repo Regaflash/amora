@@ -1240,6 +1240,9 @@
        tells a screen-reader user which photo is on screen. -->
   <div class="lightbox__figure" data-lightbox-figure>
     <img class="lightbox__img" data-lightbox-img alt="" />
+    <!-- aria-hidden: the live region above already announces the same words;
+         a second copy would be read twice under one photograph. -->
+    <p class="lightbox__caption" data-lightbox-caption aria-hidden="true"></p>
     <span class="visually-hidden" role="status" aria-live="polite" data-lightbox-label></span>
   </div>
   <button class="lightbox__close" type="button" data-lightbox-close aria-label="סגירה">✕</button>

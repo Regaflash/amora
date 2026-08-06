@@ -563,6 +563,7 @@
   var lbLabel = $('[data-lightbox-label]');
   var lbImage = $('[data-lightbox-img]');
   var lbCount = $('[data-lightbox-count]');
+  var lbCaption = $('[data-lightbox-caption]');
   var galleryStatus = $('[data-gallery-status]');
 
   var filter = 'all';
@@ -648,6 +649,7 @@
       lbImage.alt = alt;
       lbFigure.style.setProperty('--ratio', ratio);
       lbCount.textContent = count;
+      if (lbCaption) lbCaption.textContent = alt;
       lbFigure.removeAttribute('data-loading');
       // Written last, and deliberately after the dialog is on screen: a live
       // region inside a hidden subtree is not announced. Stepping keeps focus on
@@ -669,6 +671,15 @@
     // Cached, which is the common case: no wait, no flicker, no loading state.
     if (pre.complete) paint();
     else lbFigure.setAttribute('data-loading', '');
+
+    // Warm both neighbours once the current request is on the wire, so a step
+    // in either direction is the cached no-flicker path rather than a dimmed
+    // wait. The cache dedupes repeats, and on a one-photo filter both
+    // neighbours are this photo — harmless either way.
+    [1, -1].forEach(function (d) {
+      var n = list[(lbIndex + d + list.length) % list.length];
+      if (n) new Image().src = largestSource($('.masonry__btn', n));
+    });
   }
 
   function step(delta) {
@@ -681,8 +692,9 @@
     lightbox.hidden = true;
     lbIndex = -1;
     // Cleared so that reopening the same photo is still a change the live
-    // region can announce.
+    // region can announce. The caption follows: :empty is what hides its bar.
     if (lbLabel) lbLabel.textContent = '';
+    if (lbCaption) lbCaption.textContent = '';
     if (menu && menu.hidden) document.body.style.overflow = '';
     // The opener can be filtered out from under us, and focusing a hidden
     // element silently drops focus to <body>.
@@ -717,6 +729,33 @@
     if (e.key === 'ArrowRight') step(-1);
     if (e.key === 'ArrowLeft') step(1);
   });
+
+  // The figure is a swipe surface: sideways steps through the photographs
+  // with the quotes viewport's exact sign convention — dragging left in RTL
+  // means "back" — and a firm downward drag closes, the way every phone
+  // photo viewer dismisses. The vertical threshold is doubled so a sloppy
+  // sideways swipe with some droop does not throw the visitor out.
+  if (lbFigure) {
+    if (lbImage) lbImage.draggable = false;
+    var lbStartX = null, lbStartY = null;
+    lbFigure.addEventListener('pointerdown', function (e) {
+      lbStartX = e.clientX;
+      lbStartY = e.clientY;
+    });
+    lbFigure.addEventListener('pointerup', function (e) {
+      if (lbStartX === null || lbIndex < 0) { lbStartX = lbStartY = null; return; }
+      var dx = e.clientX - lbStartX;
+      var dy = e.clientY - lbStartY;
+      lbStartX = lbStartY = null;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        if (dy > SWIPE_MIN * 2) closeLightbox();
+        return;
+      }
+      if (Math.abs(dx) < SWIPE_MIN) return;
+      step(dx < 0 ? -1 : 1);
+    });
+    lbFigure.addEventListener('pointercancel', function () { lbStartX = lbStartY = null; });
+  }
 
   /* ---------------------------------------------- gallery strip (phone) --- */
 

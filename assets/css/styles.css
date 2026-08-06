@@ -1255,6 +1255,37 @@ summary::-webkit-details-marker { display: none; }
    swapped underneath its caption — see openLightbox() in main.js. opacity only:
    no physical side, nothing to mirror under dir="rtl". */
 .lightbox__figure[data-loading] { opacity: 0.55; }
+/* The figure is also the swipe surface (see the lightbox pointer handlers in
+   main.js). touch-action: none is safe only because this is a modal with body
+   scroll already locked — nothing legitimate pans here — and without it a
+   vertical drag becomes a pointercancel that never reaches pointerup, the
+   same trap the quotes viewport documents. user-select/user-drag off so a
+   mouse drag steps photographs instead of ghost-dragging the <img>. */
+.lightbox__figure {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* The photograph's own words, worn on its lower edge like a plate caption.
+   A solid overlay ink, not a gradient: html.a11y-contrast blanks
+   background-image, and a caption that goes unreadable in the contrast mode
+   is worse than none. Hidden while empty so the closed lightbox holds no
+   stray bar. */
+.lightbox__caption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 10px 16px;
+  background-color: rgba(21, 19, 17, 0.78);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .08em;
+  color: var(--sand);
+  text-align: center;
+}
+.lightbox__caption:empty { display: none; }
 .lightbox__img {
   display: block;
   aspect-ratio: var(--ratio, 4 / 5);

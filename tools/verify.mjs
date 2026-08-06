@@ -188,6 +188,50 @@ await page.waitForTimeout(200);
      (await page.locator('[data-lightbox-label]').textContent()) === '', '""', '""');
 }
 
+// -------------------------------------------- the lightbox as a photo viewer --
+// The arrows work, but on a phone nobody aims 48px buttons at the bottom of a
+// photograph — they swipe it. The figure answers pointer events, so a mouse
+// drag exercises the same handlers a thumb does. Sign convention is the quotes
+// viewport's: dragging left in RTL steps back, and a firm downward drag
+// dismisses, the way every phone photo viewer does.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  await page.locator('.masonry__btn').first().focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(400);
+
+  const cap = await page.evaluate(() => ({
+    text: document.querySelector('[data-lightbox-caption]')?.textContent,
+    alt: document.querySelector('.lightbox__img')?.alt,
+  }));
+  ok('the caption wears the photograph\'s own words',
+     !!cap.text && cap.text === cap.alt, cap, 'caption === alt, non-empty');
+
+  const fig = await page.locator('[data-lightbox-figure]').boundingBox();
+  const cx = fig.x + fig.width / 2, cy = fig.y + fig.height / 2;
+  const before = await page.locator('[data-lightbox-label]').textContent();
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx - 120, cy + 10, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  const after = await page.locator('[data-lightbox-label]').textContent();
+  ok('a sideways swipe steps to another photograph',
+     before && after && before !== after,
+     { before: before?.slice(0, 30), after: after?.slice(0, 30) }, 'two different labels');
+
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 6, cy + 160, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  ok('a downward swipe dismisses the lightbox',
+     await page.locator('.lightbox').isHidden(), true, true);
+  ok('the caption is cleared with it',
+     (await page.locator('[data-lightbox-caption]').textContent()) === '', '""', '""');
+}
+
 // ------------------------------------------------- the gallery live region --
 {
   await page.goto(BASE + '/', { waitUntil: 'load' });
