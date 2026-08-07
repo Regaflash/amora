@@ -1041,7 +1041,8 @@ summary::-webkit-details-marker { display: none; }
     margin-top: var(--sp-5);
   }
 }
-.services__dot {
+.services__dot,
+.glimpse__dot {
   box-sizing: content-box;
   width: 10px;
   height: 2px;
@@ -1055,7 +1056,8 @@ summary::-webkit-details-marker { display: none; }
 }
 /* background-color, not background: the shorthand resets background-clip and
    paints the whole 24px hit area. Same trap as .quotes__dot. */
-.services__dot[aria-current="true"] { width: 30px; background-color: var(--champagne-ink); }
+.services__dot[aria-current="true"],
+.glimpse__dot[aria-current="true"] { width: 30px; background-color: var(--champagne-ink); }
 
 /* ------------------------------------------------------------ gallery --- */
 
@@ -1296,6 +1298,19 @@ summary::-webkit-details-marker { display: none; }
   transition: transform 900ms var(--ease);
 }
 .glimpse__link:hover .glimpse__photo { transform: scale(1.03); }
+/* The visible word under each frame ("חתונות ←"): on a touch screen the
+   hover scale does not exist and the aria-label is silent, so these six
+   category links read as decoration — the routing to the filtered galleries
+   was only discoverable by accident. The arrow sits in its own aria-hidden
+   span so the visible text stays a substring of the accessible name
+   (WCAG 2.5.3: "חתונות" is inside "לגלריית החתונות"). */
+.glimpse__cap {
+  display: block;
+  margin-block-start: var(--sp-2);
+  font-size: var(--t-micro);
+  letter-spacing: .14em;
+  color: var(--mocha);
+}
 @media (max-width: 560px) {
   .glimpse {
     display: flex;
@@ -1309,6 +1324,20 @@ summary::-webkit-details-marker { display: none; }
   }
   .glimpse::-webkit-scrollbar { display: none; }
   .glimpse__item { flex: 0 0 72%; scroll-snap-align: start; }
+}
+/* The glimpse strip's position dots, built by main.js like the services
+   dots — same mark, same hit area, one carousel vocabulary. Gated at 560px,
+   the glimpse's OWN breakpoint, not the services strip's 699px: between the
+   two widths the glimpse is a 3x2 grid and an indicator over a grid is
+   noise about nothing. */
+.glimpse__dots { display: none; }
+@media (max-width: 560px) {
+  .glimpse__dots {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-block-start: var(--sp-4);
+  }
 }
 
 /* Lightbox */
@@ -1678,6 +1707,22 @@ summary::-webkit-details-marker { display: none; }
   transform: translateX(0%);
 }
 .quotes__slide { min-width: 100%; padding: 0 clamp(4px, 2vw, 20px); }
+/* The no-JS contract the other two carousels keep and this one broke: the
+   track moves only by JS transform, so with scripting off two of the three
+   testimonials were clipped and unreachable while two arrows, three dots and
+   a pause control — aria-pressed="false", promising an auto-advance that is
+   not running — all rendered dead. Scriptless, the quotes stack and the
+   controls vanish. html.js is set only by index.html's head script, so
+   :not(.js) matches on every other page too — harmless, no .quotes__* markup
+   exists there, but a future rule hung on :not(.js) must check page by page.
+   (The canonical fix is building the controls in JS like the services dots;
+   the CSS gate was chosen as the smaller change — if this gets re-litigated,
+   that is the alternative, at ~50 lines and the Hebrew copy moving into JS.) */
+html:not(.js) .quotes__viewport { overflow: visible; }
+html:not(.js) .quotes__track { display: block; transform: none; }
+html:not(.js) .quotes__slide { min-width: 0; }
+html:not(.js) .quotes__slide + .quotes__slide { margin-block-start: clamp(32px, 4vw, 56px); }
+html:not(.js) .quotes__controls { display: none; }
 /* Display type wants a measure too. Left to run the full 1000px the quote
    set as two very long lines; held to 16em it breaks into three handsome
    ones and reads as a pull quote rather than a paragraph in a big font. */

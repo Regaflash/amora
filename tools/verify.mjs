@@ -454,6 +454,85 @@ await page.waitForTimeout(200);
      !(await waVisible()), await waVisible(), false);
 }
 
+// ----------------------------- the glimpse gets captions, dots, and honesty --
+// The six category links on the money page had a hover scale for an
+// affordance — which does not exist on a touch screen — and no position
+// indicator, on the one strip of three that lacked one.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const caps = await p.evaluate(() => [...document.querySelectorAll('.glimpse__link')].map((a) => {
+    const cap = a.querySelector('.glimpse__cap');
+    if (!cap) return { ok: false, why: 'no cap' };
+    const r = cap.getBoundingClientRect();
+    // The visible word (arrow stripped) must live inside the accessible name
+    // — WCAG 2.5.3, and the assertion that stops a future copy edit from
+    // silently breaking voice control.
+    const word = [...cap.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+    return { ok: r.width > 0 && r.height > 0 && word.length > 0 && (a.getAttribute('aria-label') || '').includes(word), word };
+  }));
+  ok('every glimpse frame wears its category, and the word is in the name',
+     caps.length === 6 && caps.every((c) => c.ok), JSON.stringify(caps.filter((c) => !c.ok)), '[]');
+
+  const dots = p.locator('.glimpse__dot');
+  ok('the glimpse strip finally says "there are six"',
+     (await dots.count()) === 6
+       && (await p.locator('.glimpse__dot[aria-current="true"]').count()) === 1,
+     `${await dots.count()} dots`, '6 dots, one current');
+  await dots.nth(4).click();
+  await p.waitForTimeout(600);
+  ok('a dot is a control: the fifth dot shows the fifth frame',
+     await p.evaluate(() => {
+       const dots = [...document.querySelectorAll('.glimpse__dot')];
+       return dots.findIndex((d) => d.getAttribute('aria-current') === 'true') === 4;
+     }), true, true);
+  await p.setViewportSize({ width: 1440, height: 900 });
+  await p.waitForTimeout(400);
+  ok('no indicator paints over the desktop grid',
+     await p.evaluate(() => getComputedStyle(document.querySelector('.glimpse__dots')).display === 'none'),
+     true, true);
+  await p.close();
+}
+
+// --------------------------------------- the quotes keep the no-JS contract --
+// The other two carousels keep it: pure CSS scroll-snap, JS-built controls.
+// The quotes track moves only by JS transform — with scripting off, two of
+// three testimonials were clipped and unreachable while arrows, dots and a
+// pause control rendered dead. Scriptless: stacked quotes, no controls.
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  const q = await np.evaluate(() => {
+    const slides = [...document.querySelectorAll('.quotes__slide')];
+    const controls = document.querySelector('.quotes__controls');
+    return {
+      readable: slides.length && slides.every((s) => {
+        const r = s.getBoundingClientRect();
+        return r.height > 0 && r.left >= -1 && r.right <= document.documentElement.scrollWidth + 1;
+      }),
+      slides: slides.length,
+      controlsGone: !controls || getComputedStyle(controls).display === 'none',
+    };
+  });
+  ok('with JS off, every testimonial is on the page and readable',
+     q.readable && q.slides === 3, JSON.stringify(q), '3 stacked slides');
+  ok('with JS off, no quote control renders dead', q.controlsGone, q.controlsGone, true);
+  await ctx.close();
+}
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  ok('with JS on, the quotes carousel is unchanged',
+     await page.evaluate(() => {
+       const controls = document.querySelector('.quotes__controls');
+       const track = document.querySelector('.quotes__track');
+       return getComputedStyle(controls).display !== 'none'
+         && getComputedStyle(track).display === 'flex';
+     }), true, true);
+}
+
 // ------------------------------------- campaign tags across the page hop --
 // leadSource() reads utm_* off location.search and refuses a same-origin
 // referrer, so the tag lives only in the address bar. In-page it was already

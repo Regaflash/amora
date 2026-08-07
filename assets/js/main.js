@@ -1253,6 +1253,51 @@
       });
       obs.disconnect();
     }, { rootMargin: '800px 0px' }).observe(glimpse);
+
+    // The one strip on the site with no position indicator: the services
+    // strip has dots, the gallery strip has "3 / 18", and the glimpse — on
+    // the highest-intent page — showed 1.3 of 6 frames and never said there
+    // were six. Same vocabulary as the services dots (JS-built, so no dead
+    // control with scripting off; aria-label from the frame's own photograph,
+    // not a count to six; aria-current tracks the best-covered frame mid-
+    // swipe). Display-gated in CSS at 560px, the glimpse's OWN breakpoint —
+    // at 699px, the services gate, these would paint over the desktop grid.
+    var frames = $$('.glimpse__item', glimpse);
+    if (frames.length > 1) {
+      var glDots = document.createElement('div');
+      glDots.className = 'glimpse__dots';
+      glDots.setAttribute('role', 'group');
+      glDots.setAttribute('aria-label', 'מיקום ברצועת הגלריה');
+
+      var glRatios = frames.map(function () { return 0; });
+      var glButtons = frames.map(function (frame, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'glimpse__dot';
+        b.setAttribute('aria-current', String(i === 0));
+        var img = $('img', frame);
+        b.setAttribute('aria-label', img && img.alt ? img.alt : 'תמונה ' + (i + 1));
+        b.addEventListener('click', function () {
+          // scrollIntoView, never scrollLeft; no `behavior` key — the same
+          // two RTL/a11y reasons the services dots document at length.
+          frame.scrollIntoView({ inline: 'start', block: 'nearest' });
+        });
+        glDots.appendChild(b);
+        return b;
+      });
+
+      var glIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          glRatios[frames.indexOf(e.target)] = e.intersectionRatio;
+        });
+        var best = 0;
+        for (var i = 1; i < glRatios.length; i++) if (glRatios[i] > glRatios[best]) best = i;
+        glButtons.forEach(function (b, i) { b.setAttribute('aria-current', String(i === best)); });
+      }, { root: glimpse, threshold: [0, 0.25, 0.5, 0.75, 1] });
+      frames.forEach(function (f) { glIO.observe(f); });
+
+      glimpse.parentNode.insertBefore(glDots, glimpse.nextSibling);
+    }
   }
 
   /* ------------------------------------------------- services carousel --- */
