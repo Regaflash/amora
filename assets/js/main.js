@@ -633,11 +633,25 @@
     applyFilter(m[1]);
     return true;
   }
-  if (filterFromHash()) {
-    var gallerySection = $('#gallery');
-    if (gallerySection) gallerySection.scrollIntoView();
+
+  // And one photograph deeper: #photo-<n> (the number openLightbox writes to
+  // the address) opens the lightbox on that exact photo. A pasted photo link
+  // wins over whatever filter happens to be active — a hidden photo cannot
+  // be opened, so the filter falls back to הכל first.
+  function photoFromHash() {
+    var m = /^#photo-(\d+)$/.exec(location.hash);
+    if (!m) return false;
+    var li = items[Number(m[1]) - 1];
+    if (!li) return false;
+    if (li.hidden) applyFilter('all');
+    openLightbox(visibleItems().indexOf(li));
+    return true;
   }
-  window.addEventListener('hashchange', filterFromHash);
+
+  // NOT invoked here: photoFromHash → openLightbox → ++lbGen, and lbGen's
+  // declaration is hoisted but its `= 0` is not — calling above it paints
+  // nothing, forever (gen NaN !== lbGen NaN). The load-path call sits after
+  // the lightbox wiring below.
 
   /** Widest candidate in the picture, preferring WebP. The thumbnail's own
    *  currentSrc is the ~500px variant sized for the masonry column — far too
@@ -700,6 +714,13 @@
       $('[data-lightbox-close]').focus();
     }
 
+    // The address mirrors the open photograph the way it mirrors the filter:
+    // #photo-<n> numbers the FULL set, not the filtered one, so the link
+    // means the same photo whatever filter its sender had on.
+    if (history.replaceState) {
+      history.replaceState(null, '', '#photo-' + (items.indexOf(list[lbIndex]) + 1));
+    }
+
     var pre = new Image();
     pre.onload = paint;
     pre.onerror = paint;    // a broken URL must still swap — alt text and all
@@ -727,6 +748,14 @@
     if (!lightbox || lightbox.hidden) return;
     lightbox.hidden = true;
     lbIndex = -1;
+    // Hand the address back to the filter, or clear it. pathname AND search
+    // survive — same reasoning as the chips: closing a photo must not eat
+    // the utm_* tag the form's `source` field reads at submit.
+    if (history.replaceState) {
+      history.replaceState(null, '', filter === 'all'
+        ? location.pathname + location.search
+        : '#gallery-' + filter);
+    }
     // Cleared so that reopening the same photo is still a change the live
     // region can announce. The caption follows: :empty is what hides its bar.
     if (lbLabel) lbLabel.textContent = '';
@@ -756,6 +785,36 @@
   if (lbPrev) lbPrev.addEventListener('click', function () { step(-1); });
   var lbNext = $('[data-lightbox-next]');
   if (lbNext) lbNext.addEventListener('click', function () { step(1); });
+
+  // Web Share, where it exists — in practice the phones this viewer was
+  // rebuilt for. Created here rather than in the markup so a browser without
+  // navigator.share carries no dead control (the strip counter's rule). It
+  // shares location.href, which openLightbox keeps pointed at the exact
+  // photograph on screen; the focus trap queries FOCUSABLE per keypress, so
+  // an appended button is trapped like the built-in three.
+  var lbNav = $('.lightbox__nav');
+  if (lbNav && navigator.share) {
+    var lbShare = document.createElement('button');
+    lbShare.type = 'button';
+    lbShare.className = 'lightbox__step lightbox__share';
+    lbShare.setAttribute('aria-label', 'שיתוף קישור לתמונה');
+    lbShare.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.2" cy="12" r="2.5"/><circle cx="17.2" cy="5.6" r="2.5"/><circle cx="17.2" cy="18.4" r="2.5"/><path d="M8.4 10.8l6.6-4M8.4 13.2l6.6 4"/></svg>';
+    lbShare.addEventListener('click', function () {
+      // A rejected promise here is the visitor closing the share sheet.
+      navigator.share({ title: document.title, url: location.href }).catch(function () {});
+    });
+    lbNav.appendChild(lbShare);
+  }
+
+  // The deferred load-path call (see the note above filterFromHash's group):
+  // safe now that lbGen and the lightbox wiring exist.
+  if (filterFromHash() || photoFromHash()) {
+    var gallerySection = $('#gallery');
+    if (gallerySection) gallerySection.scrollIntoView();
+  }
+  window.addEventListener('hashchange', function () {
+    if (!photoFromHash()) filterFromHash();
+  });
 
   // RTL: ArrowRight walks back through the list, ArrowLeft walks forward.
   document.addEventListener('keydown', function (e) {

@@ -1416,9 +1416,15 @@ summary::-webkit-details-marker { display: none; }
    and the sand glyph brightens to ivory. */
 .lightbox__close:hover,
 .lightbox__step:hover { border-color: var(--champagne); color: var(--ivory); }
-/* "1 / 18" renders as "18 / 1" inside the RTL document without this. */
+/* Created by main.js only when navigator.share exists — no dead control
+   otherwise. Inline SVG, so the glyph inherits the step buttons' ink and
+   hover; grid centring because the sibling steps centre a text glyph. */
+.lightbox__share { display: grid; place-items: center; }
+/* "1 / 18" renders as "18 / 1" inside the RTL document without this; and
+   nowrap, because a fourth control in the row (the share button) squeezed
+   the span until the count folded into two lines. */
 .lightbox__count { font-family: var(--script); font-size: 16px; color: var(--sand);
-  direction: ltr; unicode-bidi: isolate; }
+  direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
 
 /* --------------------------------------------------------------- film --- */
 

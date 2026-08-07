@@ -321,6 +321,46 @@ await page.waitForTimeout(200);
      u.hash === '' && u.search === '?utm_source=verify', u.hash + ' ' + u.search, ' ?utm_source=verify');
 }
 
+// --------------------------------------------- photo deep links (#photo-…) --
+// One level deeper than the category links: the address mirrors the OPEN
+// photograph, numbered in the full set so the link survives the sender's
+// filter. To hold: a photo link opens the lightbox on that photo, stepping
+// keeps the address current, closing hands it back to the filter (or clears
+// it), and no share button exists where navigator.share does not.
+{
+  await page.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await page.waitForTimeout(900);
+  const total = await page.locator('.masonry__item').count();
+  ok('#photo-9 opens the lightbox on the ninth photograph',
+     await page.evaluate(() => !document.querySelector('[data-lightbox]').hidden)
+       && (await page.locator('[data-lightbox-count]').textContent()) === `9 / ${total}`,
+     await page.locator('[data-lightbox-count]').textContent(), `9 / ${total}`);
+  await page.locator('[data-lightbox-next]').click();
+  await page.waitForTimeout(400);
+  ok('stepping keeps the address on the open photo',
+     new URL(page.url()).hash === '#photo-10', new URL(page.url()).hash, '#photo-10');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  ok('closing hands the address back',
+     new URL(page.url()).hash === ''
+       && await page.evaluate(() => document.querySelector('[data-lightbox]').hidden),
+     new URL(page.url()).hash || '(clear)', '(clear)');
+
+  await page.locator('.chip[data-filter="prep"]').click();
+  await page.waitForTimeout(400);
+  await page.locator('.masonry__item:not([hidden]) .masonry__btn').first().click();
+  await page.waitForTimeout(600);
+  ok('a filtered open still numbers photos in the full set',
+     new URL(page.url()).hash === '#photo-9', new URL(page.url()).hash, '#photo-9');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  ok('closing under a filter restores the filter link',
+     new URL(page.url()).hash === '#gallery-prep', new URL(page.url()).hash, '#gallery-prep');
+  ok('no share button where navigator.share does not exist',
+     (await page.locator('.lightbox__share').count()) === 0,
+     await page.locator('.lightbox__share').count(), 0);
+}
+
 // ----------------------------------------------------- the swipe hint, phone --
 // The peek shows a sliver of the next frame; only motion proves the strip
 // moves. Once, when the strip first fills half the viewport untouched, the
@@ -719,13 +759,16 @@ await page.waitForTimeout(200);
       frames: links.length,
       rendered: links.filter((a) => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0; }).length,
       swipeable: g.scrollWidth > g.clientWidth + 1,
-      allToGallery: links.every((a) => a.getAttribute('href') === 'index.html#gallery'),
+      // Each frame targets its own category's filtered view, not frame one
+      // of eighteen — the fragments main.js resolves on the homepage.
+      allToGallery: links.every((a) =>
+        /^index\.html#gallery-(weddings|std|prep|events)$/.test(a.getAttribute('href'))),
     };
   });
   ok('the cost glimpse renders all six frames', m.frames === 6 && m.rendered === 6,
      `${m.rendered}/${m.frames}`, '6/6');
   ok('at 390px the cost glimpse is a strip', m.swipeable, m.swipeable, 'scrollable');
-  ok('every glimpse frame leads to the gallery', m.allToGallery, m.allToGallery, true);
+  ok('every glimpse frame leads to its own gallery category', m.allToGallery, m.allToGallery, true);
   await p.setViewportSize({ width: 1440, height: 900 });
   await p.waitForTimeout(400);
   ok('at 1440px the cost glimpse is a grid, not a strip',
