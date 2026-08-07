@@ -900,7 +900,10 @@
   </section>
 
   <!-- ===== 06 · סרטון תדמית ===== -->
-  <section class="film" data-section="film">
+  <!-- id, not just data-section: the assistant's "לסרט" action on cost.html
+       and camera-3d.html navigates to index.html#film, and a bare fragment
+       needs a real element id to land on with no JS involved. -->
+  <section class="film" id="film" data-section="film">
     <div class="film__inner">
       <div class="chapter chapter--center">
         <p class="eyebrow" lang="en">04 — The film</p>

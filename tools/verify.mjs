@@ -454,6 +454,67 @@ await page.waitForTimeout(200);
      !(await waVisible()), await waVisible(), false);
 }
 
+// ------------------------------- the assistant's actions, off the homepage --
+// assistant.js loads on three pages; the sections its actions point at exist
+// on one. The old fallback wrote a fragment that resolves to nothing — panel
+// closed, page unmoved: the visible-but-dead control this repo refuses to
+// ship. Now the action navigates to index.html, carrying location.search —
+// leadSource() reads utm_* at submit and refuses a same-origin referrer, so
+// dropping the query here would erase the campaign that paid for the visit.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/camera-3d.html?utm_source=check', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-action', { hasText: 'להשארת פרטים' }).first().click();
+  await np.waitForLoadState('load');
+  await np.waitForTimeout(400);
+  const u = new URL(np.url());
+  ok('the assistant form action leaves camera-3d with the campaign tag intact',
+     u.pathname === '/index.html' && u.search === '?utm_source=check' && u.hash === '#contact',
+     `${u.pathname}${u.search}${u.hash}`, '/index.html?utm_source=check#contact');
+  await ctx.close();
+}
+
+// ----------------------------------- the assistant hands out filtered galleries --
+// Three KB ids are the filter categories by name; the chips, the address bar
+// and cost.html's glimpse all speak #gallery-<cat> — the assistant was the
+// one surface that could not. And the eighth FAQ answer ("האולם שלנו חשוך")
+// matched no keys at all: the site's own question got "אין לי תשובה מהאתר".
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('אתם מצלמים גם את ההכנות?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(900);
+  const act = np.locator('.am-action', { hasText: 'לגלריית ההכנות' });
+  ok('the prep answer offers the prep gallery', (await act.count()) > 0, await act.count(), '>0');
+  await act.first().click();
+  await np.waitForTimeout(600);
+  ok('the assistant gallery action filters and signs the address',
+     new URL(np.url()).hash === '#gallery-prep'
+       && (await np.locator('.chip[data-filter="prep"]').getAttribute('aria-pressed')) === 'true',
+     new URL(np.url()).hash, '#gallery-prep');
+
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('האולם שלנו חשוך — איך זה מצטלם?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(900);
+  const bubbles = await np.locator('.am-msg--bot .am-bubble').allTextContents();
+  const last = bubbles[bubbles.length - 1] || '';
+  ok('the dark-hall FAQ finally has a route into the assistant',
+     last.includes('פול־פריים') && !last.includes('אין לי תשובה'),
+     last.slice(0, 40) + '…', 'the FAQ answer, not the fallback');
+  await ctx.close();
+}
+
 // ----------------------------------------------------- the swipe hint, phone --
 // The peek shows a sliver of the next frame; only motion proves the strip
 // moves. Once, when the strip first fills half the viewport untouched, the
