@@ -90,6 +90,13 @@
   var header = $('[data-header]');
   var progress = $('[data-progress]');
   var waFloat = $('[data-wa]');
+  // Set by the #gallery-<cat> / #photo-<n> load paths: a visitor who was SENT
+  // here has already been vouched for, and measured at 390×844 they land at
+  // 29.8% — fifteen pixels under WA_THRESHOLD, with the only always-on CTA
+  // switched off. For #photo-<n> it is worse: body overflow is hidden behind
+  // the lightbox, so they cannot even scroll to earn it. ORed into the
+  // threshold term ONLY — never past !formOnScreen, which owns its own test.
+  var waEngaged = false;
 
   // Cached: reading scrollHeight in the scroll handler forces a layout on
   // every frame, which is what makes scrolling stutter on cheap Androids.
@@ -122,7 +129,7 @@
     // at a desktop, and that is exactly when they want to ask one question.
     // ...but not while the lead form is on screen — see formOnScreen below.
     if (waFloat) {
-      waFloat.classList.toggle('is-visible', pct > WA_THRESHOLD && !formOnScreen);
+      waFloat.classList.toggle('is-visible', (pct > WA_THRESHOLD || waEngaged) && !formOnScreen);
     }
   }
 
@@ -763,6 +770,12 @@
     if (menu && menu.hidden) document.body.style.overflow = '';
     // The opener can be filtered out from under us, and focusing a hidden
     // element silently drops focus to <body>.
+    // The #photo-<n> visitor sees the strip for the first time NOW — retry
+    // the one-shot hint that would otherwise have burned behind the overlay.
+    // BEFORE the focus restoration below: focusing a button inside the strip
+    // scrolls it (measured: two scroll events), which trips stripTouched and
+    // would veto the very hint this call exists to rescue.
+    playHint();
     if (lastFocused && lastFocused.focus && lastFocused.offsetParent !== null) {
       lastFocused.focus();
     } else {
@@ -800,8 +813,16 @@
     lbShare.setAttribute('aria-label', 'שיתוף קישור לתמונה');
     lbShare.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.2" cy="12" r="2.5"/><circle cx="17.2" cy="5.6" r="2.5"/><circle cx="17.2" cy="18.4" r="2.5"/><path d="M8.4 10.8l6.6-4M8.4 13.2l6.6 4"/></svg>';
     lbShare.addEventListener('click', function () {
+      // The query is stripped before the URL leaves the phone: a shared photo
+      // goes to a DIFFERENT person, and the sender's utm_* tags must not
+      // become that person's `source` — a word-of-mouth lead recorded as an
+      // ad conversion is worse than an unattributed one. #photo-<n> numbers
+      // the full set and photoFromHash never reads the query, so the link
+      // still opens the same photograph.
+      var u = new URL(location.href);
+      u.search = '';
       // A rejected promise here is the visitor closing the share sheet.
-      navigator.share({ title: document.title, url: location.href }).catch(function () {});
+      navigator.share({ title: document.title, url: u.href }).catch(function () {});
     });
     lbNav.appendChild(lbShare);
   }
@@ -811,9 +832,14 @@
   if (filterFromHash() || photoFromHash()) {
     var gallerySection = $('#gallery');
     if (gallerySection) gallerySection.scrollIntoView();
+    waEngaged = true;
+    onScroll();
   }
   window.addEventListener('hashchange', function () {
-    if (!photoFromHash()) filterFromHash();
+    if (photoFromHash() || filterFromHash()) {
+      waEngaged = true;
+      onScroll();
+    }
   });
 
   // RTL: ArrowRight walks back through the list, ArrowLeft walks forward.
@@ -865,6 +891,26 @@
   var stripRatios = items.map(function () { return 0; });
   var stripBest = 0;
 
+  // Swipe-hint state, at this scope because closeLightbox retries the hint.
+  // playHint is a hoisted declaration and closeLightbox genuinely runs before
+  // this line (applyFilter calls it on the #photo-<n> load path), so the
+  // !strip guard is load-bearing, not paranoia — `var strip` above is
+  // undefined at that moment. lbGen's comment tells the same story.
+  var stripTouched = false, stripInView = false, hintSpent = false;
+
+  function playHint() {
+    if (hintSpent || reducedMotion || !strip || stripTouched || !stripInView) return;
+    if (lightbox && !lightbox.hidden) return;
+    if (strip.scrollWidth <= strip.clientWidth + 1) return;
+    hintSpent = true;
+    strip.classList.add('is-hinting');
+    // animationend bubbles up from the items; the first one ends them all.
+    strip.addEventListener('animationend', function onEnd() {
+      strip.classList.remove('is-hinting');
+      strip.removeEventListener('animationend', onEnd);
+    });
+  }
+
   function paintStripCount() {
     if (!stripCount) return;
     var vis = visibleItems();
@@ -907,24 +953,23 @@
     // it, the frames lean one gesture's worth into the reading direction and
     // settle back (@keyframes masonry-hint). CSS owns the motion and
     // html.a11y-no-motion already collapses it; the OS preference is checked
-    // here too so the class never even lands. Behaviour-based desktop guard,
-    // same as stripAfterFilter: a wall that does not scroll gets no hint.
-    var stripTouched = false;
+    // in playHint so the class never even lands. Behaviour-based desktop
+    // guard, same as stripAfterFilter: a wall that does not scroll gets none.
+    //
+    // The observer used to disconnect on first intersection, and that burned
+    // the one shot behind the #photo-<n> load path: the lightbox is an opaque
+    // fixed overlay, the strip intersected UNDER it, the hint played to
+    // nobody and was spent — for precisely the visitor a shared link brings,
+    // the one the hint was written for. So the observer only tracks
+    // visibility now; playHint is idempotent via hintSpent, refuses while the
+    // lightbox is open, and closeLightbox retries it — the first moment that
+    // visitor can actually see the strip.
     strip.addEventListener('scroll', function () { stripTouched = true; },
       { once: true, passive: true });
-    if (!reducedMotion) {
-      new IntersectionObserver(function (entries, obs) {
-        if (!entries[0].isIntersecting) return;
-        obs.disconnect();
-        if (stripTouched || strip.scrollWidth <= strip.clientWidth + 1) return;
-        strip.classList.add('is-hinting');
-        // animationend bubbles up from the items; the first one ends them all.
-        strip.addEventListener('animationend', function onEnd() {
-          strip.classList.remove('is-hinting');
-          strip.removeEventListener('animationend', onEnd);
-        });
-      }, { threshold: 0.5 }).observe(strip);
-    }
+    new IntersectionObserver(function (entries) {
+      stripInView = entries[0].isIntersecting;
+      playHint();
+    }, { threshold: 0.5 }).observe(strip);
 
     if (items.length > 1) {
       stripCount = document.createElement('p');

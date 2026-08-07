@@ -361,6 +361,99 @@ await page.waitForTimeout(200);
      await page.locator('.lightbox__share').count(), 0);
 }
 
+// ------------------------------------------- what the share button hands out --
+// A shared photo goes to a DIFFERENT person. The sender's utm_* tags must not
+// ride along and become the recipient's `source` — that records a
+// word-of-mouth lead as a paid conversion. The stripped link must still open
+// the same photograph, or the cleanup broke the feature it cleans.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.addInitScript(() => {
+    navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
+  });
+  await np.goto(BASE + '/?utm_source=instagram&utm_campaign=aug#photo-9', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.lightbox__share').click();
+  await np.waitForTimeout(200);
+  const shared = await np.evaluate(() => window.__shared && window.__shared.url);
+  const su = new URL(shared);
+  ok('a shared photo link carries no campaign tag',
+     su.search === '' && su.hash === '#photo-9', `${su.search || '(clean)'} ${su.hash}`, '(clean) #photo-9');
+  await np.goto(shared, { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  const total = await np.locator('.masonry__item').count();
+  ok('the stripped link still opens the same photograph',
+     (await np.locator('[data-lightbox-count]').textContent()) === `9 / ${total}`,
+     await np.locator('[data-lightbox-count]').textContent(), `9 / ${total}`);
+  await ctx.close();
+}
+
+// ----------------------------- the hint survives a #photo-<n> arrival --
+// The lightbox is an opaque fixed overlay. The strip used to intersect UNDER
+// it on the #photo-<n> load path, play its one-shot hint to nobody, and
+// disconnect — burned for precisely the visitor a shared link brings. Now:
+// no hint while the photo is open, and the hint plays when it closes.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.addInitScript(() => {
+    window.__hinted = false;
+    // Observe `document`, not documentElement: init scripts run before <html>
+    // exists, and observing null throws — leaving __hinted frozen false and
+    // this test failing against working code. That happened.
+    new MutationObserver(() => {
+      const g = document.querySelector('[data-masonry]');
+      if (g && g.classList.contains('is-hinting')) window.__hinted = true;
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
+  await np.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await np.waitForTimeout(1600);
+  ok('no hint plays behind the open lightbox',
+     await np.evaluate(() => !window.__hinted
+       && !document.querySelector('[data-lightbox]').hidden), true, true);
+  await np.keyboard.press('Escape');
+  const played = await np.waitForFunction(() => window.__hinted, null, { timeout: 3000 })
+    .then(() => true).catch(() => false);
+  ok('closing the photo plays the hint the visitor could not have seen',
+     played, played, true);
+  await ctx.close();
+}
+
+// --------------------------- the WhatsApp float meets the deep-link visitor --
+// Measured before the fix: #gallery-prep and #photo-9 land at 29.8% of the
+// page — fifteen pixels under WA_THRESHOLD — with the only always-on CTA
+// switched off; the #photo-9 visitor cannot even scroll to earn it while the
+// lightbox holds body overflow. A deep-linked visitor is vouched for by the
+// link itself. The form-occlusion rule must still win over the new flag.
+{
+  const waVisible = () =>
+    page.evaluate(() => document.querySelector('[data-wa]').classList.contains('is-visible'));
+  // Through another page first: a hash-only goto is a same-document
+  // navigation, which never runs the load path this block is testing.
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.goto(BASE + '/#gallery-prep', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  ok('the float greets a #gallery-<cat> arrival without a scroll',
+     await waVisible(), await waVisible(), true);
+  await page.evaluate(() => document.querySelector('#contact').scrollIntoView());
+  await page.waitForTimeout(500);
+  ok('the form still banishes the float, deep link or not',
+     !(await waVisible()), await waVisible(), false);
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+  ok('the float greets a #photo-<n> arrival once the photo closes',
+     await waVisible(), await waVisible(), true);
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('a plain arrival still earns the float by scrolling',
+     !(await waVisible()), await waVisible(), false);
+}
+
 // ----------------------------------------------------- the swipe hint, phone --
 // The peek shows a sliver of the next frame; only motion proves the strip
 // moves. Once, when the strip first fills half the viewport untouched, the
