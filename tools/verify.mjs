@@ -454,6 +454,128 @@ await page.waitForTimeout(200);
      !(await waVisible()), await waVisible(), false);
 }
 
+// ------------------------------------- campaign tags across the page hop --
+// leadSource() reads utm_* off location.search and refuses a same-origin
+// referrer, so the tag lives only in the address bar. In-page it was already
+// guarded; the cross-page hop — cost.html's glimpse into the homepage form,
+// the highest-intent path on the site — erased it. carryCampaign() rewrites
+// same-origin cross-page links; everything else must stay untouched.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/cost.html?utm_source=instagram&utm_campaign=aug', { waitUntil: 'load' });
+  await np.waitForTimeout(600);
+  const glimpseHref = await np.locator('.glimpse__link').first().evaluate((a) => a.href);
+  const gu = new URL(glimpseHref);
+  ok('a glimpse link carries the campaign, query before fragment',
+     gu.searchParams.get('utm_source') === 'instagram'
+       && gu.searchParams.get('utm_campaign') === 'aug'
+       && gu.hash === '#gallery-weddings',
+     `${gu.search} ${gu.hash}`, 'utm_source+utm_campaign #gallery-weddings');
+  const untouched = await np.evaluate(() => {
+    const skip = document.querySelector('.skip-link');
+    const wa = document.querySelector('a[href^="https://wa.me/"]');
+    const rf = document.querySelector('a[href*="regaflash.com"]');
+    return {
+      skip: skip ? skip.getAttribute('href') : '(none)',
+      waClean: !wa || !wa.href.includes('utm_'),
+      rfClean: !rf || !rf.href.includes('utm_'),
+    };
+  });
+  ok('the skip link and external links carry no inherited tag',
+     untouched.skip === '#main' && untouched.waClean && untouched.rfClean,
+     JSON.stringify(untouched), 'skip #main, wa/regaflash clean');
+  await np.locator('.glimpse__link').first().click();
+  await np.waitForLoadState('load');
+  await np.waitForTimeout(700);
+  const landed = new URL(np.url());
+  ok('the hop lands filtered with the campaign intact',
+     landed.searchParams.get('utm_source') === 'instagram'
+       && landed.hash === '#gallery-weddings'
+       && (await np.locator('.chip[data-filter="weddings"]').getAttribute('aria-pressed')) === 'true',
+     `${landed.search} ${landed.hash}`, 'utm intact, weddings filtered');
+  await ctx.close();
+}
+{
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('with no campaign in the address, every href is byte-identical',
+     await page.evaluate(() => [...document.querySelectorAll('a[href]')]
+       .every((a) => !a.href.includes('utm_'))), true, true);
+}
+
+// ------------------------------------------- the lightbox backdrop closes --
+// The desktop counterpart of the phone's downward swipe. The trap: a click is
+// dispatched on the common ancestor of pointerdown and pointerup targets, so
+// a swipe that lifts over the surround fires click with target === lightbox —
+// it must STEP, not dismiss. Only a press born on the backdrop closes.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  await p.locator('.masonry__btn').first().click();
+  await p.waitForTimeout(600);
+  await p.mouse.click(20, 400);
+  await p.waitForTimeout(400);
+  ok('a backdrop click closes the lightbox and clears the address',
+     await p.evaluate(() => document.querySelector('[data-lightbox]').hidden)
+       && new URL(p.url()).hash === '',
+     new URL(p.url()).hash || '(clear)', '(clear)');
+  await p.locator('.masonry__btn').first().click();
+  await p.waitForTimeout(600);
+  const fig = await p.locator('[data-lightbox-figure]').boundingBox();
+  await p.mouse.click(fig.x + fig.width / 2, fig.y + fig.height / 2);
+  await p.waitForTimeout(300);
+  ok('a click on the photograph itself does not close',
+     await p.evaluate(() => !document.querySelector('[data-lightbox]').hidden), true, true);
+  // A mouse drag has no implicit pointer capture (touch does), so the
+  // overshooting drag's pointerup lands on the backdrop and no step fires —
+  // the assertion that matters on both input kinds is that the viewer
+  // SURVIVES: pointerdown was born on the figure, so the click the drag
+  // synthesises on the lightbox must not dismiss it.
+  await p.mouse.move(fig.x + fig.width / 2, fig.y + fig.height / 2);
+  await p.mouse.down();
+  await p.mouse.move(20, fig.y + fig.height / 2, { steps: 8 });
+  await p.mouse.up();
+  await p.waitForTimeout(500);
+  ok('a drag that lifts over the backdrop never dismisses the photo',
+     await p.evaluate(() => !document.querySelector('[data-lightbox]').hidden), true, true);
+  await p.close();
+}
+
+// ----------------------------------------------- the chips learn their size --
+// "חתונות · 8" — the count each chip decides, on the chip. Derived from
+// data-cat on BOTH sides of this assertion, so a future gallery edit cannot
+// leave a chip lying; aria-hidden so the accessible name stays the bare word.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  const chips = await page.evaluate(() => [...document.querySelectorAll('.chip')].map((c) => {
+    const cat = c.dataset.filter;
+    const want = cat === 'all'
+      ? document.querySelectorAll('.masonry__item').length
+      : document.querySelectorAll(`.masonry__item[data-cat="${cat}"]`).length;
+    const mark = c.querySelector('.chip__n');
+    return {
+      cat,
+      counted: mark ? mark.textContent.trim() === `· ${want}` : false,
+      hidden: mark ? mark.getAttribute('aria-hidden') === 'true' : false,
+    };
+  }));
+  ok('every chip tells its true size, out loud to nobody',
+     chips.every((c) => c.counted && c.hidden),
+     JSON.stringify(chips.filter((c) => !c.counted || !c.hidden)), '[]');
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.waitForTimeout(400);
+  ok('the counted chips still fit a 360px shell',
+     await page.evaluate(() => {
+       const f = document.querySelector('.filters');
+       return f.scrollWidth <= f.clientWidth + 1;
+     }), true, true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
+}
+
 // ------------------------------- the assistant's actions, off the homepage --
 // assistant.js loads on three pages; the sections its actions point at exist
 // on one. The old fallback wrote a fragment that resolves to nothing — panel

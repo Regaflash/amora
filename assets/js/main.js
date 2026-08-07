@@ -73,6 +73,44 @@
     a.href = waLink(a.dataset.waText || 'היי, הגעתי מהאתר של Amora Studio ואשמח לבדוק זמינות לתאריך שלנו.');
   });
 
+  /* --------------------------------------- campaign tags across page hops --- */
+
+  // leadSource() reads utm_* off location.search at submit and deliberately
+  // refuses a same-origin referrer — so a campaign tag survives exactly as
+  // long as it stays in the address bar. Within a page that is guarded (the
+  // chips and the lightbox close both keep location.search); across pages it
+  // was not: the cost.html glimpse links, .faq__more and the nav are bare
+  // hrefs, and the hop from the money page to the homepage form erased the
+  // tag. Measured: land on /cost.html?utm_source=instagram, tap a glimpse
+  // frame, submit the form — source recorded "/". This rewrites same-origin
+  // cross-page links to carry the tags. The URL API places the query before
+  // the fragment on its own — string concatenation would have buried it
+  // inside the hash and broken filterFromHash's exact match.
+  //
+  // Skipped on purpose: bare-fragment hrefs (same-document, search already
+  // survives), cross-origin (wa.me, regaflash, Instagram must not inherit
+  // our tags), same-pathname (covered by the fragment rule's logic), and any
+  // link carrying its own query (it knows better). Links assistant.js builds
+  // later are not covered here — its goTo() carries the search itself.
+  // Nothing is stored or sent; a non-submitting visitor is still unmeasured.
+  (function carryCampaign() {
+    var params = new URLSearchParams(location.search);
+    var tags = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
+      .filter(function (k) { return params.get(k); });
+    if (!tags.length) return;
+    $$('a[href]').forEach(function (a) {
+      var raw = a.getAttribute('href');
+      if (!raw || raw.charAt(0) === '#') return;
+      var u;
+      try { u = new URL(a.href, location.href); } catch (e) { return; }
+      if (u.origin !== location.origin) return;
+      if (u.pathname === location.pathname) return;
+      if (u.search) return;
+      tags.forEach(function (k) { u.searchParams.set(k, params.get(k)); });
+      a.href = u.href;
+    });
+  })();
+
   /* ------------------------------------- broken images fall back to stripes -- */
 
   document.addEventListener('error', function (e) {
@@ -623,6 +661,27 @@
     });
   });
 
+  // "חתונות · 8": the size of each category, on the control that chooses it.
+  // The count is already this gallery's vocabulary — announceCount speaks it,
+  // the strip counter shows it — everywhere except the chip itself. Derived
+  // from data-cat at init, never typed: a hand-edited gallery can desync a
+  // typed number but not a derived one. aria-hidden, because a bare trailing
+  // digit is noise to a screen reader and announceCount already says the real
+  // sentence the moment the chip is pressed — same rule as .gallery__count.
+  // JS off: the chips read exactly as before. Strictly additive.
+  chips.forEach(function (chip) {
+    var cat = chip.dataset.filter;
+    var n = cat === 'all' ? items.length : items.filter(function (li) {
+      return li.dataset.cat === cat;
+    }).length;
+    if (!n) return;
+    var mark = document.createElement('span');
+    mark.className = 'chip__n';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = ' · ' + n;
+    chip.appendChild(mark);
+  });
+
   // The chips filter for whoever is standing in front of them; a link could
   // not. #gallery-<cat> lands filtered and scrolled — "תראי את גלריית ההכנות"
   // becomes /#gallery-prep in a WhatsApp message. Unknown categories (and
@@ -876,6 +935,23 @@
       step(dx < 0 ? -1 : 1);
     });
     lbFigure.addEventListener('pointercancel', function () { lbStartX = lbStartY = null; });
+  }
+
+  // Clicking the dark surround closes — the desktop counterpart of the
+  // phone's downward swipe. The guard is the point, not a detail: a click is
+  // dispatched on the nearest common ANCESTOR of pointerdown and pointerup
+  // targets, so a horizontal swipe that starts on the figure and lifts over
+  // the surround fires click with target === lightbox — and a naive check
+  // would dismiss the viewer on every overshooting swipe instead of stepping
+  // it. Only a press that both began and ended on the backdrop closes.
+  if (lightbox) {
+    var lbDownOnBackdrop = false;
+    lightbox.addEventListener('pointerdown', function (e) {
+      lbDownOnBackdrop = e.target === lightbox;
+    });
+    lightbox.addEventListener('click', function (e) {
+      if (e.target === lightbox && lbDownOnBackdrop) closeLightbox();
+    });
   }
 
   /* ---------------------------------------------- gallery strip (phone) --- */

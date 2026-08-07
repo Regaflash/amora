@@ -1132,6 +1132,12 @@ summary::-webkit-details-marker { display: none; }
 .chip:hover::after { background: var(--rule); }
 .chip[aria-pressed="true"] { color: var(--charcoal); }
 .chip[aria-pressed="true"]::after { background: var(--charcoal); height: 2px; }
+/* The category count main.js appends ("חתונות · 8"). color: inherit, no
+   opacity — the same painted ink as the word, which is what keeps the
+   measured chip-contrast assertion honest. Isolated, because "Save the
+   Date · 4" is an LTR run meeting a digit inside an RTL paragraph — the
+   exact reorder that once rendered the lightbox count as "18 / 1". */
+.chip__n { color: inherit; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
 
 /* Columns are 300px wide at their narrowest; the browser fits as many as
    the 1320px shell allows, so a column is never much wider than ~330px. */
