@@ -454,6 +454,65 @@ await page.waitForTimeout(200);
      !(await waVisible()), await waVisible(), false);
 }
 
+// ------------------------------------------------- the design elevation --
+// Eight restrained-futurism touches, and the traps each must not fall into:
+// decorations must survive html.a11y-contrast (background-COLOR under every
+// gradient), every animation must die under reduced motion (global kills),
+// and nothing may move a tap target.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 } }); // no reduce
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  ok('the progress bar keeps a solid color under its gradient',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('[data-progress]'));
+       return s.backgroundColor === 'rgb(201, 174, 140)' && s.backgroundImage.includes('gradient');
+     }), true, true);
+  ok('every chapter opens with its champagne signature',
+     await p.evaluate(() => [...document.querySelectorAll('.chapter')].every((c) => {
+       const s = getComputedStyle(c, '::before');
+       return s.backgroundColor === 'rgb(201, 174, 140)' && parseInt(s.width) === 72;
+     })), true, true);
+  ok('the play circle breathes when motion is welcome',
+     await p.evaluate(() => getComputedStyle(document.querySelector('.film__play-icon'))
+       .animationName === 'play-pulse'), true, true);
+
+  await p.locator('.masonry__btn').first().hover();
+  await p.waitForTimeout(600);
+  const cap = await p.evaluate(() => {
+    const b = document.querySelector('.masonry__btn');
+    const s = getComputedStyle(b, '::after');
+    return { opacity: s.opacity, text: s.content.includes(b.dataset.alt.slice(0, 8)),
+             inert: s.pointerEvents === 'none' };
+  });
+  ok('hovering a photograph reveals its own words, tap target untouched',
+     cap.opacity === '1' && cap.text && cap.inert, JSON.stringify(cap), 'visible, alt text, inert');
+
+  await p.locator('.masonry__btn').first().click();
+  await p.waitForTimeout(200);
+  ok('the lightbox enters with its animation where motion is welcome',
+     await p.evaluate(() => getComputedStyle(document.querySelector('[data-lightbox-figure]'))
+       .animationName === 'lightbox-in'), true, true);
+  await p.close();
+}
+{
+  // The same touches on the reduce page: the pulse and the entrance must be
+  // dead, and the form focus halo + caret must hold (they are not motion).
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('reduced motion silences the pulse and the entrance',
+     await page.evaluate(() => {
+       const pulse = getComputedStyle(document.querySelector('.film__play-icon')).animationName;
+       return pulse === 'none';
+     }), true, true);
+  await page.locator('[data-field="name"]').focus();
+  ok('a focused field wears the brand: halo and caret',
+     await page.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('[data-field="name"]'));
+       return s.caretColor === 'rgb(128, 97, 66)' && s.boxShadow !== 'none';
+     }), true, true);
+}
+
 // ----------------------------- the glimpse gets captions, dots, and honesty --
 // The six category links on the money page had a hover scale for an
 // affordance — which does not exist on a touch screen — and no position

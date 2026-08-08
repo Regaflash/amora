@@ -99,7 +99,13 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* The page's own scrollbar in the brand's ink — the last uncoloured
+     browser furniture. Firefox reads this directly; WebKit falls back to
+     its default, which is an acceptable place to fall. */
+  scrollbar-color: var(--champagne) transparent;
+}
 
 body {
   margin: 0;
@@ -216,9 +222,23 @@ summary::-webkit-details-marker { display: none; }
    Where a section is two columns (faq, about, gear, contact) the rule sits
    at the same height in both, so it reads as one line broken by the gutter. */
 .chapter {
+  position: relative;
   border-top: 1px solid var(--rule);
   padding-top: var(--sp-5);
   margin: 0 0 var(--chapter-gap);
+}
+/* A 72px champagne segment where the chapter rule begins — the reading-start
+   corner, so inset-inline-start, never `right`. One quiet signature repeated
+   at every chapter head. background-color, not a gradient: it must survive
+   html.a11y-contrast blanking background-images. */
+.chapter::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  inset-inline-start: 0;
+  width: 72px;
+  height: 1px;
+  background-color: var(--champagne);
 }
 .chapter .eyebrow { margin-bottom: var(--sp-5); }
 .chapter .h2 { margin: 0; }
@@ -527,7 +547,16 @@ summary::-webkit-details-marker { display: none; }
    fill itself loses nothing: at the top of the page it is 0% wide anyway. */
 .progress { height: 1px; background: var(--line); transition: background 400ms var(--ease); }
 .site-header:not(.is-scrolled) .progress { background: transparent; }
-.progress__bar { height: 1px; width: 0%; background: var(--champagne); }
+/* background-color AND a gradient on top: html.a11y-contrast blanks every
+   background-image, so the glow and the sheen are decoration over a solid
+   bar that survives contrast mode intact. */
+.progress__bar {
+  height: 1px;
+  width: 0%;
+  background-color: var(--champagne);
+  background-image: linear-gradient(to left, var(--champagne), var(--sand));
+  box-shadow: 0 0 8px rgba(201, 174, 140, 0.55);
+}
 
 /* Mobile menu overlay */
 .menu {
@@ -541,6 +570,24 @@ summary::-webkit-details-marker { display: none; }
   padding: clamp(24px, 8vw, 60px);
 }
 .menu[hidden] { display: none; }
+/* The overlay's items rise in reading order, ~55ms apart — the one place a
+   stagger earns its keep, because the menu appears from nothing and the
+   cascade gives the eye an order to follow. hidden toggles display, so the
+   animation replays on every open. Media-gated on top of the global kills;
+   the close button is excluded — it must be exactly where the finger that
+   opened the menu already is, instantly. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes menu-item-in {
+    from { opacity: 0; transform: translateY(14px); }
+  }
+  .menu:not([hidden]) > :not(.menu__close) { animation: menu-item-in 460ms var(--ease) backwards; }
+  .menu:not([hidden]) > :nth-child(3) { animation-delay: 55ms; }
+  .menu:not([hidden]) > :nth-child(4) { animation-delay: 110ms; }
+  .menu:not([hidden]) > :nth-child(5) { animation-delay: 165ms; }
+  .menu:not([hidden]) > :nth-child(6) { animation-delay: 220ms; }
+  .menu:not([hidden]) > :nth-child(7) { animation-delay: 275ms; }
+  .menu:not([hidden]) > :nth-child(8) { animation-delay: 330ms; }
+}
 .menu__close {
   position: absolute;
   top: 18px;
@@ -1173,6 +1220,7 @@ summary::-webkit-details-marker { display: none; }
 .masonry__item[hidden] { display: none; }
 .masonry__btn {
   display: block;
+  position: relative;   /* anchors the hover frame and caption below */
   width: 100%;
   height: 100%;
   padding: 0;
@@ -1182,6 +1230,49 @@ summary::-webkit-details-marker { display: none; }
   cursor: zoom-in;
   overflow: hidden;
   border-radius: 0;
+}
+/* Desktop hover reveal: a hairline champagne frame floats in over the
+   photograph and the frame's own words rise from the corner — content is
+   attr(data-alt), the same text the lightbox announces, so no markup and no
+   second copy to drift. Pointer-gated: on touch there is no hover, the strip
+   already captions itself with the counter, and a chip flashing under every
+   tap would be noise. The caption chip is background-COLOR ink — it survives
+   html.a11y-contrast, which blanks background-images, with its legibility
+   intact. Both layers are pointer-events: none, so the tap target underneath
+   is exactly what it was. */
+@media (hover: hover) and (min-width: 561px) {
+  .masonry__btn::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border: 1px solid rgba(201, 174, 140, 0.85);
+    opacity: 0;
+    transition: opacity 400ms var(--ease);
+    pointer-events: none;
+  }
+  .masonry__btn::after {
+    content: attr(data-alt);
+    position: absolute;
+    inset-inline-start: 10px;
+    inset-block-end: 10px;
+    max-width: calc(100% - 20px);
+    padding: 6px 12px;
+    background-color: rgba(21, 19, 17, 0.78);
+    color: var(--ivory);
+    font-size: var(--t-micro);
+    letter-spacing: .12em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 400ms var(--ease), transform 400ms var(--ease);
+    pointer-events: none;
+  }
+  .masonry__btn:hover::before,
+  .masonry__btn:focus-visible::before { opacity: 1; }
+  .masonry__btn:hover::after,
+  .masonry__btn:focus-visible::after { opacity: 1; transform: none; }
 }
 .masonry__btn picture { display: block; width: 100%; height: 100%; }
 /* object-fit is what lets a frame fill its slot without distorting: the row
@@ -1350,7 +1441,25 @@ summary::-webkit-details-marker { display: none; }
   place-items: center;
   padding: clamp(16px, 4vw, 60px);
 }
+/* Where the engine can frost the page behind the photo, the scrim lightens
+   and blurs instead of going near-opaque — the photograph floats over the
+   site the way a phone's own photo viewer floats over the camera roll.
+   @supports-gated so the opaque scrim above stays the fallback everywhere
+   else, at full legibility. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lightbox {
+    background: rgba(28, 26, 24, 0.82);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
+    backdrop-filter: blur(18px) saturate(1.1);
+  }
+}
 .lightbox[hidden] { display: none; }
+/* Entrance: hidden toggles display, so the animation replays on every open.
+   Killed globally under prefers-reduced-motion and html.a11y-no-motion. */
+@keyframes lightbox-in {
+  from { opacity: 0; transform: scale(0.965); }
+}
+.lightbox__figure { animation: lightbox-in 420ms var(--ease); }
 .lightbox__figure {
   display: grid;
   place-items: center;
@@ -1534,6 +1643,20 @@ summary::-webkit-details-marker { display: none; }
 .film__play:hover .film__play-icon {
   background: rgba(201, 174, 140, 0.28);
   transform: translate(-50%, -50%) scale(1.06);
+}
+/* A slow champagne ring breathes off the play circle — the one resting
+   element on the page allowed to move, because it is an invitation to press.
+   box-shadow only: the element's transform is load-bearing (centring).
+   Media-gated on top of the global kills, so the ring never even starts
+   under reduced motion; hover pauses it because the button is already
+   answering the hand. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes play-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(201, 174, 140, 0.4); }
+    70%, 100% { box-shadow: 0 0 0 22px rgba(201, 174, 140, 0); }
+  }
+  .film__play-icon { animation: play-pulse 3.2s var(--ease) infinite; }
+  .film__play:hover .film__play-icon { animation-play-state: paused; }
 }
 .film__frame iframe {
   display: block;
@@ -2061,7 +2184,14 @@ html:not(.js) .quotes__controls { display: none; }
 select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
 /* There was no :focus rule on the controls at all — a mouse click produced no
    border change whatsoever. */
-.field__control:focus { border-color: var(--champagne-ink); background: var(--ivory); }  /* Firefox dims it without opacity:1 */
+.field__control:focus {
+  border-color: var(--champagne-ink);
+  background: var(--ivory);   /* Firefox dims it without opacity:1 */
+  /* A soft champagne halo, outside the border so the field reads "live"
+     without its text moving a pixel. Decoration only — the border-color
+     change above stays the state that carries the meaning. */
+  box-shadow: 0 0 0 3px rgba(201, 174, 140, 0.22);
+}
 /* Inputs stay square while every action is a pill (8.2026): shape is what
    separates "type here" from "press me", and rounded ends would crowd the
    LTR-forced tel/date values against the curve. */
@@ -2072,6 +2202,7 @@ select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
   border: 1px solid var(--rule-strong);
   border-radius: 0;
   font-size: var(--t-small);
+  caret-color: var(--champagne-ink);   /* the blinking cursor wears the brand */
 }
 .field__control[aria-invalid="true"] { border-color: var(--terracotta); }
 /* Phone numbers and dates are LTR sequences. Inside dir="rtl" they otherwise
