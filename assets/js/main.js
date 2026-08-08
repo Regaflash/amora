@@ -73,6 +73,44 @@
     a.href = waLink(a.dataset.waText || 'היי, הגעתי מהאתר של Amora Studio ואשמח לבדוק זמינות לתאריך שלנו.');
   });
 
+  /* --------------------------------------- campaign tags across page hops --- */
+
+  // leadSource() reads utm_* off location.search at submit and deliberately
+  // refuses a same-origin referrer — so a campaign tag survives exactly as
+  // long as it stays in the address bar. Within a page that is guarded (the
+  // chips and the lightbox close both keep location.search); across pages it
+  // was not: the cost.html glimpse links, .faq__more and the nav are bare
+  // hrefs, and the hop from the money page to the homepage form erased the
+  // tag. Measured: land on /cost.html?utm_source=instagram, tap a glimpse
+  // frame, submit the form — source recorded "/". This rewrites same-origin
+  // cross-page links to carry the tags. The URL API places the query before
+  // the fragment on its own — string concatenation would have buried it
+  // inside the hash and broken filterFromHash's exact match.
+  //
+  // Skipped on purpose: bare-fragment hrefs (same-document, search already
+  // survives), cross-origin (wa.me, regaflash, Instagram must not inherit
+  // our tags), same-pathname (covered by the fragment rule's logic), and any
+  // link carrying its own query (it knows better). Links assistant.js builds
+  // later are not covered here — its goTo() carries the search itself.
+  // Nothing is stored or sent; a non-submitting visitor is still unmeasured.
+  (function carryCampaign() {
+    var params = new URLSearchParams(location.search);
+    var tags = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
+      .filter(function (k) { return params.get(k); });
+    if (!tags.length) return;
+    $$('a[href]').forEach(function (a) {
+      var raw = a.getAttribute('href');
+      if (!raw || raw.charAt(0) === '#') return;
+      var u;
+      try { u = new URL(a.href, location.href); } catch (e) { return; }
+      if (u.origin !== location.origin) return;
+      if (u.pathname === location.pathname) return;
+      if (u.search) return;
+      tags.forEach(function (k) { u.searchParams.set(k, params.get(k)); });
+      a.href = u.href;
+    });
+  })();
+
   /* ------------------------------------- broken images fall back to stripes -- */
 
   document.addEventListener('error', function (e) {
@@ -90,6 +128,13 @@
   var header = $('[data-header]');
   var progress = $('[data-progress]');
   var waFloat = $('[data-wa]');
+  // Set by the #gallery-<cat> / #photo-<n> load paths: a visitor who was SENT
+  // here has already been vouched for, and measured at 390×844 they land at
+  // 29.8% — fifteen pixels under WA_THRESHOLD, with the only always-on CTA
+  // switched off. For #photo-<n> it is worse: body overflow is hidden behind
+  // the lightbox, so they cannot even scroll to earn it. ORed into the
+  // threshold term ONLY — never past !formOnScreen, which owns its own test.
+  var waEngaged = false;
 
   // Cached: reading scrollHeight in the scroll handler forces a layout on
   // every frame, which is what makes scrolling stutter on cheap Androids.
@@ -122,7 +167,7 @@
     // at a desktop, and that is exactly when they want to ask one question.
     // ...but not while the lead form is on screen — see formOnScreen below.
     if (waFloat) {
-      waFloat.classList.toggle('is-visible', pct > WA_THRESHOLD && !formOnScreen);
+      waFloat.classList.toggle('is-visible', (pct > WA_THRESHOLD || waEngaged) && !formOnScreen);
     }
   }
 
@@ -563,6 +608,7 @@
   var lbLabel = $('[data-lightbox-label]');
   var lbImage = $('[data-lightbox-img]');
   var lbCount = $('[data-lightbox-count]');
+  var lbCaption = $('[data-lightbox-caption]');
   var galleryStatus = $('[data-gallery-status]');
 
   var filter = 'all';
@@ -585,6 +631,7 @@
     });
     closeLightbox();
     announceCount();
+    stripAfterFilter();
   }
 
   // A chip press silently rewrites the grid from 18 tiles to 3 or 4. aria-pressed
@@ -598,8 +645,79 @@
   }
 
   chips.forEach(function (chip) {
-    chip.addEventListener('click', function () { applyFilter(chip.dataset.filter); });
+    chip.addEventListener('click', function () {
+      applyFilter(chip.dataset.filter);
+      // The address bar mirrors the filter, so any filtered view can be
+      // copied and sent. replaceState, not location.hash: no history entry
+      // per chip press, and no native anchor scroll for a fragment that is
+      // not an element id. Clearing keeps pathname AND search — the form's
+      // `source` field reads utm_* tags at submit, and "הכל" must not eat
+      // the campaign tag that brought the visitor here.
+      if (history.replaceState) {
+        history.replaceState(null, '', chip.dataset.filter === 'all'
+          ? location.pathname + location.search
+          : '#gallery-' + chip.dataset.filter);
+      }
+    });
   });
+
+  // "חתונות · 8": the size of each category, on the control that chooses it.
+  // The count is already this gallery's vocabulary — announceCount speaks it,
+  // the strip counter shows it — everywhere except the chip itself. Derived
+  // from data-cat at init, never typed: a hand-edited gallery can desync a
+  // typed number but not a derived one. aria-hidden, because a bare trailing
+  // digit is noise to a screen reader and announceCount already says the real
+  // sentence the moment the chip is pressed — same rule as .gallery__count.
+  // JS off: the chips read exactly as before. Strictly additive.
+  chips.forEach(function (chip) {
+    var cat = chip.dataset.filter;
+    var n = cat === 'all' ? items.length : items.filter(function (li) {
+      return li.dataset.cat === cat;
+    }).length;
+    if (!n) return;
+    var mark = document.createElement('span');
+    mark.className = 'chip__n';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = ' · ' + n;
+    chip.appendChild(mark);
+  });
+
+  // The chips filter for whoever is standing in front of them; a link could
+  // not. #gallery-<cat> lands filtered and scrolled — "תראי את גלריית ההכנות"
+  // becomes /#gallery-prep in a WhatsApp message. Unknown categories (and
+  // #gallery itself, a real anchor) fall through untouched; the browser never
+  // scrolls to these fragments on its own precisely because they are not
+  // element ids, so the load path scrolls the section into view itself — no
+  // `behavior` key, the stylesheet keeps answering html.a11y-no-motion and
+  // the OS preference. announceCount speaks on this load path, and should:
+  // the visitor asked for a filtered gallery and the live region says so.
+  function filterFromHash() {
+    var m = /^#gallery-([a-z]+)$/.exec(location.hash);
+    if (!m || m[1] === 'all') return false;
+    var known = chips.some(function (c) { return c.dataset.filter === m[1]; });
+    if (!known) return false;
+    applyFilter(m[1]);
+    return true;
+  }
+
+  // And one photograph deeper: #photo-<n> (the number openLightbox writes to
+  // the address) opens the lightbox on that exact photo. A pasted photo link
+  // wins over whatever filter happens to be active — a hidden photo cannot
+  // be opened, so the filter falls back to הכל first.
+  function photoFromHash() {
+    var m = /^#photo-(\d+)$/.exec(location.hash);
+    if (!m) return false;
+    var li = items[Number(m[1]) - 1];
+    if (!li) return false;
+    if (li.hidden) applyFilter('all');
+    openLightbox(visibleItems().indexOf(li));
+    return true;
+  }
+
+  // NOT invoked here: photoFromHash → openLightbox → ++lbGen, and lbGen's
+  // declaration is hoisted but its `= 0` is not — calling above it paints
+  // nothing, forever (gen NaN !== lbGen NaN). The load-path call sits after
+  // the lightbox wiring below.
 
   /** Widest candidate in the picture, preferring WebP. The thumbnail's own
    *  currentSrc is the ~500px variant sized for the masonry column — far too
@@ -647,6 +765,7 @@
       lbImage.alt = alt;
       lbFigure.style.setProperty('--ratio', ratio);
       lbCount.textContent = count;
+      if (lbCaption) lbCaption.textContent = alt;
       lbFigure.removeAttribute('data-loading');
       // Written last, and deliberately after the dialog is on screen: a live
       // region inside a hidden subtree is not announced. Stepping keeps focus on
@@ -661,6 +780,13 @@
       $('[data-lightbox-close]').focus();
     }
 
+    // The address mirrors the open photograph the way it mirrors the filter:
+    // #photo-<n> numbers the FULL set, not the filtered one, so the link
+    // means the same photo whatever filter its sender had on.
+    if (history.replaceState) {
+      history.replaceState(null, '', '#photo-' + (items.indexOf(list[lbIndex]) + 1));
+    }
+
     var pre = new Image();
     pre.onload = paint;
     pre.onerror = paint;    // a broken URL must still swap — alt text and all
@@ -668,6 +794,15 @@
     // Cached, which is the common case: no wait, no flicker, no loading state.
     if (pre.complete) paint();
     else lbFigure.setAttribute('data-loading', '');
+
+    // Warm both neighbours once the current request is on the wire, so a step
+    // in either direction is the cached no-flicker path rather than a dimmed
+    // wait. The cache dedupes repeats, and on a one-photo filter both
+    // neighbours are this photo — harmless either way.
+    [1, -1].forEach(function (d) {
+      var n = list[(lbIndex + d + list.length) % list.length];
+      if (n) new Image().src = largestSource($('.masonry__btn', n));
+    });
   }
 
   function step(delta) {
@@ -679,12 +814,27 @@
     if (!lightbox || lightbox.hidden) return;
     lightbox.hidden = true;
     lbIndex = -1;
+    // Hand the address back to the filter, or clear it. pathname AND search
+    // survive — same reasoning as the chips: closing a photo must not eat
+    // the utm_* tag the form's `source` field reads at submit.
+    if (history.replaceState) {
+      history.replaceState(null, '', filter === 'all'
+        ? location.pathname + location.search
+        : '#gallery-' + filter);
+    }
     // Cleared so that reopening the same photo is still a change the live
-    // region can announce.
+    // region can announce. The caption follows: :empty is what hides its bar.
     if (lbLabel) lbLabel.textContent = '';
+    if (lbCaption) lbCaption.textContent = '';
     if (menu && menu.hidden) document.body.style.overflow = '';
     // The opener can be filtered out from under us, and focusing a hidden
     // element silently drops focus to <body>.
+    // The #photo-<n> visitor sees the strip for the first time NOW — retry
+    // the one-shot hint that would otherwise have burned behind the overlay.
+    // BEFORE the focus restoration below: focusing a button inside the strip
+    // scrolls it (measured: two scroll events), which trips stripTouched and
+    // would veto the very hint this call exists to rescue.
+    playHint();
     if (lastFocused && lastFocused.focus && lastFocused.offsetParent !== null) {
       lastFocused.focus();
     } else {
@@ -708,6 +858,49 @@
   var lbNext = $('[data-lightbox-next]');
   if (lbNext) lbNext.addEventListener('click', function () { step(1); });
 
+  // Web Share, where it exists — in practice the phones this viewer was
+  // rebuilt for. Created here rather than in the markup so a browser without
+  // navigator.share carries no dead control (the strip counter's rule). It
+  // shares location.href, which openLightbox keeps pointed at the exact
+  // photograph on screen; the focus trap queries FOCUSABLE per keypress, so
+  // an appended button is trapped like the built-in three.
+  var lbNav = $('.lightbox__nav');
+  if (lbNav && navigator.share) {
+    var lbShare = document.createElement('button');
+    lbShare.type = 'button';
+    lbShare.className = 'lightbox__step lightbox__share';
+    lbShare.setAttribute('aria-label', 'שיתוף קישור לתמונה');
+    lbShare.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6.2" cy="12" r="2.5"/><circle cx="17.2" cy="5.6" r="2.5"/><circle cx="17.2" cy="18.4" r="2.5"/><path d="M8.4 10.8l6.6-4M8.4 13.2l6.6 4"/></svg>';
+    lbShare.addEventListener('click', function () {
+      // The query is stripped before the URL leaves the phone: a shared photo
+      // goes to a DIFFERENT person, and the sender's utm_* tags must not
+      // become that person's `source` — a word-of-mouth lead recorded as an
+      // ad conversion is worse than an unattributed one. #photo-<n> numbers
+      // the full set and photoFromHash never reads the query, so the link
+      // still opens the same photograph.
+      var u = new URL(location.href);
+      u.search = '';
+      // A rejected promise here is the visitor closing the share sheet.
+      navigator.share({ title: document.title, url: u.href }).catch(function () {});
+    });
+    lbNav.appendChild(lbShare);
+  }
+
+  // The deferred load-path call (see the note above filterFromHash's group):
+  // safe now that lbGen and the lightbox wiring exist.
+  if (filterFromHash() || photoFromHash()) {
+    var gallerySection = $('#gallery');
+    if (gallerySection) gallerySection.scrollIntoView();
+    waEngaged = true;
+    onScroll();
+  }
+  window.addEventListener('hashchange', function () {
+    if (photoFromHash() || filterFromHash()) {
+      waEngaged = true;
+      onScroll();
+    }
+  });
+
   // RTL: ArrowRight walks back through the list, ArrowLeft walks forward.
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && menu && !menu.hidden) setMenu(false);
@@ -716,6 +909,173 @@
     if (e.key === 'ArrowRight') step(-1);
     if (e.key === 'ArrowLeft') step(1);
   });
+
+  // The figure is a swipe surface: sideways steps through the photographs
+  // with the quotes viewport's exact sign convention — dragging left in RTL
+  // means "back" — and a firm downward drag closes, the way every phone
+  // photo viewer dismisses. The vertical threshold is doubled so a sloppy
+  // sideways swipe with some droop does not throw the visitor out.
+  if (lbFigure) {
+    if (lbImage) lbImage.draggable = false;
+    var lbStartX = null, lbStartY = null;
+    lbFigure.addEventListener('pointerdown', function (e) {
+      lbStartX = e.clientX;
+      lbStartY = e.clientY;
+    });
+    lbFigure.addEventListener('pointerup', function (e) {
+      if (lbStartX === null || lbIndex < 0) { lbStartX = lbStartY = null; return; }
+      var dx = e.clientX - lbStartX;
+      var dy = e.clientY - lbStartY;
+      lbStartX = lbStartY = null;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        if (dy > SWIPE_MIN * 2) closeLightbox();
+        return;
+      }
+      if (Math.abs(dx) < SWIPE_MIN) return;
+      step(dx < 0 ? -1 : 1);
+    });
+    lbFigure.addEventListener('pointercancel', function () { lbStartX = lbStartY = null; });
+  }
+
+  // Clicking the dark surround closes — the desktop counterpart of the
+  // phone's downward swipe. The guard is the point, not a detail: a click is
+  // dispatched on the nearest common ANCESTOR of pointerdown and pointerup
+  // targets, so a horizontal swipe that starts on the figure and lifts over
+  // the surround fires click with target === lightbox — and a naive check
+  // would dismiss the viewer on every overshooting swipe instead of stepping
+  // it. Only a press that both began and ended on the backdrop closes.
+  if (lightbox) {
+    var lbDownOnBackdrop = false;
+    lightbox.addEventListener('pointerdown', function (e) {
+      lbDownOnBackdrop = e.target === lightbox;
+    });
+    lightbox.addEventListener('click', function (e) {
+      if (e.target === lightbox && lbDownOnBackdrop) closeLightbox();
+    });
+  }
+
+  /* ---------------------------------------------- gallery strip (phone) --- */
+
+  // Below 560px styles.css turns the wall into a scroll-snap strip; like the
+  // services strip it is pure CSS and works with this file deleted. This adds
+  // only what CSS cannot do: un-lazying frames that are off-screen sideways
+  // (the same defect and the same fix as the services plates), a "3 / 18"
+  // counter in the lightbox's vocabulary (eighteen dots is not an indicator),
+  // and a scroll home when a filter collapses the strip under the visitor.
+  var strip = $('[data-masonry]');
+  var stripCount = null;
+  var stripRatios = items.map(function () { return 0; });
+  var stripBest = 0;
+
+  // Swipe-hint state, at this scope because closeLightbox retries the hint.
+  // playHint is a hoisted declaration and closeLightbox genuinely runs before
+  // this line (applyFilter calls it on the #photo-<n> load path), so the
+  // !strip guard is load-bearing, not paranoia — `var strip` above is
+  // undefined at that moment. lbGen's comment tells the same story.
+  var stripTouched = false, stripInView = false, hintSpent = false;
+
+  function playHint() {
+    if (hintSpent || reducedMotion || !strip || stripTouched || !stripInView) return;
+    if (lightbox && !lightbox.hidden) return;
+    if (strip.scrollWidth <= strip.clientWidth + 1) return;
+    hintSpent = true;
+    strip.classList.add('is-hinting');
+    // animationend bubbles up from the items; the first one ends them all.
+    strip.addEventListener('animationend', function onEnd() {
+      strip.classList.remove('is-hinting');
+      strip.removeEventListener('animationend', onEnd);
+    });
+  }
+
+  function paintStripCount() {
+    if (!stripCount) return;
+    var vis = visibleItems();
+    var idx = vis.indexOf(items[stripBest]);
+    // -1 means the best-covered frame was just filtered out; the strip has
+    // just been scrolled home by stripAfterFilter, so "1 / N" is the truth.
+    stripCount.textContent = (idx < 0 ? 1 : idx + 1) + ' / ' + vis.length;
+  }
+
+  function stripAfterFilter() {
+    // Behaviour-based, not a media query: on the desktop wall the list does
+    // not scroll and this is a no-op. scrollIntoView, not scrollLeft (its
+    // sign and origin in an RTL scroller differ between engines); no
+    // `behavior` key, so the stylesheet keeps answering html.a11y-no-motion
+    // and the OS preference; block:'nearest' so the page itself stays put —
+    // the filter chips sit directly above the strip.
+    if (strip && strip.scrollWidth > strip.clientWidth + 1) {
+      var first = $('.masonry__item:not([hidden]) .masonry__btn', strip);
+      if (first) first.scrollIntoView({ inline: 'start', block: 'nearest' });
+    }
+    paintStripCount();
+  }
+
+  if (strip && 'IntersectionObserver' in window) {
+    // Same reasoning as the services plates: loading="lazy" measures vertical
+    // distance, and no amount of vertical scrolling approaches a frame that
+    // is only off-screen sideways. On the wall all eighteen loaded during the
+    // scroll-past anyway — this restores that budget, it does not add to it.
+    new IntersectionObserver(function (entries, obs) {
+      if (!entries[0].isIntersecting) return;
+      $$('.masonry__photo', strip).forEach(function (img) {
+        if (img.getAttribute('loading') === 'lazy') img.loading = 'eager';
+      });
+      obs.disconnect();
+    }, { rootMargin: '800px 0px' }).observe(strip);
+
+    // A first-time visitor sees 86% of one frame and a sliver of the next.
+    // The peek says "more exists"; only motion proves the strip moves. Once,
+    // the first time the strip fills half the viewport and nobody has swiped
+    // it, the frames lean one gesture's worth into the reading direction and
+    // settle back (@keyframes masonry-hint). CSS owns the motion and
+    // html.a11y-no-motion already collapses it; the OS preference is checked
+    // in playHint so the class never even lands. Behaviour-based desktop
+    // guard, same as stripAfterFilter: a wall that does not scroll gets none.
+    //
+    // The observer used to disconnect on first intersection, and that burned
+    // the one shot behind the #photo-<n> load path: the lightbox is an opaque
+    // fixed overlay, the strip intersected UNDER it, the hint played to
+    // nobody and was spent — for precisely the visitor a shared link brings,
+    // the one the hint was written for. So the observer only tracks
+    // visibility now; playHint is idempotent via hintSpent, refuses while the
+    // lightbox is open, and closeLightbox retries it — the first moment that
+    // visitor can actually see the strip.
+    strip.addEventListener('scroll', function () { stripTouched = true; },
+      { once: true, passive: true });
+    new IntersectionObserver(function (entries) {
+      stripInView = entries[0].isIntersecting;
+      playHint();
+    }, { threshold: 0.5 }).observe(strip);
+
+    if (items.length > 1) {
+      stripCount = document.createElement('p');
+      stripCount.className = 'gallery__count';
+      // The <ul> already announces "item N of 18", and the gallery has a live
+      // region of its own — a second announcement here would talk over both.
+      stripCount.setAttribute('aria-hidden', 'true');
+
+      // root is the strip's own scrollport, so this is correct wherever the
+      // page is scrolled — and tracks a half-finished swipe instead of
+      // jumping only once the snap lands. Hidden frames are skipped so the
+      // numerator is a position within the filtered set.
+      var stripIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          stripRatios[items.indexOf(e.target)] = e.intersectionRatio;
+        });
+        var best = -1, bestR = -1;
+        items.forEach(function (li, i) {
+          if (li.hidden) return;
+          if (stripRatios[i] > bestR) { bestR = stripRatios[i]; best = i; }
+        });
+        if (best >= 0) stripBest = best;
+        paintStripCount();
+      }, { root: strip, threshold: [0, 0.25, 0.5, 0.75, 1] });
+      items.forEach(function (li) { stripIO.observe(li); });
+
+      strip.parentNode.insertBefore(stripCount, strip.nextSibling);
+      paintStripCount();
+    }
+  }
 
   /* --------------------------------------------------- showreel (YouTube) --- */
 
@@ -876,6 +1236,68 @@
     }, SLIDE_INTERVAL);
 
     renderSlide();
+  }
+
+  /* ---------------------------------------- gallery glimpse (cost page) --- */
+
+  // The cost page's six-frame glimpse is the same sideways strip on a phone,
+  // with the same lazy defect as the services plates and the gallery strip:
+  // loading="lazy" measures vertical distance, and frames that are only
+  // off-screen sideways never load. Same one-shot fix.
+  var glimpse = $('.glimpse');
+  if (glimpse && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries, obs) {
+      if (!entries[0].isIntersecting) return;
+      $$('img', glimpse).forEach(function (img) {
+        if (img.getAttribute('loading') === 'lazy') img.loading = 'eager';
+      });
+      obs.disconnect();
+    }, { rootMargin: '800px 0px' }).observe(glimpse);
+
+    // The one strip on the site with no position indicator: the services
+    // strip has dots, the gallery strip has "3 / 18", and the glimpse — on
+    // the highest-intent page — showed 1.3 of 6 frames and never said there
+    // were six. Same vocabulary as the services dots (JS-built, so no dead
+    // control with scripting off; aria-label from the frame's own photograph,
+    // not a count to six; aria-current tracks the best-covered frame mid-
+    // swipe). Display-gated in CSS at 560px, the glimpse's OWN breakpoint —
+    // at 699px, the services gate, these would paint over the desktop grid.
+    var frames = $$('.glimpse__item', glimpse);
+    if (frames.length > 1) {
+      var glDots = document.createElement('div');
+      glDots.className = 'glimpse__dots';
+      glDots.setAttribute('role', 'group');
+      glDots.setAttribute('aria-label', 'מיקום ברצועת הגלריה');
+
+      var glRatios = frames.map(function () { return 0; });
+      var glButtons = frames.map(function (frame, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'glimpse__dot';
+        b.setAttribute('aria-current', String(i === 0));
+        var img = $('img', frame);
+        b.setAttribute('aria-label', img && img.alt ? img.alt : 'תמונה ' + (i + 1));
+        b.addEventListener('click', function () {
+          // scrollIntoView, never scrollLeft; no `behavior` key — the same
+          // two RTL/a11y reasons the services dots document at length.
+          frame.scrollIntoView({ inline: 'start', block: 'nearest' });
+        });
+        glDots.appendChild(b);
+        return b;
+      });
+
+      var glIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          glRatios[frames.indexOf(e.target)] = e.intersectionRatio;
+        });
+        var best = 0;
+        for (var i = 1; i < glRatios.length; i++) if (glRatios[i] > glRatios[best]) best = i;
+        glButtons.forEach(function (b, i) { b.setAttribute('aria-current', String(i === best)); });
+      }, { root: glimpse, threshold: [0, 0.25, 0.5, 0.75, 1] });
+      frames.forEach(function (f) { glIO.observe(f); });
+
+      glimpse.parentNode.insertBefore(glDots, glimpse.nextSibling);
+    }
   }
 
   /* ------------------------------------------------- services carousel --- */

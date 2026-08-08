@@ -182,6 +182,75 @@
 <h2>שאלה טובה לשאול כל סטודיו</h2>
 <p>לא רק אותנו: <strong>בקשו לראות אלבום שלם של חתונה אחת</strong>, מהבוקר ועד הסוף — לא רק את הפריים המושלם מכל אירוע. זה מה שמראה אם מישהו עקבי או שהיה לו מזל. אצלנו, בשיחה, שולחים 2–3 גלריות מלאות של חתונות דומות לשלכם.</p>
 
+<!-- Visual proof next to the trust question above: this page argued the
+     studio's case in words while showing none of the work. Six frames from
+     the homepage gallery, as plain LINKS to it — not lightbox buttons. The
+     lightbox and its JS live on the homepage; a button here would open
+     nothing, which is the visible-but-dead control this repo keeps refusing
+     to ship. Same six ship as 500/900 pairs the gallery already serves, so
+     no new derivative and no check.sh churn. Each link targets its frame's
+     own category (#gallery-<cat>, handled by main.js on the homepage): a
+     visitor drawn by the prep shot lands on the prep gallery, not on frame
+     one of eighteen. With JS off the fragment matches no id, so the browser
+     simply lands at the top — same page, nothing broken. -->
+<h2>ככה נראית העבודה</h2>
+<ul class="glimpse" aria-label="טעימה מהגלריה">
+  <li class="glimpse__item">
+    <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: רגע החופה">
+      <picture>
+        <source type="image/webp" srcset="assets/img/g01-500.webp 500w, assets/img/g01-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
+        <img class="glimpse__photo" src="assets/img/g01-900.jpg" srcset="assets/img/g01-500.jpg 500w, assets/img/g01-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="רגע החופה" width="900" height="1125" loading="lazy" decoding="async" />
+      </picture>
+      <span class="glimpse__cap">חתונות<span aria-hidden="true"> ←</span></span>
+    </a>
+  </li>
+  <li class="glimpse__item">
+    <a class="glimpse__link" href="index.html#gallery-prep" aria-label="לגלריית ההכנות: איפור בבוקר האירוע">
+      <picture>
+        <source type="image/webp" srcset="assets/img/g09-500.webp 500w, assets/img/g09-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
+        <img class="glimpse__photo" src="assets/img/g09-900.jpg" srcset="assets/img/g09-500.jpg 500w, assets/img/g09-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="איפור בבוקר האירוע" width="900" height="1125" loading="lazy" decoding="async" />
+      </picture>
+      <span class="glimpse__cap">הכנות<span aria-hidden="true"> ←</span></span>
+    </a>
+  </li>
+  <li class="glimpse__item">
+    <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: רגע שקט בין בני הזוג בחתונה">
+      <picture>
+        <source type="image/webp" srcset="assets/img/g16-500.webp 500w, assets/img/g16-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
+        <img class="glimpse__photo" src="assets/img/g16-900.jpg" srcset="assets/img/g16-500.jpg 500w, assets/img/g16-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="רגע שקט בין בני הזוג בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
+      </picture>
+      <span class="glimpse__cap">חתונות<span aria-hidden="true"> ←</span></span>
+    </a>
+  </li>
+  <li class="glimpse__item">
+    <a class="glimpse__link" href="index.html#gallery-events" aria-label="לגלריית האירועים: עיצוב שולחנות באירוע">
+      <picture>
+        <source type="image/webp" srcset="assets/img/g12-500.webp 500w, assets/img/g12-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
+        <img class="glimpse__photo" src="assets/img/g12-900.jpg" srcset="assets/img/g12-500.jpg 500w, assets/img/g12-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="עיצוב שולחנות באירוע" width="900" height="1125" loading="lazy" decoding="async" />
+      </picture>
+      <span class="glimpse__cap">אירועים<span aria-hidden="true"> ←</span></span>
+    </a>
+  </li>
+  <li class="glimpse__item">
+    <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: שמלת הכלה והצעדים הראשונים בחתונה">
+      <picture>
+        <source type="image/webp" srcset="assets/img/g05-500.webp 500w, assets/img/g05-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
+        <img class="glimpse__photo" src="assets/img/g05-900.jpg" srcset="assets/img/g05-500.jpg 500w, assets/img/g05-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="שמלת הכלה והצעדים הראשונים בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
+      </picture>
+      <span class="glimpse__cap">חתונות<span aria-hidden="true"> ←</span></span>
+    </a>
+  </li>
+  <li class="glimpse__item">
+    <a class="glimpse__link" href="index.html#gallery-std" aria-label="לגלריית ה-Save the Date: פורטרט זוגי בצילומי Save the Date">
+      <picture>
+        <source type="image/webp" srcset="assets/img/g18-500.webp 500w, assets/img/g18-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
+        <img class="glimpse__photo" src="assets/img/g18-900.jpg" srcset="assets/img/g18-500.jpg 500w, assets/img/g18-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="פורטרט זוגי בצילומי Save the Date" width="900" height="1125" loading="lazy" decoding="async" />
+      </picture>
+      <span class="glimpse__cap">Save the Date<span aria-hidden="true"> ←</span></span>
+    </a>
+  </li>
+</ul>
+
 <h2>איך מקבלים מספר</h2>
 <p>משאירים פרטים, ואנחנו חוזרים באותו יום עם זמינות והצעה שמתאימה למה שסיפרתם. אם עוד לא קבעתם תאריך, אפשר לסמן את זה בטופס — זו שאלה לגיטימית לשאול לפני שסוגרים אולם.</p>
 

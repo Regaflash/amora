@@ -52,6 +52,16 @@
   --mono: ui-monospace, Menlo, monospace;
 
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Interactive shape language: actions are pills, square icon buttons are
+     circles — the hero's glass-pill grammar carried site-wide (owner's call,
+     8.2026). Chips and form inputs are deliberately NOT included: shape is
+     what separates "press me" from "read me" and "type here". */
+  --r-pill: 999px;
+  --r-circle: 50%;
+  /* One clock for button feedback, always paired with --ease. */
+  --t-btn: 220ms;
+
   --gutter: clamp(18px, 4vw, 56px);
   --shell: 1320px;
 
@@ -155,7 +165,7 @@ summary::-webkit-details-marker { display: none; }
   color: var(--charcoal);
   font-size: 14px;
   letter-spacing: .08em;
-  border-radius: 0;
+  border-radius: var(--r-pill);
   transition: top 200ms var(--ease);
 }
 .skip-link:focus { top: 0; color: var(--charcoal); }
@@ -288,13 +298,14 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .16em;
   padding: 20px 40px;
   border: 1px solid var(--champagne);
-  border-radius: 0;
+  border-radius: var(--r-pill);
   text-align: center;
   cursor: pointer;
-  transition: background 320ms, color 320ms, transform 320ms, border-color 320ms;
+  transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease),
+              transform var(--t-btn) var(--ease), border-color var(--t-btn) var(--ease);
 }
-.btn--solid { background: var(--champagne); color: #1C1A18; }
-.btn--solid:hover { background: var(--sand); color: #1C1A18; transform: translateY(-2px); }
+.btn--solid { background: var(--champagne); color: var(--charcoal); }
+.btn--solid:hover { background: var(--sand); color: var(--charcoal); transform: translateY(-2px); }
 
 /* ---------------------------------------------------------------------------
    Glass over the film.
@@ -302,13 +313,12 @@ summary::-webkit-details-marker { display: none; }
    The hero sits on moving footage, and a solid block dropped on top of it
    reads as a sticker rather than as part of the frame. These three controls —
    the two hero calls to action, the header's own CTA and the burger — are
-   given a translucent, blurred surface so the film keeps running behind them,
-   and a soft radius so they stop reading as boxes cut out of the picture.
-
-   Scoped to the hero and the un-scrolled header ON PURPOSE. .btn--solid is
-   also the primary button on cost.html, over a light page, where translucency
-   would leave dark text floating on nothing. The moment the header picks up
-   .is-scrolled it is over ivory, not film, and the glass is dropped there too.
+   given a translucent, blurred surface so the film keeps running behind them.
+   The pill radius that used to live here moved to the base rules in 8.2026 —
+   every action button is a pill now — so what remains hero-scoped is only
+   the GLASS: translucency over a light page would leave dark text floating
+   on nothing, and the moment the header picks up .is-scrolled it is over
+   ivory, not film, so the glass is dropped there too.
 
    -webkit-backdrop-filter is not optional: iOS Safari is the browser this was
    reported from, and it still needs the prefix. Where backdrop-filter is not
@@ -316,18 +326,17 @@ summary::-webkit-details-marker { display: none; }
    buttons keep a slightly stronger flat tint — legible either way, which is
    why the base colours are set outside the @supports. */
 .hero__actions .btn {
-  border-radius: 999px;
   backface-visibility: hidden;   /* Safari: stops the blur seaming on scroll */
 }
 .hero__actions .btn--solid {
   background: rgba(201, 174, 140, 0.34);
   border-color: rgba(201, 174, 140, 0.9);
-  color: #FFFDF9;
+  color: var(--ivory);
 }
 .hero__actions .btn--solid:hover {
   background: rgba(201, 174, 140, 0.52);
   border-color: var(--champagne);
-  color: #FFFDF9;
+  color: var(--ivory);
 }
 .hero__actions .btn--ghost-light {
   background: rgba(255, 253, 249, 0.10);
@@ -335,7 +344,7 @@ summary::-webkit-details-marker { display: none; }
 }
 .hero__actions .btn--ghost-light:hover {
   background: rgba(255, 253, 249, 0.2);
-  border-color: #FFFDF9;
+  border-color: var(--ivory);
 }
 
 /* Dark glass here, light glass on the hero buttons, and the difference is
@@ -346,11 +355,9 @@ summary::-webkit-details-marker { display: none; }
    up, and it still shows the film through. */
 .site-header:not(.is-scrolled) .nav-mobile__cta,
 .site-header:not(.is-scrolled) .burger {
-  border-radius: 999px;
   background: rgba(24, 22, 20, 0.42);
   border-color: rgba(255, 253, 249, 0.5);
 }
-.site-header:not(.is-scrolled) .burger { border-radius: 50%; }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .hero__actions .btn,
@@ -367,10 +374,10 @@ summary::-webkit-details-marker { display: none; }
 
 .btn--ghost-light {
   background: transparent;
-  color: #FFFDF9;
+  color: var(--ivory);
   border-color: rgba(255, 253, 249, 0.45);
 }
-.btn--ghost-light:hover { background: rgba(255, 253, 249, 0.12); border-color: #FFFDF9; color: #FFFDF9; }
+.btn--ghost-light:hover { background: rgba(255, 253, 249, 0.12); border-color: var(--ivory); color: var(--ivory); }
 
 .btn--outline {
   background: transparent;
@@ -459,7 +466,7 @@ summary::-webkit-details-marker { display: none; }
 .nav__link {
   font-size: var(--t-small);
   letter-spacing: .04em;
-  color: #FFFDF9;
+  color: var(--ivory);
   transition: color 400ms;
 }
 .site-header.is-scrolled .nav__link { color: var(--charcoal); }
@@ -471,14 +478,15 @@ summary::-webkit-details-marker { display: none; }
   /* No border. The outlined box read as a stray rectangle sitting on the hero
      footage rather than as a button. The padding stays, so the link keeps its
      own space in the row, and the champagne fill on hover still marks it out
-     as the primary action. */
-  color: #FFFDF9;
+     as the primary action — painting a pill now, like every other action. */
+  border-radius: var(--r-pill);
+  color: var(--ivory);
   background: transparent;
-  transition: background 300ms, color 300ms;
+  transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
 }
 .site-header.is-scrolled .nav__cta { color: var(--charcoal); }
 .nav__cta:hover,
-.site-header.is-scrolled .nav__cta:hover { background: var(--champagne); color: #1C1A18; }
+.site-header.is-scrolled .nav__cta:hover { background: var(--champagne); color: var(--charcoal); }
 
 .nav-mobile { display: none; align-items: center; gap: 10px; }
 .nav-mobile__cta {
@@ -486,7 +494,8 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .12em;
   padding: 11px 16px;
   border: 1px solid var(--champagne);
-  color: #FFFDF9;
+  border-radius: var(--r-pill);
+  color: var(--ivory);
   white-space: nowrap;
   transition: color 400ms;
 }
@@ -500,10 +509,10 @@ summary::-webkit-details-marker { display: none; }
   place-content: center;
   background: transparent;
   border: 1px solid rgba(255, 253, 249, 0.45);
-  border-radius: 0;
+  border-radius: var(--r-circle);
   cursor: pointer;
   padding: 0 11px;
-  color: #FFFDF9;
+  color: var(--ivory);
   transition: color 400ms, border-color 400ms;
 }
 .site-header.is-scrolled .burger { color: var(--charcoal); border-color: rgba(201, 174, 140, 0.6); }
@@ -540,11 +549,15 @@ summary::-webkit-details-marker { display: none; }
   height: 46px;
   background: transparent;
   border: 1px solid var(--line);
+  border-radius: var(--r-circle);
+  /* charcoal, not champagne: a 1px champagne hairline on cream measures ~1.7:1
+     and barely reads — same family as .quotes__arrow:hover. */
+  transition: border-color var(--t-btn) var(--ease);
   color: var(--charcoal);
   cursor: pointer;
-  border-radius: 0;
   font-size: 16px;
 }
+.menu__close:hover { border-color: var(--charcoal); }
 .menu__brand {
   font-family: var(--script);
   font-style: italic;
@@ -565,12 +578,15 @@ summary::-webkit-details-marker { display: none; }
 .menu__cta {
   font-size: var(--t-micro);
   letter-spacing: .16em;
-  padding: 19px 24px;
+  padding: 19px 28px;   /* rounded ends need inline breathing room */
   background: var(--champagne);
-  color: #1C1A18;
+  border-radius: var(--r-pill);
+  color: var(--charcoal);
   text-align: center;
   margin-top: var(--sp-6);
+  transition: background var(--t-btn) var(--ease), transform var(--t-btn) var(--ease);
 }
+.menu__cta:hover { background: var(--sand); transform: translateY(-2px); }
 .menu__phone { font-size: var(--t-small); color: var(--mocha); text-align: center; margin-top: var(--sp-2); }
 
 /* --------------------------------------------------------------- hero --- */
@@ -767,7 +783,7 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: -0.025em;
   font-size: var(--t-display);
   line-height: 0.98;
-  color: #FFFDF9;
+  color: var(--ivory);
   margin: 0 0 var(--sp-6);
   text-wrap: balance;
 }
@@ -1025,7 +1041,8 @@ summary::-webkit-details-marker { display: none; }
     margin-top: var(--sp-5);
   }
 }
-.services__dot {
+.services__dot,
+.glimpse__dot {
   box-sizing: content-box;
   width: 10px;
   height: 2px;
@@ -1039,7 +1056,8 @@ summary::-webkit-details-marker { display: none; }
 }
 /* background-color, not background: the shorthand resets background-clip and
    paints the whole 24px hit area. Same trap as .quotes__dot. */
-.services__dot[aria-current="true"] { width: 30px; background-color: var(--champagne-ink); }
+.services__dot[aria-current="true"],
+.glimpse__dot[aria-current="true"] { width: 30px; background-color: var(--champagne-ink); }
 
 /* ------------------------------------------------------------ gallery --- */
 
@@ -1084,6 +1102,10 @@ summary::-webkit-details-marker { display: none; }
   margin-bottom: clamp(30px, 4vw, 52px);
   border-bottom: 1px solid var(--rule);
 }
+/* Deliberately NOT a pill (the 8.2026 shape refresh skipped this on purpose):
+   the underline is the gallery's contact-sheet filter language, and both
+   aria-pressed states are pixel-asserted at 4.5:1 on the ink ground by
+   verify.mjs — a fill here re-opens that measured work for no gain. */
 .chip {
   position: relative;
   font-size: var(--t-micro);
@@ -1112,6 +1134,12 @@ summary::-webkit-details-marker { display: none; }
 .chip:hover::after { background: var(--rule); }
 .chip[aria-pressed="true"] { color: var(--charcoal); }
 .chip[aria-pressed="true"]::after { background: var(--charcoal); height: 2px; }
+/* The category count main.js appends ("חתונות · 8"). color: inherit, no
+   opacity — the same painted ink as the word, which is what keeps the
+   measured chip-contrast assertion honest. Isolated, because "Save the
+   Date · 4" is an LTR run meeting a digit inside an RTL paragraph — the
+   exact reorder that once rendered the lightbox count as "18 / 1". */
+.chip__n { color: inherit; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
 
 /* Columns are 300px wide at their narrowest; the browser fits as many as
    the 1320px shell allows, so a column is never much wider than ~330px. */
@@ -1168,9 +1196,149 @@ summary::-webkit-details-marker { display: none; }
 .masonry__btn:hover .masonry__photo { transform: scale(1.03); }
 
 @media (max-width: 900px) { .masonry { --row: clamp(150px, 22vw, 200px); } }
-@media (max-width: 560px) { .masonry { --row: 150px; } }
+
+/* On a phone the wall compressed eighteen frames into 150px rows — thumbnails
+   of the one section this audience actually came for. Below 560px the wall
+   becomes a scroll-snap filmstrip instead: the same native mechanics as the
+   services strip (swipes, snaps, honours RTL, costs nothing with JS off), at
+   the breakpoint the imgs' own sizes attribute already declares, so the markup
+   — and the image schema generated from it — does not change. Each slide keeps
+   its own shape through the --ar the wall already set from data-ratio: a 21/9
+   panorama stays a panorama, centred in the band the portraits define, rather
+   than being cropped into a portrait box. justify-content must return to
+   flex-start here — centred overflow content puts the scroll start out of
+   reach. */
+@media (max-width: 560px) {
+  .masonry {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--sp-4);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    padding-inline: var(--gutter);
+    scroll-padding-inline: var(--gutter);
+    /* The peek of the next frame is the affordance; a scrollbar under it is
+       just noise. */
+    scrollbar-width: none;
+  }
+  .masonry::-webkit-scrollbar { display: none; }
+  .masonry__item {
+    /* 86%, not the services strip's 78%: photographs earn more width than
+       text cards, and ~9vw of the next frame still shows. */
+    flex: 0 0 86%;
+    height: auto;
+    max-width: none;
+    aspect-ratio: var(--ar);
+    scroll-snap-align: start;
+  }
+  /* One gesture's worth of proof that the strip moves. main.js adds
+     .is-hinting once — the first time the strip fills half the viewport and
+     nobody has swiped it yet — and the frames lean a real advance's worth
+     into the reading direction, then settle. The transform rides the items,
+     not the scroller: translating the scroll container drags its clip box
+     along and reveals nothing, while content moving inside the scrollport
+     shows an honest slice of the next frame. Never scrollLeft — its sign in
+     an RTL scroller differs between engines. html.a11y-no-motion and the OS
+     preference both collapse animations globally, so the hint obeys them
+     with no code of its own. */
+  @keyframes masonry-hint {
+    0%, 100% { transform: translateX(0); }
+    38%, 62% { transform: translateX(16px); }
+  }
+  .masonry.is-hinting .masonry__item { animation: masonry-hint 1100ms var(--ease); }
+}
+
+/* The strip's position, in the lightbox's own vocabulary — "3 / 18", not
+   eighteen dots. Written by main.js and phone-only, same rule as
+   .services__dots: with scripting off the strip still swipes and no dead
+   indicator exists. Not interactive, so there is no hit-area to size; and
+   aria-hidden, because the <ul> already tells a screen reader "item 3 of 18"
+   and the gallery has a live region of its own. */
+.gallery__count { display: none; }
+@media (max-width: 560px) {
+  .gallery__count {
+    display: block;
+    margin: var(--sp-4) var(--gutter) 0;
+    text-align: center;
+    font-size: var(--t-micro);
+    letter-spacing: .18em;
+    font-variant-numeric: tabular-nums;
+    /* Same ink as the resting chips on the gallery's dark ground. */
+    color: rgba(255, 253, 249, .72);
+  }
+}
 
 .gallery__footer { display: flex; justify-content: center; margin-top: clamp(44px, 5vw, 76px); }
+
+/* --------------------------------------------- gallery glimpse (cost page) --- */
+/* Six frames on the page that answers "how much": it argued the studio's case
+   in words while showing none of the work. Plain links to the homepage
+   gallery, not lightbox buttons — the lightbox lives there. Desktop is a
+   modest grid inside the prose measure; a phone gets the same scroll-snap
+   strip vocabulary as the gallery itself, bled to the screen edges with the
+   services strip's negative-margin pattern (.legal pads by the same
+   --gutter). */
+.glimpse {
+  list-style: none;
+  margin: var(--sp-5) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 1.5vw, 16px);
+}
+.glimpse__link { display: block; overflow: hidden; }
+.glimpse__photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  transition: transform 900ms var(--ease);
+}
+.glimpse__link:hover .glimpse__photo { transform: scale(1.03); }
+/* The visible word under each frame ("חתונות ←"): on a touch screen the
+   hover scale does not exist and the aria-label is silent, so these six
+   category links read as decoration — the routing to the filtered galleries
+   was only discoverable by accident. The arrow sits in its own aria-hidden
+   span so the visible text stays a substring of the accessible name
+   (WCAG 2.5.3: "חתונות" is inside "לגלריית החתונות"). */
+.glimpse__cap {
+  display: block;
+  margin-block-start: var(--sp-2);
+  font-size: var(--t-micro);
+  letter-spacing: .14em;
+  color: var(--mocha);
+}
+@media (max-width: 560px) {
+  .glimpse {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x mandatory;
+    margin-inline: calc(var(--gutter) * -1);
+    padding-inline: var(--gutter);
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .glimpse::-webkit-scrollbar { display: none; }
+  .glimpse__item { flex: 0 0 72%; scroll-snap-align: start; }
+}
+/* The glimpse strip's position dots, built by main.js like the services
+   dots — same mark, same hit area, one carousel vocabulary. Gated at 560px,
+   the glimpse's OWN breakpoint, not the services strip's 699px: between the
+   two widths the glimpse is a 3x2 grid and an indicator over a grid is
+   noise about nothing. */
+.glimpse__dots { display: none; }
+@media (max-width: 560px) {
+  .glimpse__dots {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-block-start: var(--sp-4);
+  }
+}
 
 /* Lightbox */
 .lightbox {
@@ -1198,6 +1366,37 @@ summary::-webkit-details-marker { display: none; }
    swapped underneath its caption — see openLightbox() in main.js. opacity only:
    no physical side, nothing to mirror under dir="rtl". */
 .lightbox__figure[data-loading] { opacity: 0.55; }
+/* The figure is also the swipe surface (see the lightbox pointer handlers in
+   main.js). touch-action: none is safe only because this is a modal with body
+   scroll already locked — nothing legitimate pans here — and without it a
+   vertical drag becomes a pointercancel that never reaches pointerup, the
+   same trap the quotes viewport documents. user-select/user-drag off so a
+   mouse drag steps photographs instead of ghost-dragging the <img>. */
+.lightbox__figure {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* The photograph's own words, worn on its lower edge like a plate caption.
+   A solid overlay ink, not a gradient: html.a11y-contrast blanks
+   background-image, and a caption that goes unreadable in the contrast mode
+   is worse than none. Hidden while empty so the closed lightbox holds no
+   stray bar. */
+.lightbox__caption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 10px 16px;
+  background-color: rgba(21, 19, 17, 0.78);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .08em;
+  color: var(--sand);
+  text-align: center;
+}
+.lightbox__caption:empty { display: none; }
 .lightbox__img {
   display: block;
   aspect-ratio: var(--ratio, 4 / 5);
@@ -1224,9 +1423,10 @@ summary::-webkit-details-marker { display: none; }
   height: 44px;
   background: transparent;
   border: 1px solid rgba(217, 195, 165, 0.5);
+  transition: border-color var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
   color: var(--sand);
   cursor: pointer;
-  border-radius: 0;
+  border-radius: var(--r-circle);
 }
 .lightbox__nav {
   position: absolute;
@@ -1242,13 +1442,24 @@ summary::-webkit-details-marker { display: none; }
   height: 48px;
   background: transparent;
   border: 1px solid rgba(217, 195, 165, 0.5);
+  transition: border-color var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
   color: var(--sand);
   cursor: pointer;
-  border-radius: 0;
+  border-radius: var(--r-circle);
 }
-/* "1 / 18" renders as "18 / 1" inside the RTL document without this. */
+/* On the ink ground champagne carries (the token comment's 8.19:1 hue family),
+   and the sand glyph brightens to ivory. */
+.lightbox__close:hover,
+.lightbox__step:hover { border-color: var(--champagne); color: var(--ivory); }
+/* Created by main.js only when navigator.share exists — no dead control
+   otherwise. Inline SVG, so the glyph inherits the step buttons' ink and
+   hover; grid centring because the sibling steps centre a text glyph. */
+.lightbox__share { display: grid; place-items: center; }
+/* "1 / 18" renders as "18 / 1" inside the RTL document without this; and
+   nowrap, because a fourth control in the row (the share button) squeezed
+   the span until the count folded into two lines. */
 .lightbox__count { font-family: var(--script); font-size: 16px; color: var(--sand);
-  direction: ltr; unicode-bidi: isolate; }
+  direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
 
 /* --------------------------------------------------------------- film --- */
 
@@ -1259,7 +1470,7 @@ summary::-webkit-details-marker { display: none; }
   padding: var(--section-y) var(--gutter);
   text-align: center;
 }
-.film .h2 { color: #FFFDF9; }
+.film .h2 { color: var(--ivory); }
 .film .chapter__deck { color: rgba(255, 253, 249, 0.72); max-width: 40ch; }
 /* No frame round the still, on a ground this dark it only draws a box. */
 .film__frame {
@@ -1343,9 +1554,11 @@ summary::-webkit-details-marker { display: none; }
   padding: 10px 20px;
   min-height: 24px;
   border: 1px solid rgba(201, 174, 140, 0.55);
+  border-radius: var(--r-pill);
   background: transparent;
   color: var(--sand);
   font: inherit;
+  transition: border-color var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
   font-size: 14px;
   cursor: pointer;
 }
@@ -1385,8 +1598,10 @@ summary::-webkit-details-marker { display: none; }
   letter-spacing: .18em;
   padding: 20px 40px;
   border: 1px solid var(--champagne);
+  border-radius: var(--r-pill);
   color: var(--charcoal);
-  transition: background 320ms, color 320ms;
+  transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease),
+              transform var(--t-btn) var(--ease);
 }
 .gear__cta:hover { background: var(--champagne); color: var(--charcoal); }
 .gear__stage {
@@ -1492,6 +1707,22 @@ summary::-webkit-details-marker { display: none; }
   transform: translateX(0%);
 }
 .quotes__slide { min-width: 100%; padding: 0 clamp(4px, 2vw, 20px); }
+/* The no-JS contract the other two carousels keep and this one broke: the
+   track moves only by JS transform, so with scripting off two of the three
+   testimonials were clipped and unreachable while two arrows, three dots and
+   a pause control — aria-pressed="false", promising an auto-advance that is
+   not running — all rendered dead. Scriptless, the quotes stack and the
+   controls vanish. html.js is set only by index.html's head script, so
+   :not(.js) matches on every other page too — harmless, no .quotes__* markup
+   exists there, but a future rule hung on :not(.js) must check page by page.
+   (The canonical fix is building the controls in JS like the services dots;
+   the CSS gate was chosen as the smaller change — if this gets re-litigated,
+   that is the alternative, at ~50 lines and the Hebrew copy moving into JS.) */
+html:not(.js) .quotes__viewport { overflow: visible; }
+html:not(.js) .quotes__track { display: block; transform: none; }
+html:not(.js) .quotes__slide { min-width: 0; }
+html:not(.js) .quotes__slide + .quotes__slide { margin-block-start: clamp(32px, 4vw, 56px); }
+html:not(.js) .quotes__controls { display: none; }
 /* Display type wants a measure too. Left to run the full 1000px the quote
    set as two very long lines; held to 16em it breaks into three handsome
    ones and reads as a pull quote rather than a paragraph in a big font. */
@@ -1579,8 +1810,8 @@ summary::-webkit-details-marker { display: none; }
   background: transparent;
   cursor: pointer;
   color: var(--charcoal);
-  border-radius: 0;
-  transition: border-color 300ms;
+  border-radius: var(--r-circle);
+  transition: border-color var(--t-btn) var(--ease);
 }
 .quotes__arrow:hover { border-color: var(--charcoal); }
 .quotes__dots { display: flex; gap: 0; align-items: center; }
@@ -1591,10 +1822,10 @@ summary::-webkit-details-marker { display: none; }
   background: transparent;
   color: var(--charcoal);
   cursor: pointer;
-  border-radius: 0;
+  border-radius: var(--r-circle);
   display: grid;
   place-items: center;
-  transition: border-color 300ms;
+  transition: border-color var(--t-btn) var(--ease);
 }
 .quotes__pause:hover { border-color: var(--charcoal); }
 .quotes__pause::before {
@@ -1753,7 +1984,7 @@ summary::-webkit-details-marker { display: none; }
   line-height: 1.08;
   letter-spacing: -0.015em;
   margin: 0 0 var(--sp-5);
-  color: #FFFDF9;
+  color: var(--ivory);
   text-wrap: balance;
 }
 .contact__text {
@@ -1831,6 +2062,9 @@ select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
 /* There was no :focus rule on the controls at all — a mouse click produced no
    border change whatsoever. */
 .field__control:focus { border-color: var(--champagne-ink); background: var(--ivory); }  /* Firefox dims it without opacity:1 */
+/* Inputs stay square while every action is a pill (8.2026): shape is what
+   separates "type here" from "press me", and rounded ends would crowd the
+   LTR-forced tel/date values against the curve. */
 .field__control {
   width: 100%;
   padding: 15px 14px;
@@ -1888,18 +2122,18 @@ textarea.field__control { resize: vertical; }
 
 .form__submit {
   width: 100%;
-  padding: 20px 24px;
+  padding: 20px 32px;   /* rounded ends need inline breathing room */
   font-size: var(--t-micro);
   line-height: 1.4;
   letter-spacing: .16em;
   border: 1px solid var(--champagne);
-  border-radius: 0;
+  border-radius: var(--r-pill);
   cursor: pointer;
   background: var(--champagne);
-  color: #1C1A18;
-  transition: background 300ms;
+  color: var(--charcoal);
+  transition: background var(--t-btn) var(--ease), transform var(--t-btn) var(--ease);
 }
-.form__submit:hover { background: var(--sand); }
+.form__submit:hover { background: var(--sand); transform: translateY(-2px); }
 .form__submit.is-sending { background: var(--sand); cursor: wait; opacity: .75; }
 .form__alt { font-size: var(--t-small); color: var(--mocha); margin: 0; text-align: center; }
 .form__consent { font-size: var(--t-micro); color: var(--mocha); margin: 0 0 var(--sp-1); text-align: center; }
@@ -1940,8 +2174,9 @@ textarea.field__control { resize: vertical; }
   letter-spacing: .16em;
   padding: 18px 34px;
   border: 1px solid var(--champagne);
+  border-radius: var(--r-pill);
   color: var(--charcoal);
-  transition: background 320ms;
+  transition: background var(--t-btn) var(--ease), transform var(--t-btn) var(--ease);
 }
 .form__done-cta:hover { background: var(--champagne); color: var(--charcoal); }
 
@@ -2007,16 +2242,50 @@ textarea.field__control { resize: vertical; }
   gap: 8px;
   padding: 14px 20px;
   background: var(--champagne);
-  color: #1C1A18;
-  border-radius: 0;
+  color: var(--charcoal);
+  border-radius: var(--r-pill);
   box-shadow: 0 6px 24px rgba(28, 26, 24, 0.18);
-  transition: opacity 400ms, transform 400ms;
+  /* Entrance transform sped up to the button clock: kept at 400ms it made the
+     hover lift and the press feel mushy; the 400ms fade still covers the
+     arrival visually. */
+  transition: opacity 400ms var(--ease), transform var(--t-btn) var(--ease),
+              background var(--t-btn) var(--ease), box-shadow var(--t-btn) var(--ease);
   opacity: 0;
   transform: translateY(14px);
   pointer-events: none;
 }
 .wa-float.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+/* After .is-visible in source: both set transform at equal specificity, and
+   the hover must win once the float is on screen. */
+.wa-float:hover {
+  background: var(--sand);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(28, 26, 24, 0.22);
+}
 .wa-float span { font-size: var(--t-micro); letter-spacing: .14em; }
+
+/* Press feedback, one rule for every action button — <a> and <button> alike
+   (:active fires for both). transform is a state, not a transition, so it
+   still reads at 0ms under prefers-reduced-motion and html.a11y-no-motion.
+   After the .wa-float rules in source on purpose: several of these tie on
+   specificity with rules that also set transform, and source order is the
+   tiebreak. */
+.btn:active,
+.skip-link:active,
+.nav__cta:active,
+.nav-mobile__cta:active,
+.burger:active,
+.menu__cta:active,
+.menu__close:active,
+.gear__cta:active,
+.film__back:active,
+.form__submit:active,
+.form__done-cta:active,
+.wa-float:active,
+.quotes__arrow:active,
+.quotes__pause:active,
+.lightbox__close:active,
+.lightbox__step:active { transform: translateY(1px); }
 
 /* --------------------------------------------------------- responsive --- */
 

@@ -114,10 +114,14 @@
     {
       id: 'gallery',
       chip: 'אפשר לראות אלבום שלם של חתונה?',
-      keys: ['אלבום שלם', 'גלריה מלאה', 'לראות עבודות', 'עבודות שלמות', 'תיק עבודות', 'דוגמאות', 'לראות חתונה שלמה', 'פורטפוליו'],
+      keys: ['אלבום שלם', 'גלריה מלאה', 'לראות עבודות', 'עבודות שלמות', 'תיק עבודות', 'דוגמאות', 'לראות חתונה שלמה', 'פורטפוליו', 'לשתף תמונה', 'קישור לתמונה'],
+      // Line 1 is shared with the trust answer the studio gives in person;
+      // line 2 describes the gallery as it is NOW — a swipeable strip on the
+      // phone, filterable, every photo opening full-screen. "לגלול" was the
+      // one verb that no longer described it.
       a: 'בשמחה. בשיחה נשלח לכם 2–3 גלריות מלאות של חתונות דומות לשלכם, מהבוקר ועד הסוף — לא רק את הפריים המושלם.\n' +
-         'בינתיים אפשר לגלול לגלריה כאן באתר.',
-      actions: ['gallery', 'form'],
+         'בינתיים יש כאן באתר גלריה: בטלפון מחליקים בין התמונות, אפשר לסנן לפי סוג אירוע, ולפתוח כל תמונה במסך מלא.',
+      actions: ['gallery:weddings', 'gallery', 'form'],
       next: ['film', 'package', 'availability']
     },
     {
@@ -153,7 +157,7 @@
       chip: 'מה זה צילומי Save the Date?',
       keys: ['save the date', 'זוגיות', 'צילומי זוגיות', 'לפני החתונה', 'לוקיישן', 'סייב דה דייט'],
       a: 'שעה וחצי בלוקיישן שאתם אוהבים, לפני היום הגדול. אפשר להוסיף את זה לחבילת החתונה.',
-      actions: ['form'],
+      actions: ['gallery:std', 'form'],
       next: ['package', 'price', 'gallery']
     },
     {
@@ -161,6 +165,7 @@
       chip: 'אתם מצלמים גם את ההכנות?',
       keys: ['הכנות', 'בבוקר', 'הבוקר', 'איפור', 'שיער', 'השמלה', 'מלתחה', 'לפני החופה'],
       a: 'כן — איפור, שיער, השמלה על הקולב, הרגעים השקטים של הבוקר. בחתונה מלאה אנחנו איתכם מההכנות ועד השיר האחרון.',
+      actions: ['gallery:prep', 'form'],
       next: ['package', 'photographers', 'process']
     },
     {
@@ -168,7 +173,7 @@
       chip: 'ואירועים שהם לא חתונה?',
       keys: ['חינה', 'אירוסין', 'בר מצווה', 'בת מצווה', 'מצווה', 'יום הולדת', 'אירוע אחר', 'ברית מילה', 'מסיבה', 'שהם לא חתונה', 'מצלמים אירועים'],
       a: 'כן — חינה, אירוסין, בר ובת מצווה וימי הולדת. אותה עין, אותו צוות.',
-      actions: ['form'],
+      actions: ['gallery:events', 'form'],
       next: ['package', 'area', 'price']
     },
     {
@@ -200,7 +205,21 @@
       keys: ['ציוד', 'מצלמה', 'עדשות', 'עדשה', 'פלאש', 'תאורה', 'פול פריים', 'מצלמות', 'עם מה אתם מצלמים'],
       a: 'גוף פול־פריים, עדשות פריים מהירות, ותאורה שמכבדת את האור שיש בחדר — בלי פלאשים שמסמאים את האורחים.\n' +
          'יש באתר דגם תלת־מימד של המצלמה, אפשר לסובב אותו.',
-      next: ['photographers', 'package']
+      next: ['light', 'photographers', 'package']
+    },
+    {
+      id: 'light',
+      chip: 'האולם שלנו חשוך — איך זה מצטלם?',
+      // The eighth FAQ answer, which had no way in: "האולם שלנו חשוך"
+      // normalises to nothing in any keys list, so the site's own question
+      // came back as "אין לי תשובה מהאתר". The answer is copied out of
+      // .faq__a — one-way, nothing enters index.html, the byte-lock stands.
+      // No bare 'אור' key: it is a substring of 'תאורה' and would fight the
+      // gear entry at 3 characters against 5; every key here either cannot
+      // appear in a gear question or outranks the gear key it contains.
+      keys: ['חשוך', 'חושך', 'אולם חשוך', 'איך זה מצטלם', 'תאורה באולם', 'אור נמוך', 'גן אירועים חשוך', 'בערב'],
+      a: 'אנחנו מצלמים על גוף פול־פריים ועדשות פריים מהירות, כאלה שאוספות הרבה אור, ומשלימים בתאורה שמכבדת את האור שכבר יש בחדר. בלי פלאשים שמסמאים את האורחים.',
+      next: ['gear', 'photographers', 'package']
     },
     {
       id: 'album',
@@ -473,6 +492,35 @@
     document.body.appendChild(panel);
   }
 
+  /** Same target, two pages. This file loads on index.html, cost.html and
+   *  camera-3d.html, and the sections the actions point at exist only on the
+   *  first (cost.html at least has its own form). The old fallback wrote a
+   *  fragment that resolves to nothing — the panel closed, the page did not
+   *  move: the visible-but-dead control cost.html's glimpse comment refuses
+   *  to ship. location.search rides along on the navigation: leadSource()
+   *  reads utm_* off the address at submit and refuses a same-origin
+   *  referrer, so a bare 'index.html#contact' would silently lose the
+   *  campaign tag that paid for the visit. */
+  function goTo(selector, fallbackHash) {
+    var target = document.querySelector(selector);
+    setOpen(false);
+    if (target) {
+      target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+      return target;
+    }
+    window.location.href = 'index.html' + window.location.search + fallbackHash;
+    return null;
+  }
+
+  // Same four names cost.html's glimpse links use, so a visitor sent to
+  // "לגלריית ההכנות" from either surface arrives at the same place.
+  var GALLERY_LABELS = {
+    weddings: 'לגלריית החתונות',
+    prep: 'לגלריית ההכנות',
+    events: 'לגלריית האירועים',
+    std: 'לגלריית ה-Save the Date'
+  };
+
   /** The escape hatches. Every one of them ends at a person. */
   function makeAction(kind) {
     var node;
@@ -480,15 +528,9 @@
       node = el('button', 'am-action', 'להשארת פרטים');
       node.type = 'button';
       node.addEventListener('click', function () {
-        var target = document.querySelector(CONFIG.formHash);
-        setOpen(false);
-        if (target) {
-          target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
-          var field = document.querySelector('[data-field="name"]');
-          if (field) setTimeout(function () { field.focus(); }, reducedMotion ? 0 : 600);
-        } else {
-          window.location.hash = CONFIG.formHash;
-        }
+        if (!goTo(CONFIG.formHash, CONFIG.formHash)) return;
+        var field = document.querySelector('[data-field="name"]');
+        if (field) setTimeout(function () { field.focus(); }, reducedMotion ? 0 : 600);
       });
       return node;
     }
@@ -504,13 +546,35 @@
       node.href = 'tel:' + CONFIG.tel;
       return node;
     }
+    if (kind.indexOf('gallery:') === 0) {
+      var cat = kind.slice(8);
+      node = el('button', 'am-action', GALLERY_LABELS[cat] || 'לגלריה');
+      node.type = 'button';
+      node.addEventListener('click', function () {
+        // #gallery-<cat> is main.js's territory: it applies the filter on
+        // hashchange and on load, and the fragment is not an element id, so
+        // nothing scrolls on its own — hence the explicit scrollIntoView.
+        // Assigning .hash keeps pathname AND search, the utm rule the chips
+        // follow. Off the homepage this becomes a real navigation and
+        // main.js's load path reads the same fragment.
+        var hash = '#gallery-' + cat;
+        var section = document.querySelector('#gallery');
+        setOpen(false);
+        if (!section) {
+          window.location.href = 'index.html' + window.location.search + hash;
+          return;
+        }
+        if (window.location.hash !== hash) window.location.hash = hash;
+        section.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+      });
+      return node;
+    }
     if (kind === 'gallery' || kind === 'film') {
       node = el('button', 'am-action', kind === 'gallery' ? 'לגלריה' : 'לסרט');
       node.type = 'button';
       node.addEventListener('click', function () {
-        var target = document.querySelector(kind === 'gallery' ? '#gallery' : '[data-section="film"]');
-        setOpen(false);
-        if (target) target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+        if (kind === 'gallery') goTo('#gallery', '#gallery');
+        else goTo('[data-section="film"]', '#film');
       });
       return node;
     }

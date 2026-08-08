@@ -188,6 +188,50 @@ await page.waitForTimeout(200);
      (await page.locator('[data-lightbox-label]').textContent()) === '', '""', '""');
 }
 
+// -------------------------------------------- the lightbox as a photo viewer --
+// The arrows work, but on a phone nobody aims 48px buttons at the bottom of a
+// photograph — they swipe it. The figure answers pointer events, so a mouse
+// drag exercises the same handlers a thumb does. Sign convention is the quotes
+// viewport's: dragging left in RTL steps back, and a firm downward drag
+// dismisses, the way every phone photo viewer does.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  await page.locator('.masonry__btn').first().focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(400);
+
+  const cap = await page.evaluate(() => ({
+    text: document.querySelector('[data-lightbox-caption]')?.textContent,
+    alt: document.querySelector('.lightbox__img')?.alt,
+  }));
+  ok('the caption wears the photograph\'s own words',
+     !!cap.text && cap.text === cap.alt, cap, 'caption === alt, non-empty');
+
+  const fig = await page.locator('[data-lightbox-figure]').boundingBox();
+  const cx = fig.x + fig.width / 2, cy = fig.y + fig.height / 2;
+  const before = await page.locator('[data-lightbox-label]').textContent();
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx - 120, cy + 10, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  const after = await page.locator('[data-lightbox-label]').textContent();
+  ok('a sideways swipe steps to another photograph',
+     before && after && before !== after,
+     { before: before?.slice(0, 30), after: after?.slice(0, 30) }, 'two different labels');
+
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 6, cy + 160, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  ok('a downward swipe dismisses the lightbox',
+     await page.locator('.lightbox').isHidden(), true, true);
+  ok('the caption is cleared with it',
+     (await page.locator('[data-lightbox-caption]').textContent()) === '', '""', '""');
+}
+
 // ------------------------------------------------- the gallery live region --
 {
   await page.goto(BASE + '/', { waitUntil: 'load' });
@@ -201,6 +245,506 @@ await page.waitForTimeout(200);
   const shown = await page.locator('.masonry__item:visible').count();
   ok('filtering announces how many survived',
      said.includes(String(shown)) && said.includes(String(total)), said, `${shown} of ${total}`);
+}
+
+// ------------------------------------------------ the gallery strip, phone --
+// Below 560px the wall becomes a scroll-snap strip. Three things to hold: it
+// actually scrolls (a wall that kept wrapping would stack eighteen full-width
+// frames into eleven screens of page), the counter main.js builds tells the
+// truth in both numerator and denominator, and a filter scrolls the strip
+// home — without it the visitor is left mid-strip staring at frame 7 of a set
+// that now has 3. The counter is compared by textContent, never visual order:
+// this page is RTL and "1 / 18" renders through bidi.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  const g = page.locator('[data-masonry]');
+  ok('at 390px the gallery is a strip, not a wall',
+     await g.evaluate((el) => el.scrollWidth > el.clientWidth + 1), true, 'scrollable');
+  const total = await page.locator('.masonry__item').count();
+  ok('the strip counter starts at the first frame',
+     (await page.locator('.gallery__count').textContent()) === `1 / ${total}`,
+     await page.locator('.gallery__count').textContent(), `1 / ${total}`);
+
+  await page.locator('.chip[data-filter="weddings"]').click();
+  await page.waitForTimeout(400);
+  const kept = await page.locator('.masonry__item:not([hidden])').count();
+  ok('filtering rewrites the counter denominator',
+     (await page.locator('.gallery__count').textContent()) === `1 / ${kept}`,
+     await page.locator('.gallery__count').textContent(), `1 / ${kept}`);
+  // Home in RTL is the right edge: the first surviving frame's right edge
+  // sits at the container's right edge minus the scroll padding.
+  const home = await page.evaluate(() => {
+    const g = document.querySelector('[data-masonry]');
+    const first = g.querySelector('.masonry__item:not([hidden])');
+    return Math.abs(g.getBoundingClientRect().right - first.getBoundingClientRect().right);
+  });
+  ok('filtering scrolls the strip home', home <= 40, `${Math.round(home)}px from home`, '<=40px');
+  await page.locator('.chip[data-filter="all"]').click();
+  await page.waitForTimeout(250);
+}
+
+// ------------------------------------------- gallery deep links (#gallery-…) --
+// A filtered gallery is a state worth sending: /#gallery-prep must land
+// filtered and scrolled, a chip press must leave a copyable address behind,
+// and clearing back to "הכל" must not eat a utm_* tag — the form's `source`
+// field reads it at submit.
+{
+  await page.goto(BASE + '/?utm_source=verify#gallery-prep', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  const prep = await page.locator('.masonry__item[data-cat="prep"]').count();
+  const shown = await page.locator('.masonry__item:not([hidden])').count();
+  ok('#gallery-prep lands filtered',
+     (await page.locator('.chip[data-filter="prep"]').getAttribute('aria-pressed')) === 'true'
+       && shown === prep,
+     { pressed: true, shown }, { pressed: true, shown: prep });
+  const galleryTop = await page.evaluate(
+    () => document.querySelector('#gallery').getBoundingClientRect().top);
+  ok('#gallery-prep lands scrolled to the gallery',
+     galleryTop > -300 && galleryTop < 500, `${Math.round(galleryTop)}px`, 'near viewport top');
+
+  await page.locator('.chip[data-filter="weddings"]').click();
+  await page.waitForTimeout(200);
+  ok('a chip press leaves a copyable address',
+     new URL(page.url()).hash === '#gallery-weddings', new URL(page.url()).hash, '#gallery-weddings');
+
+  await page.evaluate(() => { location.hash = '#gallery-events'; });
+  await page.waitForTimeout(300);
+  ok('hashchange re-filters a live page',
+     (await page.locator('.chip[data-filter="events"]').getAttribute('aria-pressed')) === 'true',
+     'events pressed', 'events pressed');
+
+  await page.locator('.chip[data-filter="all"]').click();
+  await page.waitForTimeout(200);
+  const u = new URL(page.url());
+  ok('"הכל" clears the fragment but keeps the campaign tag',
+     u.hash === '' && u.search === '?utm_source=verify', u.hash + ' ' + u.search, ' ?utm_source=verify');
+}
+
+// --------------------------------------------- photo deep links (#photo-…) --
+// One level deeper than the category links: the address mirrors the OPEN
+// photograph, numbered in the full set so the link survives the sender's
+// filter. To hold: a photo link opens the lightbox on that photo, stepping
+// keeps the address current, closing hands it back to the filter (or clears
+// it), and no share button exists where navigator.share does not.
+{
+  await page.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await page.waitForTimeout(900);
+  const total = await page.locator('.masonry__item').count();
+  ok('#photo-9 opens the lightbox on the ninth photograph',
+     await page.evaluate(() => !document.querySelector('[data-lightbox]').hidden)
+       && (await page.locator('[data-lightbox-count]').textContent()) === `9 / ${total}`,
+     await page.locator('[data-lightbox-count]').textContent(), `9 / ${total}`);
+  await page.locator('[data-lightbox-next]').click();
+  await page.waitForTimeout(400);
+  ok('stepping keeps the address on the open photo',
+     new URL(page.url()).hash === '#photo-10', new URL(page.url()).hash, '#photo-10');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  ok('closing hands the address back',
+     new URL(page.url()).hash === ''
+       && await page.evaluate(() => document.querySelector('[data-lightbox]').hidden),
+     new URL(page.url()).hash || '(clear)', '(clear)');
+
+  await page.locator('.chip[data-filter="prep"]').click();
+  await page.waitForTimeout(400);
+  await page.locator('.masonry__item:not([hidden]) .masonry__btn').first().click();
+  await page.waitForTimeout(600);
+  ok('a filtered open still numbers photos in the full set',
+     new URL(page.url()).hash === '#photo-9', new URL(page.url()).hash, '#photo-9');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  ok('closing under a filter restores the filter link',
+     new URL(page.url()).hash === '#gallery-prep', new URL(page.url()).hash, '#gallery-prep');
+  ok('no share button where navigator.share does not exist',
+     (await page.locator('.lightbox__share').count()) === 0,
+     await page.locator('.lightbox__share').count(), 0);
+}
+
+// ------------------------------------------- what the share button hands out --
+// A shared photo goes to a DIFFERENT person. The sender's utm_* tags must not
+// ride along and become the recipient's `source` — that records a
+// word-of-mouth lead as a paid conversion. The stripped link must still open
+// the same photograph, or the cleanup broke the feature it cleans.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.addInitScript(() => {
+    navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
+  });
+  await np.goto(BASE + '/?utm_source=instagram&utm_campaign=aug#photo-9', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.lightbox__share').click();
+  await np.waitForTimeout(200);
+  const shared = await np.evaluate(() => window.__shared && window.__shared.url);
+  const su = new URL(shared);
+  ok('a shared photo link carries no campaign tag',
+     su.search === '' && su.hash === '#photo-9', `${su.search || '(clean)'} ${su.hash}`, '(clean) #photo-9');
+  await np.goto(shared, { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  const total = await np.locator('.masonry__item').count();
+  ok('the stripped link still opens the same photograph',
+     (await np.locator('[data-lightbox-count]').textContent()) === `9 / ${total}`,
+     await np.locator('[data-lightbox-count]').textContent(), `9 / ${total}`);
+  await ctx.close();
+}
+
+// ----------------------------- the hint survives a #photo-<n> arrival --
+// The lightbox is an opaque fixed overlay. The strip used to intersect UNDER
+// it on the #photo-<n> load path, play its one-shot hint to nobody, and
+// disconnect — burned for precisely the visitor a shared link brings. Now:
+// no hint while the photo is open, and the hint plays when it closes.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.addInitScript(() => {
+    window.__hinted = false;
+    // Observe `document`, not documentElement: init scripts run before <html>
+    // exists, and observing null throws — leaving __hinted frozen false and
+    // this test failing against working code. That happened.
+    new MutationObserver(() => {
+      const g = document.querySelector('[data-masonry]');
+      if (g && g.classList.contains('is-hinting')) window.__hinted = true;
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
+  await np.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await np.waitForTimeout(1600);
+  ok('no hint plays behind the open lightbox',
+     await np.evaluate(() => !window.__hinted
+       && !document.querySelector('[data-lightbox]').hidden), true, true);
+  await np.keyboard.press('Escape');
+  const played = await np.waitForFunction(() => window.__hinted, null, { timeout: 3000 })
+    .then(() => true).catch(() => false);
+  ok('closing the photo plays the hint the visitor could not have seen',
+     played, played, true);
+  await ctx.close();
+}
+
+// --------------------------- the WhatsApp float meets the deep-link visitor --
+// Measured before the fix: #gallery-prep and #photo-9 land at 29.8% of the
+// page — fifteen pixels under WA_THRESHOLD — with the only always-on CTA
+// switched off; the #photo-9 visitor cannot even scroll to earn it while the
+// lightbox holds body overflow. A deep-linked visitor is vouched for by the
+// link itself. The form-occlusion rule must still win over the new flag.
+{
+  const waVisible = () =>
+    page.evaluate(() => document.querySelector('[data-wa]').classList.contains('is-visible'));
+  // Through another page first: a hash-only goto is a same-document
+  // navigation, which never runs the load path this block is testing.
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.goto(BASE + '/#gallery-prep', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  ok('the float greets a #gallery-<cat> arrival without a scroll',
+     await waVisible(), await waVisible(), true);
+  await page.evaluate(() => document.querySelector('#contact').scrollIntoView());
+  await page.waitForTimeout(500);
+  ok('the form still banishes the float, deep link or not',
+     !(await waVisible()), await waVisible(), false);
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(400);
+  ok('the float greets a #photo-<n> arrival once the photo closes',
+     await waVisible(), await waVisible(), true);
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('a plain arrival still earns the float by scrolling',
+     !(await waVisible()), await waVisible(), false);
+}
+
+// ----------------------------- the glimpse gets captions, dots, and honesty --
+// The six category links on the money page had a hover scale for an
+// affordance — which does not exist on a touch screen — and no position
+// indicator, on the one strip of three that lacked one.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const caps = await p.evaluate(() => [...document.querySelectorAll('.glimpse__link')].map((a) => {
+    const cap = a.querySelector('.glimpse__cap');
+    if (!cap) return { ok: false, why: 'no cap' };
+    const r = cap.getBoundingClientRect();
+    // The visible word (arrow stripped) must live inside the accessible name
+    // — WCAG 2.5.3, and the assertion that stops a future copy edit from
+    // silently breaking voice control.
+    const word = [...cap.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('').trim();
+    return { ok: r.width > 0 && r.height > 0 && word.length > 0 && (a.getAttribute('aria-label') || '').includes(word), word };
+  }));
+  ok('every glimpse frame wears its category, and the word is in the name',
+     caps.length === 6 && caps.every((c) => c.ok), JSON.stringify(caps.filter((c) => !c.ok)), '[]');
+
+  const dots = p.locator('.glimpse__dot');
+  ok('the glimpse strip finally says "there are six"',
+     (await dots.count()) === 6
+       && (await p.locator('.glimpse__dot[aria-current="true"]').count()) === 1,
+     `${await dots.count()} dots`, '6 dots, one current');
+  await dots.nth(4).click();
+  await p.waitForTimeout(600);
+  ok('a dot is a control: the fifth dot shows the fifth frame',
+     await p.evaluate(() => {
+       const dots = [...document.querySelectorAll('.glimpse__dot')];
+       return dots.findIndex((d) => d.getAttribute('aria-current') === 'true') === 4;
+     }), true, true);
+  await p.setViewportSize({ width: 1440, height: 900 });
+  await p.waitForTimeout(400);
+  ok('no indicator paints over the desktop grid',
+     await p.evaluate(() => getComputedStyle(document.querySelector('.glimpse__dots')).display === 'none'),
+     true, true);
+  await p.close();
+}
+
+// --------------------------------------- the quotes keep the no-JS contract --
+// The other two carousels keep it: pure CSS scroll-snap, JS-built controls.
+// The quotes track moves only by JS transform — with scripting off, two of
+// three testimonials were clipped and unreachable while arrows, dots and a
+// pause control rendered dead. Scriptless: stacked quotes, no controls.
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  const q = await np.evaluate(() => {
+    const slides = [...document.querySelectorAll('.quotes__slide')];
+    const controls = document.querySelector('.quotes__controls');
+    return {
+      readable: slides.length && slides.every((s) => {
+        const r = s.getBoundingClientRect();
+        return r.height > 0 && r.left >= -1 && r.right <= document.documentElement.scrollWidth + 1;
+      }),
+      slides: slides.length,
+      controlsGone: !controls || getComputedStyle(controls).display === 'none',
+    };
+  });
+  ok('with JS off, every testimonial is on the page and readable',
+     q.readable && q.slides === 3, JSON.stringify(q), '3 stacked slides');
+  ok('with JS off, no quote control renders dead', q.controlsGone, q.controlsGone, true);
+  await ctx.close();
+}
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  ok('with JS on, the quotes carousel is unchanged',
+     await page.evaluate(() => {
+       const controls = document.querySelector('.quotes__controls');
+       const track = document.querySelector('.quotes__track');
+       return getComputedStyle(controls).display !== 'none'
+         && getComputedStyle(track).display === 'flex';
+     }), true, true);
+}
+
+// ------------------------------------- campaign tags across the page hop --
+// leadSource() reads utm_* off location.search and refuses a same-origin
+// referrer, so the tag lives only in the address bar. In-page it was already
+// guarded; the cross-page hop — cost.html's glimpse into the homepage form,
+// the highest-intent path on the site — erased it. carryCampaign() rewrites
+// same-origin cross-page links; everything else must stay untouched.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/cost.html?utm_source=instagram&utm_campaign=aug', { waitUntil: 'load' });
+  await np.waitForTimeout(600);
+  const glimpseHref = await np.locator('.glimpse__link').first().evaluate((a) => a.href);
+  const gu = new URL(glimpseHref);
+  ok('a glimpse link carries the campaign, query before fragment',
+     gu.searchParams.get('utm_source') === 'instagram'
+       && gu.searchParams.get('utm_campaign') === 'aug'
+       && gu.hash === '#gallery-weddings',
+     `${gu.search} ${gu.hash}`, 'utm_source+utm_campaign #gallery-weddings');
+  const untouched = await np.evaluate(() => {
+    const skip = document.querySelector('.skip-link');
+    const wa = document.querySelector('a[href^="https://wa.me/"]');
+    const rf = document.querySelector('a[href*="regaflash.com"]');
+    return {
+      skip: skip ? skip.getAttribute('href') : '(none)',
+      waClean: !wa || !wa.href.includes('utm_'),
+      rfClean: !rf || !rf.href.includes('utm_'),
+    };
+  });
+  ok('the skip link and external links carry no inherited tag',
+     untouched.skip === '#main' && untouched.waClean && untouched.rfClean,
+     JSON.stringify(untouched), 'skip #main, wa/regaflash clean');
+  await np.locator('.glimpse__link').first().click();
+  await np.waitForLoadState('load');
+  await np.waitForTimeout(700);
+  const landed = new URL(np.url());
+  ok('the hop lands filtered with the campaign intact',
+     landed.searchParams.get('utm_source') === 'instagram'
+       && landed.hash === '#gallery-weddings'
+       && (await np.locator('.chip[data-filter="weddings"]').getAttribute('aria-pressed')) === 'true',
+     `${landed.search} ${landed.hash}`, 'utm intact, weddings filtered');
+  await ctx.close();
+}
+{
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('with no campaign in the address, every href is byte-identical',
+     await page.evaluate(() => [...document.querySelectorAll('a[href]')]
+       .every((a) => !a.href.includes('utm_'))), true, true);
+}
+
+// ------------------------------------------- the lightbox backdrop closes --
+// The desktop counterpart of the phone's downward swipe. The trap: a click is
+// dispatched on the common ancestor of pointerdown and pointerup targets, so
+// a swipe that lifts over the surround fires click with target === lightbox —
+// it must STEP, not dismiss. Only a press born on the backdrop closes.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  await p.locator('.masonry__btn').first().click();
+  await p.waitForTimeout(600);
+  await p.mouse.click(20, 400);
+  await p.waitForTimeout(400);
+  ok('a backdrop click closes the lightbox and clears the address',
+     await p.evaluate(() => document.querySelector('[data-lightbox]').hidden)
+       && new URL(p.url()).hash === '',
+     new URL(p.url()).hash || '(clear)', '(clear)');
+  await p.locator('.masonry__btn').first().click();
+  await p.waitForTimeout(600);
+  const fig = await p.locator('[data-lightbox-figure]').boundingBox();
+  await p.mouse.click(fig.x + fig.width / 2, fig.y + fig.height / 2);
+  await p.waitForTimeout(300);
+  ok('a click on the photograph itself does not close',
+     await p.evaluate(() => !document.querySelector('[data-lightbox]').hidden), true, true);
+  // A mouse drag has no implicit pointer capture (touch does), so the
+  // overshooting drag's pointerup lands on the backdrop and no step fires —
+  // the assertion that matters on both input kinds is that the viewer
+  // SURVIVES: pointerdown was born on the figure, so the click the drag
+  // synthesises on the lightbox must not dismiss it.
+  await p.mouse.move(fig.x + fig.width / 2, fig.y + fig.height / 2);
+  await p.mouse.down();
+  await p.mouse.move(20, fig.y + fig.height / 2, { steps: 8 });
+  await p.mouse.up();
+  await p.waitForTimeout(500);
+  ok('a drag that lifts over the backdrop never dismisses the photo',
+     await p.evaluate(() => !document.querySelector('[data-lightbox]').hidden), true, true);
+  await p.close();
+}
+
+// ----------------------------------------------- the chips learn their size --
+// "חתונות · 8" — the count each chip decides, on the chip. Derived from
+// data-cat on BOTH sides of this assertion, so a future gallery edit cannot
+// leave a chip lying; aria-hidden so the accessible name stays the bare word.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(700);
+  const chips = await page.evaluate(() => [...document.querySelectorAll('.chip')].map((c) => {
+    const cat = c.dataset.filter;
+    const want = cat === 'all'
+      ? document.querySelectorAll('.masonry__item').length
+      : document.querySelectorAll(`.masonry__item[data-cat="${cat}"]`).length;
+    const mark = c.querySelector('.chip__n');
+    return {
+      cat,
+      counted: mark ? mark.textContent.trim() === `· ${want}` : false,
+      hidden: mark ? mark.getAttribute('aria-hidden') === 'true' : false,
+    };
+  }));
+  ok('every chip tells its true size, out loud to nobody',
+     chips.every((c) => c.counted && c.hidden),
+     JSON.stringify(chips.filter((c) => !c.counted || !c.hidden)), '[]');
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.waitForTimeout(400);
+  ok('the counted chips still fit a 360px shell',
+     await page.evaluate(() => {
+       const f = document.querySelector('.filters');
+       return f.scrollWidth <= f.clientWidth + 1;
+     }), true, true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
+}
+
+// ------------------------------- the assistant's actions, off the homepage --
+// assistant.js loads on three pages; the sections its actions point at exist
+// on one. The old fallback wrote a fragment that resolves to nothing — panel
+// closed, page unmoved: the visible-but-dead control this repo refuses to
+// ship. Now the action navigates to index.html, carrying location.search —
+// leadSource() reads utm_* at submit and refuses a same-origin referrer, so
+// dropping the query here would erase the campaign that paid for the visit.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/camera-3d.html?utm_source=check', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-action', { hasText: 'להשארת פרטים' }).first().click();
+  await np.waitForLoadState('load');
+  await np.waitForTimeout(400);
+  const u = new URL(np.url());
+  ok('the assistant form action leaves camera-3d with the campaign tag intact',
+     u.pathname === '/index.html' && u.search === '?utm_source=check' && u.hash === '#contact',
+     `${u.pathname}${u.search}${u.hash}`, '/index.html?utm_source=check#contact');
+  await ctx.close();
+}
+
+// ----------------------------------- the assistant hands out filtered galleries --
+// Three KB ids are the filter categories by name; the chips, the address bar
+// and cost.html's glimpse all speak #gallery-<cat> — the assistant was the
+// one surface that could not. And the eighth FAQ answer ("האולם שלנו חשוך")
+// matched no keys at all: the site's own question got "אין לי תשובה מהאתר".
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('אתם מצלמים גם את ההכנות?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(900);
+  const act = np.locator('.am-action', { hasText: 'לגלריית ההכנות' });
+  ok('the prep answer offers the prep gallery', (await act.count()) > 0, await act.count(), '>0');
+  await act.first().click();
+  await np.waitForTimeout(600);
+  ok('the assistant gallery action filters and signs the address',
+     new URL(np.url()).hash === '#gallery-prep'
+       && (await np.locator('.chip[data-filter="prep"]').getAttribute('aria-pressed')) === 'true',
+     new URL(np.url()).hash, '#gallery-prep');
+
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('האולם שלנו חשוך — איך זה מצטלם?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(900);
+  const bubbles = await np.locator('.am-msg--bot .am-bubble').allTextContents();
+  const last = bubbles[bubbles.length - 1] || '';
+  ok('the dark-hall FAQ finally has a route into the assistant',
+     last.includes('פול־פריים') && !last.includes('אין לי תשובה'),
+     last.slice(0, 40) + '…', 'the FAQ answer, not the fallback');
+  await ctx.close();
+}
+
+// ----------------------------------------------------- the swipe hint, phone --
+// The peek shows a sliver of the next frame; only motion proves the strip
+// moves. Once, when the strip first fills half the viewport untouched, the
+// frames lean and settle (.is-hinting). Two sides to hold: it fires — and
+// cleans up — for a visitor with no motion preference, and it never lands at
+// all under prefers-reduced-motion (the main `page` context emulates reduce).
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  const appeared = await np.waitForFunction(
+    () => document.querySelector('[data-masonry]').classList.contains('is-hinting'),
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  ok('the strip hints once when it first arrives', appeared, appeared, true);
+  const cleaned = await np.waitForFunction(
+    () => !document.querySelector('[data-masonry]').classList.contains('is-hinting'),
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  ok('the hint ends and cleans up after itself', cleaned, cleaned, true);
+  await ctx.close();
+}
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  await page.waitForTimeout(1400);
+  ok('reduced motion suppresses the hint entirely',
+     await page.evaluate(
+       () => !document.querySelector('[data-masonry]').classList.contains('is-hinting')),
+     true, true);
 }
 
 // ------------------------------------------------- the "no date yet" hatch --
@@ -275,6 +819,28 @@ await page.waitForTimeout(200);
      strip.swipeable, strip.swipeable, 'scrollable');
   ok('with JS off, no carousel dots are left undriven',
      strip.dots === 0, strip.dots, 0);
+
+  // The gallery strip lives by the same two rules: CSS scroll-snap, so it
+  // still swipes with scripting off, and a JS-built indicator, so no "3 / 18"
+  // counter exists that nothing is driving.
+  const gal = await np.evaluate(() => {
+    const g = document.querySelector('[data-masonry]');
+    return {
+      total: g.children.length,
+      rendered: [...g.children].filter((c) => {
+        const r = c.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      }).length,
+      swipeable: g.scrollWidth > g.clientWidth + 1,
+      counters: document.querySelectorAll('.gallery__count').length,
+    };
+  });
+  ok('with JS off, every gallery frame still renders',
+     gal.rendered === gal.total && gal.total === 18, `${gal.rendered}/${gal.total}`, '18/18');
+  ok('with JS off, the gallery strip still swipes',
+     gal.swipeable, gal.swipeable, 'scrollable');
+  ok('with JS off, no gallery counter is left undriven',
+     gal.counters === 0, gal.counters, 0);
   await ctx.close();
 }
 
@@ -467,7 +1033,105 @@ await page.waitForTimeout(200);
     .filter((x) => x !== null));
   ok('every service plate has its photograph before it is swiped to',
      blank.length === 0, blank.length ? `blank: plate ${blank.join(', ')}` : 'all loaded', 'none blank');
+
+  // The gallery strip has the same sideways-lazy defect and the same fix, at
+  // eighteen frames instead of five. A waitForFunction rather than a fixed
+  // sleep: eighteen images on this link legitimately take a few seconds, and
+  // a timer tuned to today's weights is exactly the flake this file warns
+  // about.
+  await p.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  const galleryLoaded = await p
+    .waitForFunction(() => [...document.querySelectorAll('.masonry__photo')]
+      .every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 10000 })
+    .then(() => true, () => false);
+  ok('every gallery frame has its photograph before it is swiped to',
+     galleryLoaded, galleryLoaded ? 'all 18 loaded' : 'some frames still blank', 'none blank');
   await ctx.close();
+}
+
+// -------------------------------------------- the carousel stays on the phone --
+// The strip exists because 150px rows wasted the gallery on a phone; the wall
+// exists because a 1440px screen shows twelve frames at once and a carousel
+// would show one. The media query is the only thing keeping them apart, so a
+// desktop viewport asserts the wall did not quietly become a strip and the
+// phone counter did not leak onto it.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const d = await p.evaluate(() => {
+    const g = document.querySelector('[data-masonry]');
+    const c = document.querySelector('.gallery__count');
+    const r = c && c.getBoundingClientRect();
+    return {
+      scrolls: g.scrollWidth > g.clientWidth + 1,
+      counterBox: !!(r && r.width > 0 && r.height > 0),
+    };
+  });
+  ok('at 1440px the gallery is still a wall', d.scrolls === false,
+     d.scrolls ? 'the wall scrolls sideways' : 'wall', 'wall');
+  ok('the strip counter does not appear on the wall', d.counterBox === false,
+     d.counterBox ? 'counter has a box at 1440px' : 'hidden', 'hidden');
+  await p.close();
+}
+
+// ------------------------------------------- the buttons keep their pills --
+// The 8.2026 refresh made every action button a pill and every square icon
+// button a circle (owner's call). A future "clean-up" flattening radii is the
+// exact regression this guards: sampled on the shared 390px page, one probe
+// per shape family.
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  const flat = await page.evaluate(() =>
+    ['.btn', '.form__submit', '.wa-float', '.burger', '.lightbox__close']
+      .map((s) => {
+        const el = document.querySelector(s);
+        if (!el) return `${s} missing`;
+        const r = parseFloat(getComputedStyle(el).borderRadius);
+        return r >= 20 ? null : `${s} radius=${r}px`;
+      })
+      .filter(Boolean));
+  ok('action buttons are pills, icon buttons are circles',
+     flat.length === 0, flat.length ? flat : 'all rounded', 'no flattened control');
+}
+
+// ----------------------------------------- the cost page shows the work --
+// The page that answers "how much" argued the studio's case in words while
+// showing none of the photographs. Six frames now sit beside the "ask any
+// studio for a full album" paragraph, as plain links to the gallery — the
+// lightbox lives on the homepage, so a button here would be the dead-control
+// trap. A phone gets the same scroll-snap strip as the gallery; a desktop
+// gets a grid inside the prose measure.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const m = await p.evaluate(() => {
+    const g = document.querySelector('.glimpse');
+    const links = [...g.querySelectorAll('.glimpse__link')];
+    return {
+      frames: links.length,
+      rendered: links.filter((a) => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0; }).length,
+      swipeable: g.scrollWidth > g.clientWidth + 1,
+      // Each frame targets its own category's filtered view, not frame one
+      // of eighteen — the fragments main.js resolves on the homepage.
+      allToGallery: links.every((a) =>
+        /^index\.html#gallery-(weddings|std|prep|events)$/.test(a.getAttribute('href'))),
+    };
+  });
+  ok('the cost glimpse renders all six frames', m.frames === 6 && m.rendered === 6,
+     `${m.rendered}/${m.frames}`, '6/6');
+  ok('at 390px the cost glimpse is a strip', m.swipeable, m.swipeable, 'scrollable');
+  ok('every glimpse frame leads to its own gallery category', m.allToGallery, m.allToGallery, true);
+  await p.setViewportSize({ width: 1440, height: 900 });
+  await p.waitForTimeout(400);
+  ok('at 1440px the cost glimpse is a grid, not a strip',
+     await p.evaluate(() => {
+       const g = document.querySelector('.glimpse');
+       return g.scrollWidth <= g.clientWidth + 1;
+     }), true, 'not scrollable');
+  await p.close();
 }
 
 // ------------------------------------- the floats vs. the form they feed --

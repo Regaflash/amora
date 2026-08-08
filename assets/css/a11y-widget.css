@@ -75,6 +75,9 @@
   transition: transform 200ms var(--ease, ease), background-color 200ms var(--ease, ease);
 }
 .a11y-fab:hover { background: #D9C3A5; transform: translateY(-2px); }
+/* After :hover in source: equal specificity, and the press must win. Reads at
+   0ms too — transform is a state, not a transition. */
+.a11y-fab:active { transform: translateY(1px); }
 .a11y-fab:focus-visible { outline: 3px solid var(--a11y-on-accent); outline-offset: 3px; }
 .a11y-fab svg { width: 28px; height: 28px; display: block; }
 
@@ -318,6 +321,20 @@ html.a11y-contrast body button,
 html.a11y-contrast body input,
 html.a11y-contrast body select,
 html.a11y-contrast body textarea { border: 1px solid #FFF !important; }
+/* Buttons built on <a> get no border from the rule above and were degrading
+   to bare yellow links in contrast mode — the WhatsApp float and every CTA
+   among them. Same 1px white frame the real <button>s get. .nf__btn is
+   404.html, which loads this sheet. border-radius is not blanked by this
+   mode, so the pills keep signalling "button" here too. */
+html.a11y-contrast body a.btn,
+html.a11y-contrast body a.skip-link,
+html.a11y-contrast body a.nav__cta,
+html.a11y-contrast body a.nav-mobile__cta,
+html.a11y-contrast body a.menu__cta,
+html.a11y-contrast body a.gear__cta,
+html.a11y-contrast body a.form__done-cta,
+html.a11y-contrast body a.wa-float,
+html.a11y-contrast body a.nf__btn { border: 1px solid #FFF !important; }
 html.a11y-contrast body input::placeholder,
 html.a11y-contrast body textarea::placeholder { color: #D0D0D0 !important; }
 /* The hero's scrim is repainted opaque black by the rule above, which is what
@@ -613,11 +630,10 @@ html.a11y-no-motion .a11y-panel { animation: none !important; }
   }
 }
 
-/* Shape follows the burger through both header states — a circle over the
-   hero, a square once the header goes solid. Held round in both, it was the
-   only circle in a row of rectangles after the first scroll. */
-.site-header:not(.is-scrolled) .a11y-fab--header { border-radius: 50%; }
-.site-header.is-scrolled .a11y-fab--header { border-radius: 0; }
+/* No shape override any more. The 8.2026 refresh made the burger a circle in
+   BOTH header states, so the base .a11y-fab circle now matches the row as-is —
+   the old circle-over-hero/square-when-scrolled pair would leave this the only
+   square in a row of circles. */
 
 /* The focus ring has to be restated here, and this is the third thing the move
    broke in the same way. `.a11y-fab:focus-visible` above is not scoped to

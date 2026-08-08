@@ -31,13 +31,15 @@
   background: var(--ivory);
   color: var(--charcoal);
   border: 1px solid var(--champagne);
-  border-radius: 2px;
+  border-radius: var(--r-pill, 999px);
   cursor: pointer;
   box-shadow: 0 6px 24px rgba(28, 26, 24, 0.14);
   transition: background 320ms var(--ease), transform 320ms var(--ease),
               opacity 320ms var(--ease);
 }
 .am-launcher:hover { background: var(--cream); transform: translateY(-2px); }
+/* After :hover in source — equal specificity, the press must win. */
+.am-launcher:active { transform: translateY(1px); }
 .am-launcher.is-open { background: var(--champagne); }
 
 /* Stands down while the lead form is on screen — main.js sets .form-in-view on
@@ -109,7 +111,7 @@ html.form-in-view .am-launcher:not(.is-open) {
   height: 34px;
   background: transparent;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: 50%;
   color: var(--charcoal);
   font-size: 14px;
   line-height: 1;
@@ -170,7 +172,7 @@ html.form-in-view .am-launcher:not(.is-open) {
   letter-spacing: .12em;
   padding: 10px 16px;
   border: 1px solid var(--champagne);
-  border-radius: 2px;
+  border-radius: var(--r-pill, 999px);
   background: transparent;
   color: var(--charcoal);
   cursor: pointer;
@@ -213,7 +215,7 @@ html.form-in-view .am-launcher:not(.is-open) {
   line-height: 1.5;
   padding: 8px 13px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: var(--r-pill, 999px);
   background: var(--ivory);
   color: var(--mocha);
   cursor: pointer;
@@ -248,9 +250,9 @@ html.form-in-view .am-launcher:not(.is-open) {
   font-size: 12px;
   letter-spacing: .12em;
   background: var(--champagne);
-  color: #1C1A18;
+  color: var(--charcoal);
   border: 1px solid var(--champagne);
-  border-radius: 2px;
+  border-radius: var(--r-pill, 999px);
   cursor: pointer;
   transition: background 300ms;
 }
@@ -306,8 +308,9 @@ html.form-in-view .am-launcher:not(.is-open) {
   gap: 0;
   padding: 0;
   border: 1px solid rgba(255, 253, 249, 0.45);
+  border-radius: 50%;   /* the base launcher is a pill now; 44×44 pill = circle anyway, stated for clarity */
   background: transparent;
-  color: #FFFDF9;
+  color: var(--ivory);
   box-shadow: none;
   font: inherit;
   font-size: 20px;
@@ -340,6 +343,6 @@ html.form-in-view .am-launcher--header:not(.is-open) {
   pointer-events: auto;
 }
 
-/* Same state machine as the burger: circle over the hero, square when solid. */
-.site-header:not(.is-scrolled) .am-launcher--header { border-radius: 50%; }
-.site-header.is-scrolled .am-launcher--header { border-radius: 0; }
+/* The burger's state machine lost its square half in the 8.2026 refresh —
+   circles in both header states now — so the header launcher is simply always
+   a circle, declared in the block above. */
