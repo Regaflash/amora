@@ -1286,6 +1286,23 @@ summary::-webkit-details-marker { display: none; }
 }
 .masonry__btn:hover .masonry__photo { transform: scale(1.03); }
 
+/* The filter's FLIP (main.js names each frame and wraps applyFilter in
+   startViewTransition): house easing over the UA default, and the motion
+   switches answered again at the pseudo level — the global kills match
+   elements and ::before/::after, and the view-transition tree is neither. */
+::view-transition-group(*) {
+  animation-duration: 350ms;
+  animation-timing-function: var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+html.a11y-no-motion::view-transition-group(*),
+html.a11y-no-motion::view-transition-old(*),
+html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
+
 @media (max-width: 900px) { .masonry { --row: clamp(150px, 22vw, 200px); } }
 
 /* On a phone the wall compressed eighteen frames into 150px rows — thumbnails
@@ -2052,6 +2069,24 @@ html:not(.js) .quotes__controls { display: none; }
   transition: transform 320ms var(--ease), color 320ms;
 }
 .faq__item[open] .faq__sign { transform: rotate(45deg); color: var(--champagne-ink); }
+/* Where interpolate-size exists, an answer glides open instead of snapping;
+   everywhere else <details> behaves exactly as it always did. CSS only —
+   the byte-locked .faq__a is untouched. The global motion kills do not
+   reach ::details-content (they match elements and ::before/::after), so
+   both switches are answered here explicitly. */
+@supports (interpolate-size: allow-keywords) {
+  :root { interpolate-size: allow-keywords; }
+  .faq__item::details-content {
+    height: 0;
+    overflow: clip;
+    transition: height 380ms var(--ease), content-visibility 380ms allow-discrete;
+  }
+  .faq__item[open]::details-content { height: auto; }
+  @media (prefers-reduced-motion: reduce) {
+    .faq__item::details-content { transition: none; }
+  }
+  html.a11y-no-motion .faq__item::details-content { transition: none; }
+}
 .faq__a {
   font-size: var(--t-body);
   color: var(--mocha);
@@ -2313,7 +2348,19 @@ textarea.field__control { resize: vertical; }
 
 /* ------------------------------------------------------------- footer --- */
 
-.site-footer { background: var(--cream); border-top: 1px solid var(--rule); }
+.site-footer { position: relative; background: var(--cream); border-top: 1px solid var(--rule); }
+/* The chapters' champagne signature, once more where the page signs off —
+   aligned to the content shell's reading-start edge, not the viewport's.
+   background-color: survives html.a11y-contrast. */
+.site-footer::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  height: 1px;
+  width: 72px;
+  inset-inline-start: max(var(--gutter), calc((100% - var(--shell)) / 2 + var(--gutter)));
+  background-color: var(--champagne);
+}
 .site-footer__top {
   max-width: var(--shell);
   margin: 0 auto;

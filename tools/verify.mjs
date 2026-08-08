@@ -513,6 +513,54 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// --------------------------------------- the FLIP, the FAQ, the signature --
+// Wave two of the design pass. The filter now runs through
+// startViewTransition where it exists — the state must still land correctly
+// through the async wrapper, and the one caller that needs synchronous state
+// (photoFromHash, which opens a photo right after unhiding it) must not race.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 } }); // no reduce → VT path
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  ok('every photograph carries a unique transition name',
+     await p.evaluate(() => {
+       const names = [...document.querySelectorAll('.masonry__item')].map((li) => li.style.viewTransitionName);
+       return names.every(Boolean) && new Set(names).size === names.length;
+     }), true, true);
+  await p.locator('.chip[data-filter="weddings"]').click();
+  await p.waitForTimeout(900);
+  const kept = await p.locator('.masonry__item:not([hidden])').count();
+  const want = await p.locator('.masonry__item[data-cat="weddings"]').count();
+  ok('the animated filter still lands the right state', kept === want, kept, want);
+
+  // The race: under a filter, a hash for a HIDDEN photo must open that exact
+  // photo — applyFilterCore, not the a-frame-later animated wrapper.
+  await p.locator('.chip[data-filter="prep"]').click();
+  await p.waitForTimeout(900);
+  await p.evaluate(() => { location.hash = '#photo-1'; });
+  await p.waitForTimeout(900);
+  const total = await p.locator('.masonry__item').count();
+  ok('a hidden photo\'s link unhides synchronously and opens IT',
+     (await p.locator('[data-lightbox-count]').textContent()) === `1 / ${total}`,
+     await p.locator('[data-lightbox-count]').textContent(), `1 / ${total}`);
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(300);
+
+  ok('the footer signs off in champagne',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('.site-footer'), '::before');
+       return s.backgroundColor === 'rgb(201, 174, 140)' && parseInt(s.width) === 72;
+     }), true, true);
+
+  const faq = p.locator('.faq__item').first();
+  await faq.locator('summary').click();
+  await p.waitForTimeout(700);
+  ok('a FAQ answer opens and is readable through the smooth path',
+     await faq.locator('.faq__a').isVisible()
+       && await p.evaluate(() => document.querySelector('.faq__item').open), true, true);
+  await p.close();
+}
+
 // ----------------------------- the glimpse gets captions, dots, and honesty --
 // The six category links on the money page had a hover scale for an
 // affordance — which does not exist on a touch screen — and no position

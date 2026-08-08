@@ -621,7 +621,7 @@
     });
   }
 
-  function applyFilter(next) {
+  function applyFilterCore(next) {
     filter = next;
     items.forEach(function (li) {
       li.hidden = !(filter === 'all' || li.dataset.cat === filter);
@@ -633,6 +633,26 @@
     announceCount();
     stripAfterFilter();
   }
+
+  // Where the engine has View Transitions, filtering FLIPs the wall: every
+  // frame carries a view-transition-name (assigned below), so the survivors
+  // GLIDE to their new positions and the filtered-out fade — instead of
+  // eighteen photographs teleporting. Everywhere else the same core runs
+  // with no animation, and both motion switches turn it off. The callback
+  // runs a frame later — anything that needs the filter applied
+  // SYNCHRONOUSLY (photoFromHash, which opens a photo right after unhiding
+  // it) must call applyFilterCore directly.
+  function applyFilter(next) {
+    var animate = typeof document.startViewTransition === 'function'
+      && !reducedMotion
+      && !document.documentElement.classList.contains('a11y-no-motion');
+    if (animate) document.startViewTransition(function () { applyFilterCore(next); });
+    else applyFilterCore(next);
+  }
+
+  items.forEach(function (li, i) {
+    li.style.viewTransitionName = 'photo-' + (i + 1);
+  });
 
   // A chip press silently rewrites the grid from 18 tiles to 3 or 4. aria-pressed
   // says which chip is on; nothing said how much of the gallery survived it.
@@ -709,7 +729,10 @@
     if (!m) return false;
     var li = items[Number(m[1]) - 1];
     if (!li) return false;
-    if (li.hidden) applyFilter('all');
+    // Core, not the animated wrapper: openLightbox on the next line needs the
+    // photo unhidden NOW, and startViewTransition applies a frame later —
+    // the wrapped call would open visibleItems()[-1], the last photograph.
+    if (li.hidden) applyFilterCore('all');
     openLightbox(visibleItems().indexOf(li));
     return true;
   }
