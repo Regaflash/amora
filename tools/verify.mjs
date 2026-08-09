@@ -515,6 +515,75 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ------------------------------------ the translator survives a moving DOM --
+// The collector used to memoize once, with no MutationObserver: every
+// JS-injected sentence — announceCount, the lightbox caption, the whole
+// assistant — stayed Hebrew on a translated page. Now collection is
+// incremental, repeats come from a cache with no network, and only new
+// strings travel. The endpoint is stubbed: each string comes back wrapped
+// in «guillemets», so a translated surface is recognizable on sight.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.route('**/functions/v1/translate', async (route) => {
+    const body = route.request().postDataJSON();
+    const t = {};
+    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    await route.fulfill({ json: { t } });
+  });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  const ldBefore = await p.evaluate(() =>
+    document.querySelector('script[type="application/ld+json"]').textContent);
+
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(1500);
+  ok('the stub took: the page speaks in guillemets',
+     await p.evaluate(() => document.querySelector('h1').textContent.includes('«')), true, true);
+
+  await p.locator('.chip[data-filter="prep"]').click();
+  await p.waitForTimeout(1200);
+  ok('a live-region sentence written AFTER the switch is translated',
+     await p.evaluate(() => document.querySelector('[data-gallery-status]').textContent.startsWith('«')),
+     await p.evaluate(() => document.querySelector('[data-gallery-status]').textContent.slice(0, 16)), '«…');
+
+  await p.locator('.masonry__item:not([hidden]) .masonry__btn').first().click();
+  await p.waitForTimeout(1400);
+  ok('the lightbox caption composed at click time is translated',
+     await p.evaluate(() => document.querySelector('[data-lightbox-caption]').textContent.startsWith('«')),
+     await p.evaluate(() => document.querySelector('[data-lightbox-caption]').textContent.slice(0, 16)), '«…');
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(300);
+
+  // The launcher lives in the mobile header bar, hidden at desktop widths.
+  await p.setViewportSize({ width: 390, height: 844 });
+  await p.waitForTimeout(400);
+  await p.locator('.am-launcher').click();
+  await p.waitForTimeout(1500);
+  ok('the assistant, built long after the switch, is translated',
+     await p.evaluate(() => {
+       const b = document.querySelector('.am-msg--bot .am-bubble');
+       return b && b.textContent.includes('«');
+     }), true, true);
+
+  ok('the byte-locked JSON-LD never felt a thing',
+     await p.evaluate((before) =>
+       document.querySelector('script[type="application/ld+json"]').textContent === before, ldBefore),
+     true, true);
+
+  await p.keyboard.press('Escape');   // close the assistant panel
+  await p.waitForTimeout(300);
+  await p.setViewportSize({ width: 1280, height: 800 });
+  await p.waitForTimeout(400);
+  await p.locator('.nav .lang__btn[data-lang="he"]').click();
+  await p.waitForTimeout(800);
+  ok('switching home restores every surface, late-collected included',
+     await p.evaluate(() =>
+       !document.body.textContent.includes('«')
+       && document.querySelector('h1').textContent === 'הרגעים שלכם. לנצח.'),
+     true, true);
+  await p.close();
+}
+
 // ---------------------------------------- the other three languages' turn --
 // The i18n system flips the document to LTR for en/ru, and three surfaces
 // hardcoded "right to left": the swipe hint's lean, the swipe sign

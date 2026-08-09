@@ -80,12 +80,19 @@
 
   /* ------------------------------------------------------------ collect -- */
 
-  /* Each target remembers its Hebrew so switching back needs no network. */
-  var targets = null;
+  /* Each target remembers its Hebrew so switching back needs no network.
+     The collector is INCREMENTAL, not memoized-once: this page rewrites
+     itself constantly — live regions announce filters, the lightbox writes
+     captions, the assistant builds its whole panel after load — and the old
+     `if (targets) return targets` meant every one of those spoke Hebrew
+     into a translated page forever. collect() now appends only what it has
+     not seen; the WeakSet/WeakMap let removed nodes be garbage-collected. */
+  var targets = [];
+  var seenText = ('WeakSet' in window) ? new WeakSet() : null;
+  var seenAttr = ('WeakMap' in window) ? new WeakMap() : null;
 
   function collect() {
-    if (targets) return targets;
-    targets = [];
+    if (!seenText) { return targets; }   // ancient browser: first pass only
 
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
       acceptNode: function (node) {
@@ -98,6 +105,8 @@
     });
     var n;
     while ((n = walker.nextNode())) {
+      if (seenText.has(n)) continue;
+      seenText.add(n);
       targets.push({ node: n, attr: null, he: n.nodeValue });
     }
 
@@ -105,8 +114,12 @@
       var nodes = document.body.querySelectorAll('[' + attr + ']');
       Array.prototype.forEach.call(nodes, function (el) {
         if (el.closest('[data-no-translate]')) return;
+        var done = seenAttr.get(el);
+        if (done && done[attr]) return;
         var v = el.getAttribute(attr);
         if (!worth(v)) return;
+        if (!done) { done = {}; seenAttr.set(el, done); }
+        done[attr] = 1;
         targets.push({ node: el, attr: attr, he: v });
       });
     });
@@ -116,29 +129,95 @@
 
   /* ------------------------------------------------------------- apply --- */
 
+  /* Every write this file makes goes through here: the MutationObserver
+     below must not see our own writes as fresh content, or apply() feeds
+     collect() feeds apply() forever. takeRecords() drains synchronously,
+     while the flag covers the same tick. */
+  var writing = false;
+
+  function guarded(fn) {
+    writing = true;
+    try { fn(); } finally {
+      if (observer) observer.takeRecords();
+      writing = false;
+    }
+  }
+
   function toHebrew() {
-    collect().forEach(function (t) {
-      if (t.attr) t.node.setAttribute(t.attr, t.he);
-      else t.node.nodeValue = t.he;
+    guarded(function () {
+      collect().forEach(function (t) {
+        if (t.attr) t.node.setAttribute(t.attr, t.he);
+        else t.node.nodeValue = t.he;
+      });
     });
   }
 
-  function apply(map) {
-    collect().forEach(function (t) {
-      var hit = map[t.hash];
-      if (!hit) return;                       // untranslated stays Hebrew
-      /* Restore the original leading/trailing whitespace: the walker sees
-         indentation, and dropping it would collapse the layout. */
-      var lead = /^\s*/.exec(t.he)[0];
-      var tail = /\s*$/.exec(t.he)[0];
-      if (t.attr) t.node.setAttribute(t.attr, hit);
-      else t.node.nodeValue = lead + hit + tail;
+  function applyTo(list, map) {
+    guarded(function () {
+      list.forEach(function (t) {
+        var hit = map[t.hash];
+        if (!hit) return;                     // untranslated stays Hebrew
+        /* Restore the original leading/trailing whitespace: the walker sees
+           indentation, and dropping it would collapse the layout. */
+        var lead = /^\s*/.exec(t.he)[0];
+        var tail = /\s*$/.exec(t.he)[0];
+        if (t.attr) t.node.setAttribute(t.attr, hit);
+        else t.node.nodeValue = lead + hit + tail;
+      });
     });
   }
 
   /* -------------------------------------------------------- translate --- */
 
   var inflight = false;
+  var current = 'he';
+  /* dict[lang][hash] = translated. New nodes whose strings were already
+     translated once are served from here with NO network — the strip
+     counter, a repeated live-region sentence, a reopened assistant. */
+  var dict = {};
+
+  /** Hash, split cached-vs-new, apply cache instantly, fetch only the rest.
+   *  Both the full pass (a language click) and the observer's incremental
+   *  flushes come through this one function. */
+  function translateList(code, list, done) {
+    Promise.all(list.map(function (t) {
+      if (t.hash) return Promise.resolve(t);
+      return sha256(norm(t.he)).then(function (h) { t.hash = h; return t; });
+    })).then(function (all) {
+      var cache = dict[code] || (dict[code] = {});
+      var fromCache = {}, cachedAny = false;
+      var seen = {}, misses = [];
+      all.forEach(function (t) {
+        if (cache[t.hash] !== undefined) {
+          fromCache[t.hash] = cache[t.hash];
+          cachedAny = true;
+          return;
+        }
+        if (seen[t.hash]) return;
+        seen[t.hash] = 1;
+        misses.push({ h: t.hash, s: norm(t.he) });
+      });
+      if (cachedAny) applyTo(all, fromCache);
+      if (!misses.length) { if (done) done(); return; }
+      fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lang: code, items: misses })
+      }).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      }).then(function (data) {
+        var t = data && data.t ? data.t : {};
+        Object.keys(t).forEach(function (h) { cache[h] = t[h]; });
+        /* A visitor can switch languages while a batch is in flight; only
+           the CURRENT language may write, the rest just warmed the cache. */
+        if (current === code) applyTo(all, t);
+      })['catch'](function () {
+        /* Deliberately silent to the visitor. The page is still the Hebrew
+           they could already read; an error banner would be noise. */
+      }).then(function () { if (done) done(); });
+    });
+  }
 
   function translate(code) {
     var lang = ENABLED.filter(function (l) { return l.code === code; })[0];
@@ -148,6 +227,7 @@
     document.documentElement.setAttribute('dir', lang.dir);
     try { localStorage.setItem(STORE, code); } catch (e) { /* private mode */ }
     paint(code);
+    current = code;
 
     if (code === 'he') { toHebrew(); return; }
     if (NO_TRANSLATE_PAGE.test(location.pathname)) return;
@@ -157,33 +237,45 @@
 
     inflight = true;
     document.documentElement.setAttribute('data-translating', '');
-
-    Promise.all(list.map(function (t) {
-      return sha256(norm(t.he)).then(function (h) { t.hash = h; return t; });
-    })).then(function (all) {
-      var seen = {}, items = [];
-      all.forEach(function (t) {
-        if (seen[t.hash]) return;
-        seen[t.hash] = 1;
-        items.push({ h: t.hash, s: norm(t.he) });
-      });
-      return fetch(ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lang: code, items: items })
-      });
-    }).then(function (res) {
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.json();
-    }).then(function (data) {
-      apply(data && data.t ? data.t : {});
-    })['catch'](function () {
-      /* Deliberately silent to the visitor. The page is still the Hebrew they
-         could already read; an error banner would be noise, not help. */
-    }).then(function () {
+    translateList(code, list, function () {
       inflight = false;
       document.documentElement.removeAttribute('data-translating');
     });
+    startObserver();
+  }
+
+  /* ------------------------------------------------- the DOM keeps moving -- */
+
+  /* Everything injected AFTER the switch — announceCount's sentences, the
+     lightbox caption, the assistant's entire panel — used to stay Hebrew on
+     a translated page. The observer waits out a 120ms lull, collects only
+     what is new, and runs it through the same translateList: repeats come
+     from the cache with no network, and only genuinely new strings travel. */
+  var observer = null, flushTimer = null;
+
+  function startObserver() {
+    if (observer || !('MutationObserver' in window) || !seenText) return;
+    observer = new MutationObserver(function () {
+      if (writing || current === 'he') return;
+      if (flushTimer) clearTimeout(flushTimer);
+      flushTimer = setTimeout(flush, 120);
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ATTRS
+    });
+  }
+
+  function flush() {
+    flushTimer = null;
+    if (current === 'he') return;
+    var before = targets.length;
+    collect();
+    var fresh = targets.slice(before);
+    if (fresh.length) translateList(current, fresh);
   }
 
   /* ---------------------------------------------------------- the UI ---- */
