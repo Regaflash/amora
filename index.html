@@ -559,7 +559,10 @@
   </section>
 
   <!-- ===== 02 · פס אמון ===== -->
-  <section class="trust section" id="trust" aria-label="בקצרה">
+  <!-- data-reveal here is a CLASS CARRIER only: the CSS cancels the generic
+       hide on this node, so the five claims are painted from byte one and
+       only the four decorative dots ever animate in. -->
+  <section class="trust section" id="trust" aria-label="בקצרה" data-reveal>
     <div class="trust__row">
       <!-- This slot used to read "+500 זוגות מאושרים". Nothing in this repo
            supports that number, and assets/js/assistant.js:58-61 carries an

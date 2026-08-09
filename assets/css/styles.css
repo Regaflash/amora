@@ -897,6 +897,26 @@ summary::-webkit-details-marker { display: none; }
    carrying the eye across the strip. */
 .trust__dot { width: 3px; height: 3px; background: var(--champagne); border-radius: 50%; }
 
+/* "Four small marks carrying the eye across the strip" — now they arrive in
+   reading order, 70ms apart. data-reveal on .trust is a CLASS CARRIER only:
+   the first rule cancels the generic hide on the node itself, so the five
+   claims are painted from byte one and only these aria-hidden dots animate.
+   Children run item,dot,item,dot… — the dots are 2,4,6,8. scale only, no
+   directional offset: RTL order comes from the DOM, not from a transform. */
+.js.reveal-ready .trust[data-reveal] { opacity: 1; transform: none; }
+.js.reveal-ready .trust[data-reveal] .trust__dot {
+  transform: scale(0);
+  transition: transform 420ms var(--ease);
+}
+.js.reveal-ready .trust[data-reveal].is-revealed .trust__dot { transform: none; }
+.js.reveal-ready .trust[data-reveal] .trust__dot:nth-child(4) { transition-delay: 70ms; }
+.js.reveal-ready .trust[data-reveal] .trust__dot:nth-child(6) { transition-delay: 140ms; }
+.js.reveal-ready .trust[data-reveal] .trust__dot:nth-child(8) { transition-delay: 210ms; }
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .trust[data-reveal] .trust__dot { transform: none !important; }
+}
+html.a11y-no-motion .trust[data-reveal] .trust__dot { transform: none !important; }
+
 /* -------------------------------------------------------------- about --- */
 
 /* align-items:start, not center, so the chapter's hairline lands on the top
@@ -916,6 +936,31 @@ summary::-webkit-details-marker { display: none; }
   display: block;
   border-radius: 0;
 }
+/* The first photograph on the page prints in — a bottom-up unmask, because
+   "no frame … the picture is the object" (above) rules out drawing anything
+   around it, and an unmask draws nothing: the picture simply finishes
+   arriving. Measured: .about reveals with this photo at the fold on both
+   viewports, so the section's own trigger is already correct — no new JS.
+   VERTICAL insets only: inset() is physical, and a top/bottom pair is the
+   one thing RTL cannot flip. End state is inset(0 0 0 0), not none — same
+   function, so it interpolates instead of snapping. */
+.js.reveal-ready .about[data-reveal] .about__photo { clip-path: inset(0 0 100% 0); }
+/* A keyframe ANIMATION, not a clip-path transition: measured in the harness,
+   the transition advanced 0.4ms and froze at inset(0 0 99.95%) while the
+   sibling opacity/transform transitions ran fine — the swipe hint's
+   animation machinery is the proven path, so the print uses it. `both`
+   holds the open end state after the run. */
+@keyframes about-print {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.js.reveal-ready .about[data-reveal].is-revealed .about__photo {
+  animation: about-print 900ms var(--ease) 120ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .about[data-reveal] .about__photo { clip-path: none !important; animation: none !important; }
+}
+html.a11y-no-motion .about[data-reveal] .about__photo { clip-path: none !important; animation: none !important; }
 /* Real hierarchy inside the copy: the lead is charcoal and a size up, the
    paragraphs under it are mocha and a size down. Same words, read in order. */
 .about__lead {
@@ -1020,6 +1065,26 @@ summary::-webkit-details-marker { display: none; }
 }
 /* The accent arrives on hover, and only then. */
 .card:hover .card__body { border-top-color: var(--champagne); }
+
+/* The plates rise the same way the wall does — pictures only, inside their
+   overflow-hidden media boxes, triggered by .services__grid itself (the
+   section reveals while the grid straddles the fold, measured). The card
+   box never moves, so the phone strip's snap points and the dots'
+   aria-current bookkeeping are untouched. */
+.js.reveal-ready .services__grid .card__media picture {
+  opacity: 0;
+  transform: translateY(10px) scale(1.06);
+  transition: opacity 520ms var(--ease), transform 520ms var(--ease);
+}
+.js.reveal-ready .services__grid.is-revealed .card__media picture { opacity: 1; transform: none; }
+.js.reveal-ready .services__grid > .card:nth-child(2) .card__media picture { transition-delay: 60ms; }
+.js.reveal-ready .services__grid > .card:nth-child(3) .card__media picture { transition-delay: 120ms; }
+.js.reveal-ready .services__grid > .card:nth-child(4) .card__media picture { transition-delay: 180ms; }
+.js.reveal-ready .services__grid > .card:nth-child(5) .card__media picture { transition-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .services__grid .card__media picture { opacity: 1 !important; transform: none !important; }
+}
+html.a11y-no-motion .services__grid .card__media picture { opacity: 1 !important; transform: none !important; }
 .card__kicker {
   display: block;
   font-family: var(--script);
@@ -1285,6 +1350,39 @@ summary::-webkit-details-marker { display: none; }
   transition: transform 900ms var(--ease);
 }
 .masonry__btn:hover .masonry__photo { transform: scale(1.03); }
+
+/* The wall arrives frame by frame: the first time .masonry itself is
+   revealed (main.js observes it directly — the SECTION reveals while the
+   wall is still below the fold, measured), each picture rises inside its
+   frame. The moving element is the picture, never the item: the item
+   carries the viewTransitionName, the phone hint animates the item's
+   transform, and stripIO reads the item's intersection for "3 / 18" —
+   moving it would collide with all three. scale(1.08) covers the 10px
+   rise so no sliver of ink shows under the frame. The delay ladder caps
+   at frame 6: the rest are past the fold or past the strip's edge, and an
+   850ms tail nobody sees is not craft. Both motion switches get their own
+   kill rules — the generic [data-reveal] forcings do not reach
+   descendants of a class-carrier.
+   The delay ladders repeat the full .js.reveal-ready scope on purpose: the
+   transition SHORTHAND above implicitly resets transition-delay to 0s, and
+   at lower specificity a bare nth-child delay rule silently loses to it —
+   measured as all-zero delays before the scope was added. */
+.js.reveal-ready .masonry .masonry__btn picture {
+  opacity: 0;
+  transform: translateY(10px) scale(1.08);
+  transition: opacity 520ms var(--ease), transform 520ms var(--ease);
+}
+.js.reveal-ready .masonry.is-revealed .masonry__btn picture { opacity: 1; transform: none; }
+.js.reveal-ready .masonry .masonry__item:nth-child(2) .masonry__btn picture { transition-delay: 50ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(3) .masonry__btn picture { transition-delay: 100ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(4) .masonry__btn picture { transition-delay: 150ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(5) .masonry__btn picture { transition-delay: 200ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(6) .masonry__btn picture { transition-delay: 250ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(n+7) .masonry__btn picture { transition-delay: 300ms; }
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .masonry .masonry__btn picture { opacity: 1 !important; transform: none !important; }
+}
+html.a11y-no-motion .masonry .masonry__btn picture { opacity: 1 !important; transform: none !important; }
 
 /* The filter's FLIP (main.js names each frame and wraps applyFilter in
    startViewTransition): house easing over the UA default, and the motion

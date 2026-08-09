@@ -1746,7 +1746,15 @@
 
   /* ------------------------------------------------------ scroll reveal --- */
 
-  var revealables = $$('[data-reveal]');
+  // The wall and the plate grid are revealables too — their ENTRANCES are
+  // triggered by the container the photographs live in, not the section:
+  // measured, .gallery earns .is-revealed while the wall is still 184-294px
+  // below the fold, so a stagger hung on the section would animate to
+  // nobody. Joining this list buys the observer, the 3s watchdog and the
+  // reduced-motion bypass in one line; the generic [data-reveal] hide rule
+  // deliberately does not match them (no attribute), so only their inner
+  // pictures ever carry a hidden state.
+  var revealables = $$('[data-reveal], .masonry, .services__grid');
 
   // The CSS hides [data-reveal] only once this class is set, and a watchdog
   // reveals everything regardless after 3s. A JS error further up can no

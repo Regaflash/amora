@@ -513,6 +513,96 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ----------------------------------------------- the photographs arrive --
+// Entrances for the wall, the plates, the trust dots and the about photo.
+// The load-bearing rule: triggers hang on the CONTAINER the pictures live
+// in, never the section — measured, .gallery reveals while the wall is
+// still ~200px below the fold, so a section-triggered stagger animates to
+// nobody. And the words are never gated: the trust bar's five claims must
+// compute opacity 1 with no scroll, in every mode.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 } }); // no reduce
+  // Headless throttles the animation clock within a few seconds when nothing
+  // consumes frames (measured: 133ms of animation time over 2.5s of wall
+  // time). A tiny screenshot forces a BeginFrame, so this pump keeps the
+  // clock honest while polling — a harness artifact, not a site behavior.
+  const pump = async (cond, ms) => {
+    const end = Date.now() + ms;
+    for (;;) {
+      await p.screenshot({ clip: { x: 0, y: 0, width: 8, height: 8 } });
+      if (await p.evaluate(cond)) return true;
+      if (Date.now() > end) return p.evaluate(cond);
+      await p.waitForTimeout(90);
+    }
+  };
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(400);
+  ok('the trust claims are painted from byte one',
+     await p.evaluate(() => [...document.querySelectorAll('.trust__item')]
+       .every((t) => getComputedStyle(t).opacity === '1')), true, true);
+  // Park the gallery section on-screen while the wall is still below the
+  // fold: the section may reveal, the pictures must still be waiting.
+  const staged = await p.evaluate(() => {
+    const wall = document.querySelector('.masonry');
+    window.scrollTo({ top: wall.getBoundingClientRect().top + scrollY - innerHeight - 60, behavior: 'instant' });
+    return true;
+  });
+  await p.waitForTimeout(400);
+  ok('a below-the-fold wall keeps its pictures held',
+     staged && await p.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__btn picture')).opacity === '0'),
+     true, true);
+  // behavior:'instant' throughout this block: html scroll-behavior is
+  // smooth, and an animated scroll eats the settle window before the
+  // transitions even start.
+  await p.evaluate(() => document.querySelector('.masonry').scrollIntoView({ block: 'center', behavior: 'instant' }));
+  ok('the wall arrives frame by frame and settles complete',
+     await pump(() => [...document.querySelectorAll('.masonry__btn picture')]
+       .every((pic) => getComputedStyle(pic).opacity === '1' && getComputedStyle(pic).transform === 'none'), 4000),
+     true, true);
+  ok('the delay ladder exists and caps at the fold',
+     await p.evaluate(() => {
+       // Two transitioned properties → "0.1s, 0.1s"; sample the first.
+       const d = (n) => getComputedStyle(document.querySelector(
+         `.masonry__item:nth-child(${n}) .masonry__btn picture`)).transitionDelay.split(',')[0].trim();
+       return d(1) === '0s' && d(3) === '0.1s' && d(7) === '0.3s' && d(18) === '0.3s';
+     }), true, true);
+  await p.evaluate(() => document.querySelector('.about').scrollIntoView({ block: 'center', behavior: 'instant' }));
+  const printed = await pump(() => {
+    // The filled end state serializes its keyframe units: 'inset(0px 0px 0%)'.
+    // Accept any all-zero inset, whatever the unit mix.
+    const c = getComputedStyle(document.querySelector('.about__photo')).clipPath;
+    return /^inset\(0(px|%)?(\s+0(px|%)?){0,3}\)$/.test(c);
+  }, 4500);
+  ok('the about photograph prints in fully', printed, printed, true);
+  await p.evaluate(() => document.querySelector('.services__grid').scrollIntoView({ block: 'center', behavior: 'instant' }));
+  ok('the plates rise without their boxes moving',
+     await pump(() => [...document.querySelectorAll('.card__media picture')]
+       .every((pic) => getComputedStyle(pic).opacity === '1'), 4000), true, true);
+  await p.close();
+}
+{
+  // Reduce page: everything simply there, no scroll, no waiting.
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('reduced motion holds no picture hostage',
+     await page.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__btn picture')).opacity === '1'
+       && getComputedStyle(document.querySelector('.about__photo')).clipPath === 'none'
+       && [...document.querySelectorAll('.trust__dot')]
+            .every((d) => getComputedStyle(d).transform === 'none')), true, true);
+}
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  ok('with JS off, every photograph is simply there',
+     await np.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__btn picture')).opacity === '1'
+       && getComputedStyle(document.querySelector('.about__photo')).clipPath === 'none'), true, true);
+  await ctx.close();
+}
+
 // --------------------------------------- the FLIP, the FAQ, the signature --
 // Wave two of the design pass. The filter now runs through
 // startViewTransition where it exists — the state must still land correctly
