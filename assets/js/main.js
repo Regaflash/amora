@@ -348,6 +348,16 @@
     var fails = 0;
     var proofTimer = null, pingTimer = null, pings = 0, swapTimer = null;
     var retryTimer = null;
+    // Set once, when the vertical cut has burned both its attempts: a Short
+    // can be embeddable on one surface and refused on another, and that
+    // failure is per-VIDEO, not per-network — the wide cut was playing fine
+    // on the desktop through the same code. Wide on a portrait screen is a
+    // centre crop (the CSS already covers either box with either cut), and a
+    // moving hero in the wrong aspect beats a still poster.
+    var fallbackTo = null;
+    // Autoplay bookkeeping: how many times this frame has been re-asked to
+    // play after settling without playing. Reset per build.
+    var nudges = 0, nudgeTimer = null;
 
     /** Three ways a visitor can say "not this". The OS setting; the floating
      *  widget's "stop animations"; the widget's high-contrast mode, which
@@ -363,7 +373,7 @@
 
     function shouldPlay() { return started && visible && !document.hidden && !suppressed(); }
 
-    function want() { return portrait.matches ? 'vertical' : 'wide'; }
+    function want() { return fallbackTo || (portrait.matches ? 'vertical' : 'wide'); }
 
     /** Nothing private travels in these: they are the two words the player
      *  itself listens for. '*' rather than a fixed origin because the embed may
@@ -383,6 +393,7 @@
       if (proofTimer) { clearTimeout(proofTimer); proofTimer = null; }
       if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
       if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+      if (nudgeTimer) { clearTimeout(nudgeTimer); nudgeTimer = null; }
     }
 
     function destroy() {
@@ -455,7 +466,26 @@
       markLoaded();
       var state = stateOf(e.data);
       if (state === null) return;                  // not a state message
-      if (state === PLAYING) reveal(); else conceal();
+      if (state === PLAYING) { reveal(); return; }
+      conceal();
+      // A player that loaded and then SETTLED without playing — unstarted
+      // (-1), cued (5), or paused by nobody here (2) — was asked to play
+      // exactly once, by the autoplay=1 in the URL, and mobile Safari is
+      // free to refuse that ask. Nobody was asking again; the frame sat
+      // proven-and-idle behind the poster forever. So ask again, bounded:
+      // a muted programmatic play is precisely what the autoplay policies
+      // permit without a gesture, and the mute command right before it is
+      // the belt that keeps that true. Buffering (3) is the player already
+      // trying — nudging it would only reset its work.
+      if ((state === -1 || state === 5 || state === 2)
+          && shouldPlay() && nudges < 3 && !nudgeTimer) {
+        nudgeTimer = setTimeout(function () {
+          nudgeTimer = null;
+          nudges++;
+          command('mute');
+          command('playVideo');
+        }, 1200);
+      }
     });
 
     function build(which) {
@@ -489,6 +519,7 @@
       // The IFrame API pings the player until it answers. This is that ping and
       // nothing else — if the player announces itself unprompted, the first
       // message wins and the pinging stops.
+      nudges = 0;
       pings = 0;
       pingTimer = setInterval(function () {
         pings++;
@@ -519,6 +550,18 @@
         // was making. Note what this rules out: a rights or embedding block
         // would fail every single time, not intermittently.
         if (fails < YT_MAX_FAILS) {
+          retryTimer = setTimeout(function () {
+            retryTimer = null;
+            if (shouldPlay() && !wrap) build(want());
+          }, YT_RETRY_DELAY);
+        } else if (!fallbackTo && which === 'vertical') {
+          // The vertical cut is not coming. Before the hero resigns itself
+          // to the poster, try the other film once: want() answers
+          // `fallbackTo` from here on, so the orientation observer and
+          // sync() stop steering back to the cut that just burned both its
+          // chances. The wide cut gets its own fresh pair of attempts.
+          fallbackTo = 'wide';
+          fails = 0;
           retryTimer = setTimeout(function () {
             retryTimer = null;
             if (shouldPlay() && !wrap) build(want());
