@@ -2341,6 +2341,121 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ------------------------------------ the pipeline stops hiding live money --
+// "נוצר קשר" used to drop a lead from the default view into the same drawer
+// as the dead deals — the whole live pipeline was invisible. Four shelves
+// now; pre-migration rows (no status) keep the old handled behavior exactly;
+// and the written-never-read lead_events table finally answers "how long has
+// this one been sitting".
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const errs = [];
+  p.on('pageerror', (e) => errs.push(e.message));
+  await p.route('**/auth/v1/token**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ access_token: 'fake.jwt.token', refresh_token: 'r', expires_in: 3600,
+                           token_type: 'bearer', user: { id: 'u1', email: 't@example.com' } }),
+  }));
+  const mk = (i, extra) => Object.assign({
+    id: `00000000-0000-0000-0000-00000000001${i}`,
+    created_at: '2026-08-02T10:00:00Z', name: 'ליד ' + i, phone: '0521234567',
+    event_type: 'wedding',
+  }, extra);
+  await p.route('**/rest/v1/leads**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify([
+      mk(1, { status: 'new' }),
+      mk(2, { status: 'contacted', handled: true }),
+      mk(3, { status: 'proposal', handled: true }),
+      mk(4, { status: 'signed', handled: true }),
+      mk(5, { status: 'lost', handled: true }),
+      mk(6, { handled: true }),   // pre-migration row: no status key at all
+    ]),
+  }));
+  await p.route('**/rest/v1/contracts**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: '[]',
+  }));
+  await p.route('**/rest/v1/lead_events**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify([
+      { lead_id: '00000000-0000-0000-0000-000000000012', type: 'contract_sent',
+        detail: 'החוזה סומן כנשלח', created_at: '2026-08-07T10:00:00Z' },
+      { lead_id: '00000000-0000-0000-0000-000000000012', type: 'status_changed',
+        detail: 'נוצר קשר', created_at: '2026-08-03T10:00:00Z' },
+    ]),
+  }));
+  await p.goto(BASE + '/admin.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  await p.fill('input[type=email]', 't@example.com').catch(() => {});
+  await p.fill('input[type=password]', 'whatever').catch(() => {});
+  await p.locator('button[type=submit]').first().click().catch(() => {});
+  await p.waitForTimeout(1800);
+
+  const count = () => p.evaluate(() => document.querySelectorAll('.crm-card').length);
+  ok('the default shelf holds only the truly new', (await count()) === 1, await count(), 1);
+  await p.locator('[data-filter-handled="active"]').click();
+  await p.waitForTimeout(400);
+  ok('the live pipeline has its own shelf', (await count()) === 2, await count(), 2);
+  await p.locator('[data-filter-handled="done"]').click();
+  await p.waitForTimeout(400);
+  ok('closed holds the finished and the pre-migration handled',
+     (await count()) === 3, await count(), 3);
+  await p.locator('[data-filter-handled="all"]').click();
+  await p.waitForTimeout(400);
+  ok('הכול still means all', (await count()) === 6, await count(), 6);
+  ok('the alert stat counts everything not yet closed',
+     await p.evaluate(() => document.querySelector('[data-stat="open"]').textContent) === '3',
+     await p.evaluate(() => document.querySelector('[data-stat="open"]').textContent), '3');
+
+  const timeline = await p.evaluate(() => {
+    const cards = [...document.querySelectorAll('.crm-card')];
+    const withTouch = cards.filter((c) => c.querySelector('.crm-card__stamp--touch'));
+    const t = withTouch[0];
+    return {
+      touched: withTouch.length,
+      stamp: t ? t.querySelector('.crm-card__stamp--touch').textContent : '',
+      history: t ? t.querySelectorAll('.crm-history__item').length : 0,
+    };
+  });
+  ok('exactly the lead with events wears a last-touch stamp',
+     timeline.touched === 1 && /עודכן/.test(timeline.stamp) && /חוזה נשלח/.test(timeline.stamp),
+     JSON.stringify(timeline), 'one card, עודכן + חוזה נשלח');
+  ok('the full history opens to two entries', timeline.history === 2, timeline.history, 2);
+  ok('the pipeline view raised no JS errors', errs.length === 0, errs, 'none');
+  await p.close();
+}
+{
+  // The quiet-failure contract: a database without lead_events must change
+  // nothing — same discipline as contracts.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const errs = [];
+  p.on('pageerror', (e) => errs.push(e.message));
+  await p.route('**/auth/v1/token**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ access_token: 'fake.jwt.token', refresh_token: 'r', expires_in: 3600,
+                           token_type: 'bearer', user: { id: 'u1', email: 't@example.com' } }),
+  }));
+  await p.route('**/rest/v1/leads**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify([{ id: '00000000-0000-0000-0000-000000000021',
+      created_at: '2026-08-02T10:00:00Z', name: 'בדיקה', phone: '0521234567',
+      event_type: 'wedding', status: 'new' }]),
+  }));
+  await p.route('**/rest/v1/contracts**', (route) => route.fulfill({ status: 404, body: '' }));
+  await p.route('**/rest/v1/lead_events**', (route) => route.abort('failed'));
+  await p.goto(BASE + '/admin.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  await p.fill('input[type=email]', 't@example.com').catch(() => {});
+  await p.fill('input[type=password]', 'whatever').catch(() => {});
+  await p.locator('button[type=submit]').first().click().catch(() => {});
+  await p.waitForTimeout(1800);
+  ok('a database without lead_events changes nothing',
+     await p.evaluate(() => document.querySelectorAll('.crm-card').length) === 1
+       && errs.length === 0,
+     JSON.stringify({ errs }), 'one card, no errors');
+  await p.close();
+}
+
 // -------------------------------------------------- the CRM offline path --
 {
   const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
