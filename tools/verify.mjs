@@ -515,6 +515,230 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ---------------------------------------- the other three languages' turn --
+// The i18n system flips the document to LTR for en/ru, and three surfaces
+// hardcoded "right to left": the swipe hint's lean, the swipe sign
+// convention, and standalone arrow glyphs (an "←" text node has no Hebrew,
+// so the translator skips it by design). Plus: the 3D stage's Hebrew lived
+// in attributes no walker read and a CSS content string nothing could ever
+// reach. All asserted by setting dir=ltr directly — the exact state
+// i18n.js produces — with no network involved.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  ok('the hint leans toward the next frame in BOTH directions',
+     await p.evaluate(() => {
+       const m = document.querySelector('.masonry');
+       const rtl = getComputedStyle(m).getPropertyValue('--hint-shift').trim();
+       document.documentElement.dir = 'ltr';
+       const ltr = getComputedStyle(m).getPropertyValue('--hint-shift').trim();
+       document.documentElement.dir = 'rtl';
+       return (rtl === '' || rtl === '16px') && ltr === '-16px';
+     }), true, true);
+
+  await p.goto(BASE + '/#photo-3', { waitUntil: 'load' });
+  await p.waitForTimeout(900);
+  const total = await p.locator('.masonry__item').count();
+  const swipe = async () => {
+    const fig = await p.locator('[data-lightbox-figure]').boundingBox();
+    const cx = fig.x + fig.width / 2, cy = fig.y + fig.height / 2;
+    await p.mouse.move(cx + 80, cy); await p.mouse.down();
+    await p.mouse.move(cx - 80, cy, { steps: 6 }); await p.mouse.up();
+    await p.waitForTimeout(500);
+    return p.locator('[data-lightbox-count]').textContent();
+  };
+  // The document's convention: dragging left is "back" in RTL (3 → 2), and
+  // the same physical gesture is "forward" once the document flips to LTR
+  // (2 → 3). One gesture, two meanings, decided by dir — that is the fix.
+  ok('a leftward swipe steps back in RTL',
+     (await swipe()) === `2 / ${total}`, await p.locator('[data-lightbox-count]').textContent(), `2 / ${total}`);
+  await p.evaluate(() => { document.documentElement.dir = 'ltr'; });
+  ok('and the same gesture steps forward once the document is LTR',
+     (await swipe()) === `3 / ${total}`, await p.locator('[data-lightbox-count]').textContent(), `3 / ${total}`);
+  ok('the arrow glyphs mirror under LTR',
+     await p.evaluate(() =>
+       getComputedStyle(document.querySelector('[data-lightbox-prev]')).transform !== 'none'),
+     true, true);
+  await p.evaluate(() => { document.documentElement.dir = 'rtl'; });
+  await p.close();
+}
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(1500);
+  ok('the stage speaks through attributes a translator can reach',
+     await p.evaluate(() => {
+       const shell = document.querySelector('.stage-shell');
+       const host = document.querySelector('three-d-stage');
+       return shell.hasAttribute('data-loading-text')
+         && host.hasAttribute('obj-label') && host.hasAttribute('note');
+     }), true, true);
+  ok('a rewritten label crosses into the shadow root',
+     await p.evaluate(() => {
+       const host = document.querySelector('three-d-stage');
+       host.setAttribute('obj-label', 'OBJ-TEST');
+       host.setAttribute('note', 'NOTE-TEST');
+       const sr = host.shadowRoot;
+       return sr.querySelector('.toolbar button').textContent === 'OBJ-TEST'
+         && sr.querySelector('.note').textContent === 'NOTE-TEST';
+     }), true, true);
+  ok('no Hebrew literal survives inside a CSS content string',
+     !/content:\s*["'][^"']*[֐-׿]/.test(
+       fs.readFileSync(path.join(ROOT, 'assets/css/styles.css'), 'utf8')), true, true);
+  await p.close();
+}
+
+// ----------------------------------------------- the lead form, sharpened --
+// LF1: the "(חובה)" marker moves with the requirement — it used to stay on
+// the greyed, disabled date field. LF2: a filled field validates on leaving
+// it, an empty tabbed-through field is never blamed, and only the blurred
+// field lights up. LF3: a failed submit speaks once through the role=alert
+// panel — the per-field spans are silent to AT until visited.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+
+  const reqSel = '[data-field="date"]';
+  const markOf = () => p.evaluate((sel) => {
+    const f = document.querySelector(sel).closest('.field').querySelector('.field__req');
+    return { hidden: f.hidden, required: document.querySelector(sel).getAttribute('aria-required') };
+  }, reqSel);
+  let m = await markOf();
+  ok('the date field starts required, marker showing',
+     !m.hidden && m.required === 'true', JSON.stringify(m), 'showing+true');
+  await p.locator('[data-date-tbd]').check();
+  await p.waitForTimeout(200);
+  m = await markOf();
+  ok('ticking the hatch retires the marker with the requirement',
+     m.hidden && m.required === 'false', JSON.stringify(m), 'hidden+false');
+  await p.locator('[data-date-tbd]').uncheck();
+  await p.waitForTimeout(200);
+  m = await markOf();
+  ok('unticking restores both', !m.hidden && m.required === 'true', JSON.stringify(m), 'showing+true');
+  ok('no visible requirement marker sits on a non-required control',
+     await p.evaluate(() => [...document.querySelectorAll('[data-form] .field')]
+       .every((f) => {
+         const req = f.querySelector('.field__req');
+         const ctl = f.querySelector('.field__control');
+         if (!req || !ctl) return true;
+         return req.hidden || ctl.getAttribute('aria-required') === 'true';
+       })), true, true);
+
+  await p.locator('[data-field="phone"]').fill('12');
+  await p.locator('[data-field="name"]').focus();   // blur the phone
+  await p.waitForTimeout(200);
+  ok('a bad filled phone is called out on leaving the field',
+     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent.length > 0
+       && document.querySelector('[data-field="phone"]').getAttribute('aria-invalid') === 'true'),
+     true, true);
+  await p.locator('[data-field="phone"]').fill('0521234567');
+  await p.locator('[data-field="name"]').focus();
+  await p.waitForTimeout(200);
+  ok('a corrected phone clears on the next blur',
+     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent === ''
+       && !document.querySelector('[data-field="phone"]').hasAttribute('aria-invalid')),
+     true, true);
+  await p.locator('[data-field="email"]').focus();   // blur empty name
+  await p.waitForTimeout(200);
+  ok('an empty tabbed-through field is never blamed',
+     await p.evaluate(() => document.querySelector('[data-error="name"]').textContent === ''
+       && !document.querySelector('[data-field="name"]').hasAttribute('aria-invalid')),
+     true, true);
+
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(500);
+  ok('a failed submit speaks once through the alert panel',
+     await p.evaluate(() => {
+       const f = document.querySelector('[data-form-failure]');
+       return !f.hidden && f.textContent.length > 0 && f.getAttribute('role') === 'alert';
+     }), true, true);
+  ok('and focus still lands on the first invalid field, not the panel',
+     await p.evaluate(() => document.activeElement === document.querySelector('[data-field="name"]')),
+     true, true);
+  await p.locator('[data-field="name"]').pressSequentially('א');
+  await p.waitForTimeout(200);
+  ok('one keystroke hides the headline again',
+     await p.evaluate(() => document.querySelector('[data-form-failure]').hidden), true, true);
+  await p.close();
+}
+
+// ------------------------------------------------- the phone's own traps --
+// Three WebKit behaviors a desktop harness never surfaces, fixed and pinned:
+// sub-16px inputs make Safari zoom the page on focus (and never zoom back);
+// :hover latches after a tap, so transform/ground hovers stick; the default
+// grey tap flash paints whole 24px hit areas over 2px marks.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  for (const url of ['/', '/cost.html']) {
+    await p.goto(BASE + url, { waitUntil: 'load' });
+    await p.waitForTimeout(500);
+    const small = await p.evaluate(() =>
+      [...document.querySelectorAll('[data-form] input, [data-form] select, [data-form] textarea')]
+        .filter((el) => el.type !== 'checkbox' && el.type !== 'hidden' && !el.closest('.honeypot'))
+        .map((el) => ({ f: el.dataset.field || el.name, px: parseFloat(getComputedStyle(el).fontSize) }))
+        .filter((x) => x.px < 16));
+    ok(`no form control invites the iOS focus-zoom on ${url}`,
+       small.length === 0, JSON.stringify(small), '[]');
+  }
+  ok('the WebKit opt-outs are set: no tap flash, no rotation inflation',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.documentElement);
+       return s.webkitTapHighlightColor === 'rgba(0, 0, 0, 0)'
+         && s.webkitTextSizeAdjust === '100%';
+     }), true, true);
+  await p.close();
+}
+{
+  // Static guard, off disk: any :hover rule that declares transform or a
+  // ground (background/box-shadow/opacity) must live inside a
+  // @media (hover: hover) block — the rule that keeps a future hover from
+  // re-introducing the sticky-tap defect. Colour-only hovers are exempt.
+  const css = fs.readFileSync(path.join(ROOT, 'assets/css/styles.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const offenders = [];
+  let depth = 0, inHoverMedia = 0, buf = '', sel = '';
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    if (ch === '{') {
+      if (/@media[^{]*hover:\s*hover/.test(buf)) inHoverMedia = depth + 1;
+      sel = buf.trim(); buf = ''; depth++;
+    } else if (ch === '}') {
+      depth--;
+      if (inHoverMedia && depth < inHoverMedia - 1) inHoverMedia = 0;
+      buf = '';
+    } else buf += ch;
+    if (ch === ';' && sel.includes(':hover') && !inHoverMedia
+        && /(transform|background(-color)?|box-shadow|opacity)\s*:/.test(buf)
+        && !/::after|::before/.test(sel)) {
+      offenders.push(sel.slice(0, 60)); buf = '';
+    }
+  }
+  ok('every ground/transform hover is pointer-gated (static sweep)',
+     offenders.length === 0, JSON.stringify([...new Set(offenders)]), '[]');
+}
+{
+  // Runtime: on a touch device (hover: none), a tap must not leave the
+  // thumbnail scaled.
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(700);
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  await np.waitForTimeout(400);
+  await np.locator('.masonry__btn').first().tap();
+  await np.waitForTimeout(600);
+  await np.keyboard.press('Escape');
+  await np.waitForTimeout(400);
+  ok('a tapped thumbnail does not stay swollen after the lightbox closes',
+     await np.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__photo')).transform === 'none'), true, true);
+  await ctx.close();
+}
+
 // ------------------------------------------------ the review's findings --
 // Regression pins for the code-review fixes: Back out of a pushed filter
 // hash clears the filter; the pinch stays the browser's over the photo; the

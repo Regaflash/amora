@@ -57,4 +57,8 @@
   transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease),
               transform var(--t-btn) var(--ease), border-color var(--t-btn) var(--ease);
 }
-.legal__back:hover { background: var(--champagne); color: var(--charcoal); transform: translateY(-2px); }
+@media (hover: hover) {
+  /* Gated like every ground/transform hover in styles.css: iOS latches
+     :hover after a tap. The :active press covers touch. */
+  .legal__back:hover { background: var(--champagne); color: var(--charcoal); transform: translateY(-2px); }
+}

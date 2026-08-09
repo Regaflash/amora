@@ -237,7 +237,11 @@ html.form-in-view .am-launcher:not(.is-open) {
   flex: 1 1 auto;
   min-width: 0;
   padding: 12px 13px;
-  font-size: 15px;
+  /* 16px floor, same reason as --t-input in styles.css: 15px is one pixel
+     under mobile Safari's focus-zoom threshold — and this input sits in a
+     bottom-anchored fixed panel, so the zoom shoved the panel's top edge
+     out of the visual viewport mid-conversation. */
+  font-size: max(1rem, 16px);
   background: var(--ivory);
   border: 1px solid var(--line);
   border-radius: 2px;

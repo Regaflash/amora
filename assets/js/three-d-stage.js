@@ -168,9 +168,28 @@
        on screen regardless, overlapping the drag hint at 390px inside the
        homepage's own #gear iframe. Observing it makes the attribute mean what
        it says whenever it is set. */
-    static get observedAttributes() { return ['hide-toolbar']; }
+    // note/obj-label/glb-label: the host page's translator rewrites these
+    // attributes (they are in i18n's ATTRS list), and the constructor reads
+    // them exactly once — without this forwarding, a translated attribute
+    // never reached the shadow root and the buttons stayed in the source
+    // language. NOTE for the starter-component copier: this diff must be
+    // upstreamed or a re-copy silently reverts it.
+    static get observedAttributes() { return ['hide-toolbar', 'note', 'obj-label', 'glb-label']; }
 
     attributeChangedCallback(name, prev, next) {
+      if (name === 'note') {
+        var n = this.shadowRoot && this.shadowRoot.querySelector('.note');
+        if (n && next !== null) n.textContent = next;
+        return;
+      }
+      if (name === 'obj-label') {
+        if (this._objBtn && next !== null) this._objBtn.textContent = next;
+        return;
+      }
+      if (name === 'glb-label') {
+        if (this._glbBtn && next !== null) this._glbBtn.textContent = next;
+        return;
+      }
       if (name !== 'hide-toolbar' || !this._toolbar) return;
       if (next === null) {
         if (!this._toolbar.isConnected) this.shadowRoot.appendChild(this._toolbar);
