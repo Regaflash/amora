@@ -44,17 +44,32 @@
 <meta name="twitter:description" content="דגם תלת־ממדי של המצלמה שמלווה את Amora Studio — גררו לסיבוב, גלגלו לזום." />
 <meta name="twitter:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
 <meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
-<!-- The only structured data this page earns. It mirrors a path the visitor
-     can actually see and walk: the homepage's gear section links here, and
-     this page's "← חזרה לאתר" link goes back. The last crumb carries no
-     "item" — per Google's guidance the current page is not self-linked. -->
+<!-- Two nodes, mirroring cost.html's pair: a WebPage that hangs this URL on
+     the site graph, and the BreadcrumbList that mirrors a path the visitor
+     can actually see and walk (the homepage's gear section links here, and
+     "← חזרה לאתר" goes back). The breadcrumb used to carry isPartOf/about
+     itself — page properties on a list node; they live on the WebPage now.
+     The last crumb carries no "item" — per Google's guidance the current
+     page is not self-linked. -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "WebPage",
+ "@id": "https://www.amora-studios.com/camera-3d.html#webpage",
+ "url": "https://www.amora-studios.com/camera-3d.html",
+ "name": "המצלמה שלנו — תלת מימד",
+ "inLanguage": "he",
+ "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
+ "about": { "@id": "https://www.amora-studios.com/#business" },
+ "primaryImageOfPage": "https://www.amora-studios.com/assets/img/og-cover.jpg"
+}
+</script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
  "@type": "BreadcrumbList",
  "@id": "https://www.amora-studios.com/camera-3d.html#breadcrumb",
  "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
- "about": { "@id": "https://www.amora-studios.com/#business" },
  "itemListElement": [
   {
    "@type": "ListItem",
@@ -260,7 +275,10 @@
   </div>
 </footer>
 
-<a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ">
+<!-- data-wa-text: page identity for the WhatsApp lead, same rule as
+     cost.html's float — page name only, never utm_*. -->
+<a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ"
+   data-wa-text="היי, הגעתי מעמוד הציוד שלכם ואשמח לבדוק זמינות לתאריך שלנו.">
   <span>וואטסאפ</span>
 </a>
 

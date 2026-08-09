@@ -38,7 +38,6 @@
   var WA_THRESHOLD = 0.3;      // scroll fraction before the WhatsApp button shows
   var SLIDE_INTERVAL = 7000;
   var SWIPE_MIN = 40;
-  var SEND_DELAY = 1200;
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) {
@@ -117,6 +116,15 @@
     var t = e.target;
     if (t && t.tagName === 'IMG' && !t.dataset.fb) {
       t.dataset.fb = '1';
+      // Removing src alone was a half-measure: every content image here is a
+      // <picture>, so the browser's pick came from a <source srcset> and
+      // survived the removal — Chrome painted its broken-image glyph OVER
+      // the stripes. The whole candidate set has to go.
+      var pic = t.parentNode;
+      if (pic && pic.tagName === 'PICTURE') {
+        $$('source', pic).forEach(function (s) { pic.removeChild(s); });
+      }
+      t.removeAttribute('srcset');
       t.removeAttribute('src');
       t.style.background = 'repeating-linear-gradient(135deg,#E8DCC8 0 6px,#F7F2EA 6px 14px)';
       t.style.minHeight = '180px';
@@ -223,6 +231,8 @@
   // three-way overflow guards existed to prevent, now solved by counting.
   var lockOwners = [];
   var lockedY = 0;
+  var lockedWidth = 0;
+  var lockedSpan = 1;
 
   // Not a scroll — the undo of a layout trick. html's scroll-behavior:smooth
   // would paint it as a visible glide from the top of the page, so the
@@ -243,6 +253,8 @@
     if (want === document.body.classList.contains('is-locked')) return;
     if (want) {
       lockedY = window.scrollY;
+      lockedWidth = window.innerWidth;
+      lockedSpan = Math.max(1, document.body.scrollHeight - window.innerHeight);
       document.body.style.top = -lockedY + 'px';
       document.body.classList.add('is-locked');
     } else {
@@ -253,7 +265,17 @@
       // restore so the onScroll below computes the progress bar and the
       // float against the real page, not a one-frame stale denominator.
       measure();
-      instantScrollTo(lockedY);
+      var y = lockedY;
+      if (window.innerWidth !== lockedWidth) {
+        // The phone rotated while the body was pinned; the reflow moved
+        // everything, and the captured pixel offset now points somewhere
+        // else — measured, far enough to land a gallery visitor in the
+        // footer. Scale the offset by the change in scrollable span:
+        // approximate, but it restores the same neighbourhood of the page
+        // rather than the same meaningless pixel.
+        y = Math.round(lockedY * (scrollable / lockedSpan));
+      }
+      instantScrollTo(y);
       onScroll();
     }
   }
@@ -291,10 +313,14 @@
   });
 
   // Leaving mobile width closes the menu — matches the prototype's mq handler.
-  mq.addEventListener('change', function () {
-    setMenu(false);
-    onScroll();
-  });
+  // Feature-detected like the portrait query further down: on Safari < 14 a
+  // MediaQueryList has no addEventListener, and an unguarded call HERE, at
+  // the top level of the IIFE, threw before the gallery, the lightbox and
+  // the lead-form submit handler ever registered — a silently dead form on
+  // exactly the devices least likely to get a second visit.
+  function onMenuCross() { setMenu(false); onScroll(); }
+  if (mq.addEventListener) mq.addEventListener('change', onMenuCross);
+  else if (mq.addListener) mq.addListener(onMenuCross);   // Safari < 14
 
   /* --------------------------------------------------------------- hero --- */
 
@@ -878,6 +904,14 @@
     // atomic — decode first, then change everything at once.
     function paint() {
       if (gen !== lbGen || lbIndex < 0) return;   // stepped past, or closed
+      // The lightbox reuses ONE <img> for every photograph, and the stripes
+      // fallback latches per-element (data-fb + two inline styles). Without
+      // this reset, a single broken variant left its stripes and min-height
+      // smeared under every later photo — and the latch meant no later
+      // broken photo could earn a fallback of its own.
+      delete lbImage.dataset.fb;
+      lbImage.style.background = '';
+      lbImage.style.minHeight = '';
       lbImage.src = url;
       lbImage.alt = alt;
       lbFigure.style.setProperty('--ratio', ratio);
@@ -894,7 +928,10 @@
       lastFocused = document.activeElement;
       lightbox.hidden = false;
       holdScroll('lightbox', true);
-      $('[data-lightbox-close]').focus();
+      // Guarded like its twin in closeLightbox: a throw here would leave the
+      // body pinned position:fixed with no visible dialog to Escape from.
+      var closeBtn = $('[data-lightbox-close]');
+      if (closeBtn) closeBtn.focus();
     }
 
     // The address mirrors the open photograph the way it mirrors the filter:
@@ -1784,9 +1821,6 @@
 
       var values = readValues();
 
-      // Honeypot: a filled hidden field means a bot — drop it silently.
-      if (values.company) return;
-
       var errors = validate(values);
       ['name', 'phone', 'email', 'date', 'type'].forEach(function (k) {
         showError(k, errors[k]);
@@ -1806,9 +1840,22 @@
         // markup — which used to be the only time this panel spoke here.
         if (failure) {
           failure.hidden = false;
-          failure.textContent = badKeys.length === 1
-            ? 'יש שדה אחד שצריך תיקון — ' + errors[badKeys[0]]
-            : 'יש ' + badKeys.length + ' שדות שצריכים תיקון לפני השליחה';
+          if (badKeys.length === 1) {
+            failure.textContent = 'יש שדה אחד שצריך תיקון — ' + errors[badKeys[0]];
+          } else {
+            // Named, not counted: at 390px the invalid controls are often
+            // off-viewport in both directions, and "יש 2 שדות" sends the
+            // visitor hunting. Labels are read from the DOM so a copy change
+            // cannot half-land; firstChild skips the (חובה) span.
+            var names = badKeys.map(function (k) {
+              var f = $('[data-field="' + k + '"]', form);
+              var wrap = f && f.closest ? f.closest('.field') : null;
+              var lab = wrap ? $('.field__label', wrap) : null;
+              var word = lab && lab.firstChild ? String(lab.firstChild.nodeValue || '').trim() : '';
+              return word || k;
+            }).join(', ');
+            failure.textContent = 'צריך להשלים: ' + names;
+          }
         }
         var firstBad = $('[aria-invalid="true"]', form);
         if (firstBad) firstBad.focus();
@@ -1827,15 +1874,66 @@
         values.message ? 'הודעה: ' + values.message : ''
       ].filter(Boolean).join('\n');
 
+      // Appends the WhatsApp escape hatch to the failure panel — the same
+      // anchor three paths need (honeypot, no-endpoint, network failure),
+      // and assigning failure.textContent first is what keeps repeated
+      // attempts from stacking links.
+      function offerWhatsApp(label) {
+        if (!failure) return;
+        var hand = document.createElement('a');
+        hand.href = waLink(summary);
+        hand.target = '_blank';
+        hand.rel = 'noopener';
+        hand.className = 'form__done-cta';
+        hand.style.marginTop = '12px';
+        hand.textContent = label;
+        failure.appendChild(document.createElement('br'));
+        failure.appendChild(hand);
+      }
+
+      // Honeypot: a filled hidden field usually means a bot — and no row is
+      // written either way. But password managers and contact autofill fill
+      // organisation fields for real people, and the old bare `return` (it
+      // sat before the summary even existed) left that couple pressing a
+      // button that did nothing, silently, for the whole visit. Now: the
+      // database stays untouched, and the typed details are handed to the
+      // WhatsApp route — a script never taps the link, a human still
+      // becomes a lead.
+      if (values.company) {
+        if (failure) {
+          failure.hidden = false;
+          failure.textContent = 'לא הצלחנו לשלוח כרגע. אפשר לפנות ישירות בוואטסאפ ונחזור אליכם היום.';
+          offerWhatsApp('שליחה בוואטסאפ ←');
+        }
+        return;
+      }
+
       if (failure) failure.hidden = true;
+      // Captured, not re-written as a literal: on a translated page the
+      // button's text is English/Arabic/Russian, and the failure path runs
+      // exactly when the network — including the translator — is down, so a
+      // restored Hebrew literal would strand the CTA in the wrong language
+      // at the worst moment. Restore what the visitor was actually shown.
+      var restoreLabel = submitBtn ? submitBtn.textContent : '';
+      if (submitBtn) {
+        submitBtn.classList.add('is-sending');
+        submitBtn.textContent = 'שולחים…';
+      }
+      // Latched only after the button writes above: submitBtn is a lookup,
+      // and a throw between `sending = true` and the release would have left
+      // the latch closed — a form dead to every later press.
       sending = true;
-      submitBtn.classList.add('is-sending');
-      submitBtn.textContent = 'שולחים…';
+
+      function release() {
+        sending = false;
+        if (submitBtn) {
+          submitBtn.classList.remove('is-sending');
+          submitBtn.textContent = restoreLabel;
+        }
+      }
 
       function succeed() {
-        sending = false;
-        submitBtn.classList.remove('is-sending');
-        submitBtn.textContent = 'שלחו — נחזור אליכם היום';
+        release();
         fields.hidden = true;
         done.hidden = false;
         done.setAttribute('tabindex', '-1');
@@ -1843,9 +1941,7 @@
       }
 
       function fail(reason) {
-        sending = false;
-        submitBtn.classList.remove('is-sending');
-        submitBtn.textContent = 'שלחו — נחזור אליכם היום';
+        release();
         failure.hidden = false;
         failure.textContent = reason;
       }
@@ -1883,23 +1979,9 @@
       // visitor who closes that tab becomes a lead the studio never hears about.
       if (!endpoint) {
         window.open(waLink(summary), '_blank', 'noopener');
-        sending = false;
-        submitBtn.classList.remove('is-sending');
-        submitBtn.textContent = 'שלחו — נחזור אליכם היום';
-        failure.hidden = false;
-        // Assigning textContent also clears the anchor appended by a previous
-        // submit, so repeated attempts do not stack links.
-        failure.textContent = 'הפרטים מוכנים בוואטסאפ — נותר ללחוץ שם על שליחה, ' +
-                              'ונחזור אליכם היום. אם החלון לא נפתח:';
-        var hand = document.createElement('a');
-        hand.href = waLink(summary);
-        hand.target = '_blank';
-        hand.rel = 'noopener';
-        hand.className = 'form__done-cta';
-        hand.style.marginTop = '12px';
-        hand.textContent = 'פתיחת וואטסאפ עם הפרטים ←';
-        failure.appendChild(document.createElement('br'));
-        failure.appendChild(hand);
+        fail('הפרטים מוכנים בוואטסאפ — נותר ללחוץ שם על שליחה, ' +
+             'ונחזור אליכם היום. אם החלון לא נפתח:');
+        offerWhatsApp('פתיחת וואטסאפ עם הפרטים ←');
         return;
       }
 
@@ -1927,15 +2009,7 @@
         // Never lose the lead to a network blip — offer the WhatsApp route.
         fail('לא הצלחנו לשלוח כרגע. אפשר לנסות שוב, או לפנות ישירות בוואטסאפ ' +
              'ונחזור אליכם היום.');
-        var alt = document.createElement('a');
-        alt.href = waLink(summary);
-        alt.target = '_blank';
-        alt.rel = 'noopener';
-        alt.className = 'form__done-cta';
-        alt.style.marginTop = '12px';
-        alt.textContent = 'שליחה בוואטסאפ ←';
-        failure.appendChild(document.createElement('br'));
-        failure.appendChild(alt);
+        offerWhatsApp('שליחה בוואטסאפ ←');
       });
     });
   }

@@ -2527,8 +2527,10 @@ textarea.field__control { resize: vertical; }
 
 .field-row {
   display: grid;
-  /* 140px paired the date and event-type controls two-across at 390px, in the
-     one place on the site where friction costs a lead. */
+  /* 220px floor: below ~500px of available width the row deliberately
+     STACKS — two 140px controls did fit side-by-side at 390px once, and the
+     date control's text was clipped mid-digit. One readable column beats
+     two cramped ones in the one place where friction costs a lead. */
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 16px;
   /* The date cell is a row taller than its neighbour now that it carries the
@@ -2608,6 +2610,12 @@ textarea.field__control { resize: vertical; }
   margin: 0 0 var(--sp-3);
 }
 .form__done-text { font-size: var(--t-small); color: var(--mocha); margin: 0 0 var(--sp-6); }
+/* The what-happens-now line sits directly over its follow-up question, and
+   the phone alternative hangs under the CTA pill — margins, not floats, so
+   the centred RTL column needs no direction-aware rules. */
+.form__done-text + .form__done-text { margin-top: calc(var(--sp-6) * -0.6); }
+.form__done-text--tel { margin: var(--sp-4) 0 0; }
+.form__done-text--tel a { color: var(--champagne-ink); }
 .form__done-cta {
   display: inline-block;
   font-size: var(--t-micro);

@@ -2868,6 +2868,373 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ----------------------------------------- a HUNG translate endpoint, bounded --
+// route.abort tests the failure that already worked; a connection that ACCEPTS
+// and never ANSWERS — captive portals do exactly this — used to hang the
+// promise forever: `inflight` never cleared, every switcher click (Hebrew
+// included) refused, and the poisoned localStorage key reproduced the strand
+// on every future load. The fetch now aborts at 8s and fails like any other.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.route('**/functions/v1/translate', () => { /* accept, never answer */ });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(9500);
+  ok('a hung endpoint is bounded: reverted at 8s, key cleared, nothing latched',
+     await p.evaluate(() => document.documentElement.getAttribute('lang') === 'he'
+       && document.documentElement.dir === 'rtl'
+       && !document.documentElement.hasAttribute('data-translating')
+       && localStorage.getItem('amora.lang') === null), true, true);
+  await p.unroute('**/functions/v1/translate');
+  await p.route('**/functions/v1/translate', async (route) => {
+    const body = route.request().postDataJSON();
+    const t = {};
+    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    await route.fulfill({ json: { t } });
+  });
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(1500);
+  ok('and the switcher is alive again after the hang',
+     await p.evaluate(() => document.documentElement.dir === 'ltr'
+       && document.querySelector('h1').textContent.includes('«')), true, true);
+  await p.close();
+}
+
+// -------------------------------------- Safari 13: MediaQueryList, old API --
+// main.js and assistant.js called mq.addEventListener unguarded at the top of
+// their IIFEs — on Safari < 14 that threw before the gallery, the lightbox
+// and the lead-form submit handler ever registered: a silently dead form.
+// Emulated by serving matchMedia results that only speak the old dialect.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.addInitScript(() => {
+    const orig = window.matchMedia.bind(window);
+    window.matchMedia = (q) => {
+      const real = orig(q);
+      return {
+        get matches() { return real.matches; },
+        media: real.media,
+        addListener: (fn) => real.addEventListener('change', fn),
+        removeListener: (fn) => real.removeEventListener('change', fn)
+      };
+    };
+  });
+  const errs = [];
+  p.on('pageerror', (e) => errs.push(e.message));
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(800);
+  await p.locator('.chip[data-filter="prep"]').click();
+  await p.waitForTimeout(500);
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(500);
+  ok('the old MediaQueryList dialect still gets a working page, form included',
+     errs.length === 0 && await p.evaluate(() =>
+       document.querySelectorAll('.masonry__item:not([hidden])').length === 3
+         && !document.querySelector('[data-form-failure]').hidden),
+     JSON.stringify(errs).slice(0, 80) || 'ok', 'no errors, chip filters, form validates');
+  await p.close();
+}
+
+// ------------------------------------------ the submit's two real outcomes --
+// A 225-check suite proved the form REJECTS a bad submission and never proved
+// it ACCEPTS a good one. Both outcomes now run against a stubbed endpoint —
+// including the payload shape, which is what the column-scoped GRANT can
+// break silently.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let posted = null;
+  await p.route('**/rest/v1/leads**', async (route) => {
+    posted = route.request().postDataJSON();
+    await route.fulfill({ status: 201, body: '' });
+  });
+  await p.goto(BASE + '/?utm_source=check', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.fill('[data-field="name"]', 'בדיקה בדיקתית');
+  await p.fill('[data-field="phone"]', '0501234567');
+  await p.check('[data-date-tbd]');
+  await p.selectOption('[data-field="type"]', 'wedding');
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(900);
+  const doneState = await p.evaluate(() => ({
+    fieldsHidden: document.querySelector('[data-form-fields]').hidden,
+    doneShown: !document.querySelector('[data-form-done]').hidden,
+    focused: document.activeElement === document.querySelector('[data-form-done]'),
+    tel: !!document.querySelector('[data-form-done] a[href^="tel:"]'),
+    wa: decodeURIComponent(document.querySelector('[data-form-done] .form__done-cta').href),
+  }));
+  ok('a real submit lands: fields fold, the done panel takes focus',
+     doneState.fieldsHidden && doneState.doneShown && doneState.focused,
+     JSON.stringify(doneState).slice(0, 90), 'hidden+shown+focused');
+  ok('the done panel names the next step, a phone route, and a follow-up WhatsApp',
+     doneState.tel && doneState.wa.includes('השארתי עכשיו פרטים'),
+     doneState.wa.slice(-45), 'tel + the follow-up message');
+  ok('the payload carries date_tbd and the campaign that paid for the visit',
+     posted && posted.date_tbd === true && posted.name === 'בדיקה בדיקתית'
+       && JSON.stringify(posted.source || '').includes('check'),
+     JSON.stringify(posted).slice(0, 90), 'date_tbd:true + utm in source');
+  await p.close();
+}
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let attempts = 0;
+  await p.route('**/rest/v1/leads**', (route) => { attempts++; route.abort('failed'); });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.fill('[data-field="name"]', 'בדיקה בדיקתית');
+  await p.fill('[data-field="phone"]', '0501234567');
+  await p.check('[data-date-tbd]');
+  await p.selectOption('[data-field="type"]', 'wedding');
+  const labelBefore = (await p.locator('[data-submit]').textContent()).trim();
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(900);
+  const failState = await p.evaluate(() => {
+    const f = document.querySelector('[data-form-failure]');
+    const a = f.querySelector('a[href^="https://wa.me/"]');
+    return { shown: !f.hidden, wa: a ? decodeURIComponent(a.href) : '',
+             label: document.querySelector('[data-submit]').textContent.trim() };
+  });
+  ok('a network failure hands the typed lead to WhatsApp and frees the button',
+     failState.shown && failState.wa.includes('0501234567') && failState.label === labelBefore,
+     JSON.stringify({ label: failState.label, want: labelBefore }), 'panel + summary + restored label');
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(900);
+  ok('a second attempt retries the network and does not stack anchors',
+     attempts === 2 && await p.evaluate(() =>
+       document.querySelectorAll('[data-form-failure] a').length === 1),
+     attempts, '2 attempts, 1 anchor');
+  await p.close();
+}
+
+// ------------------------------------------- the honeypot spares the human --
+// A filled hidden field usually means a bot — but password managers fill
+// organisation fields for real people, and the old bare `return` gave that
+// couple a button that did nothing, silently, forever. No row is written
+// either way; a human now gets the WhatsApp route with everything they typed.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let attempts = 0;
+  await p.route('**/rest/v1/leads**', (route) => { attempts++; route.abort('failed'); });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.fill('[data-field="name"]', 'בדיקה בדיקתית');
+  await p.fill('[data-field="phone"]', '0501234567');
+  await p.check('[data-date-tbd]');
+  await p.selectOption('[data-field="type"]', 'wedding');
+  await p.evaluate(() => { document.querySelector('[data-field="company"]').value = 'Acme Inc'; });
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(500);
+  ok('a tripped honeypot writes no row but never leaves a human in silence',
+     attempts === 0 && await p.evaluate(() => {
+       const f = document.querySelector('[data-form-failure]');
+       return !f.hidden && !!f.querySelector('a[href^="https://wa.me/"]');
+     }), attempts, '0 requests, visible WhatsApp route');
+  await p.close();
+}
+
+// ---------------------------------------------- form ergonomics, regression --
+{
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(600);
+  await page.locator('[data-submit]').click();
+  await page.waitForTimeout(400);
+  const summary = await page.evaluate(() => document.querySelector('[data-form-failure]').textContent);
+  ok('the error summary names the broken fields instead of counting them',
+     summary.includes('שם מלא') && summary.includes('טלפון') && !summary.includes('(חובה)'),
+     summary.slice(0, 60), 'names, no (חובה)');
+  const order = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-form-fields] [data-field]')].map((n) => n.dataset.field));
+  ok('required fields precede the optional email on both forms\' shared order',
+     order.indexOf('phone') < order.indexOf('date') && order.indexOf('date') < order.indexOf('email'),
+     order.join(','), 'phone < date < email');
+  ok('no select placeholder impersonates a real answer',
+     await page.evaluate(() => [...document.querySelectorAll('select[data-field]')].every((s) => {
+       const empty = s.querySelector('option[value=""]');
+       if (!empty) return true;
+       return [...s.options].every((o) => o.value === '' || o.textContent !== empty.textContent);
+     })), true, true);
+}
+
+// -------------------------------------- WhatsApp attribution, per placement --
+{
+  const home = await page.evaluate(() => decodeURIComponent(document.querySelector('.wa-float').href));
+  await page.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  const cost = await page.evaluate(() => decodeURIComponent(document.querySelector('.wa-float').href));
+  ok('a WhatsApp lead from the money page says so; the homepage keeps the default',
+     cost.includes('מה משפיע על המחיר') && home.includes('הגעתי מהאתר') && cost !== home,
+     cost.slice(-50), 'page-specific text');
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(400);
+}
+
+// ------------------------------------------- broken images, both fallbacks --
+// error events do not bubble but DO capture — the document-level handler sees
+// a dispatched one, which makes the repair testable without a broken deploy.
+{
+  const shape = await page.evaluate(() => {
+    const img = document.querySelector('.masonry__item img');
+    const pic = img.parentNode;
+    img.dispatchEvent(new Event('error'));
+    return { srcset: img.hasAttribute('srcset'), src: img.hasAttribute('src'),
+             sources: pic.querySelectorAll('source').length,
+             bg: img.style.background.includes('repeating') };
+  });
+  ok('a broken <picture> loses its whole candidate set, not just src',
+     !shape.srcset && !shape.src && shape.sources === 0 && shape.bg,
+     JSON.stringify(shape), 'no candidates, stripes on');
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(600);
+}
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/#photo-3', { waitUntil: 'load' });
+  await p.waitForTimeout(900);
+  await p.evaluate(() => {
+    const img = document.querySelector('[data-lightbox-img]');
+    img.dataset.fb = '1';
+    img.style.minHeight = '180px';
+    img.style.background = 'red';
+  });
+  await p.keyboard.press('ArrowLeft');
+  await p.waitForTimeout(900);
+  ok('one broken photo cannot smear its fallback onto the next',
+     await p.evaluate(() => {
+       const img = document.querySelector('[data-lightbox-img]');
+       return img.dataset.fb === undefined && img.style.minHeight === '' && img.style.background === '';
+     }), true, true);
+  await p.close();
+}
+
+// ----------------------------------------- rotating inside the scroll lock --
+// The captured pixel offset is meaningless after a reflow; the release now
+// scales it by the change in scrollable span, so closing lands the visitor
+// in the same neighbourhood instead of the footer.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await np.waitForTimeout(800);
+  await np.setViewportSize({ width: 844, height: 390 });
+  await np.waitForTimeout(500);
+  await np.keyboard.press('Escape');
+  await np.waitForTimeout(500);
+  const landed = await np.evaluate(() => {
+    const g = document.querySelector('#gallery').getBoundingClientRect();
+    return { top: Math.round(g.top), bottom: Math.round(g.bottom), vh: window.innerHeight };
+  });
+  ok('rotating inside the lightbox still hands back the gallery, not the footer',
+     landed.top < landed.vh && landed.bottom > 0, JSON.stringify(landed), 'gallery intersects viewport');
+  await ctx.close();
+}
+
+// ------------------------------------------------ the CRM works a real day --
+// Stale alarm, deep search, the note that survives a repaint, the tap that
+// moves the lead, and the dialog's keyboard manners — one seeded morning.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const now = Date.now();
+  const iso = (msAgo) => new Date(now - msAgo).toISOString();
+  const leads = [
+    { id: '00000000-0000-0000-0000-00000000cafe', created_at: iso(0), name: 'טופלה היום',
+      phone: '0522222222', event_type: 'wedding', status: 'contacted', handled: true, notes: null },
+    { id: '00000000-0000-0000-0000-00000000dead', created_at: iso(6 * 86400000), name: 'שקט מדי',
+      phone: '0521111111', event_type: 'wedding', status: 'new', handled: false,
+      message: 'אולם בראשון לציון', notes: null },
+    { id: '00000000-0000-0000-0000-00000000beef', created_at: iso(365 * 86400000), name: 'נסגרה מזמן',
+      phone: '0523333333', event_type: 'wedding', status: 'signed', handled: true, notes: null },
+  ];
+  let patched = null;
+  const eventPosts = [];
+  await p.route('**/auth/v1/token**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ access_token: 'fake.jwt.token', refresh_token: 'r', expires_in: 3600,
+                           token_type: 'bearer', user: { id: 'u1', email: 't@example.com' } }),
+  }));
+  await p.route('**/rest/v1/leads**', (route) => {
+    if (route.request().method() === 'PATCH') {
+      patched = route.request().postDataJSON();
+      return route.fulfill({ status: 204, body: '' });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(leads) });
+  });
+  // 200 with no rows, NOT 404: a 404 here means "migration not run" and
+  // folds the whole pipeline UI away — including the note box under test.
+  await p.route('**/rest/v1/contracts**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: '[]' }));
+  await p.route('**/rest/v1/lead_events**', (route) => {
+    if (route.request().method() === 'POST') {
+      eventPosts.push(route.request().postDataJSON());
+      return route.fulfill({ status: 201, body: '' });
+    }
+    route.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify([{ lead_id: leads[0].id, type: 'status_changed', detail: null, created_at: iso(3600000) }]) });
+  });
+  await p.context().route('**://wa.me/**', (route) => route.abort());
+  await p.goto(BASE + '/admin.html', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.fill('input[type=email]', 't@example.com');
+  await p.fill('input[type=password]', 'whatever');
+  await p.locator('button[type=submit]').first().click();
+  await p.waitForTimeout(1800);
+
+  ok('exactly the silent live lead wears the stale alarm, and the tile counts it',
+     await p.evaluate(() => {
+       const badges = [...document.querySelectorAll('.crm-card__badge--stale')];
+       return badges.length === 1
+         && badges[0].closest('.crm-card').textContent.includes('שקט מדי')
+         && document.querySelector('[data-stat="stale"]').textContent === '1';
+     }), true, true);
+
+  await p.fill('[data-search]', 'בראשון');
+  await p.waitForTimeout(400);
+  ok('search reaches the message a person actually remembers',
+     await p.evaluate(() => document.querySelectorAll('.crm-card').length === 1
+       && document.querySelector('.crm-card').textContent.includes('שקט מדי')), true, true);
+  await p.fill('[data-search]', '');
+  await p.waitForTimeout(400);
+
+  const staleCard = p.locator('.crm-card', { hasText: 'שקט מדי' });
+  await staleCard.locator('.crm-note__summary').click();
+  await staleCard.locator('.crm-note__area').fill('טיוטה חשובה באמצע שיחה');
+  await p.fill('[data-search]', 'ש');
+  await p.waitForTimeout(400);
+  ok('the note being typed survives the repaint a keystroke triggers',
+     await p.evaluate(() => {
+       const area = [...document.querySelectorAll('.crm-note__area')]
+         .find((a) => a.value.includes('טיוטה חשובה'));
+       return !!area && area.closest('details').open;
+     }), true, true);
+  await p.fill('[data-search]', '');
+  await p.waitForTimeout(400);
+
+  await p.locator('.crm-card', { hasText: 'שקט מדי' }).locator('.crm-act--wa').first().click();
+  await p.waitForTimeout(900);
+  ok('tapping WhatsApp IS working the lead: contacted + a diary row, one tap',
+     patched !== null && patched.status === 'contacted'
+       && eventPosts.some((e) => e.type === 'whatsapp_opened'),
+     JSON.stringify({ patched, types: eventPosts.map((e) => e.type) }).slice(0, 90),
+     'PATCH contacted + whatsapp_opened');
+
+  // The default shelf shows only the open bucket — the contacted lead lives
+  // behind הכול.
+  await p.locator('.chip[data-filter-handled="all"]').click();
+  await p.waitForTimeout(400);
+  const createBtn = p.locator('.crm-card', { hasText: 'טופלה היום' }).locator('.crm-act--contract').first();
+  await createBtn.click();
+  await p.waitForTimeout(300);
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(300);
+  ok('Escape closes the contract dialog and hands focus back to its opener',
+     await p.evaluate(() => !document.querySelector('.crm-dialog')
+       && document.activeElement.classList.contains('crm-act--contract')), true, true);
+  await p.keyboard.press('/');
+  await p.waitForTimeout(200);
+  ok('the / shortcut jumps to search', await p.evaluate(() =>
+    document.activeElement === document.querySelector('[data-search]')), true, true);
+  await p.close();
+}
+
 // ------------------------------------------------------------------- report --
 const failed = results.filter((r) => !r.pass);
 for (const r of results) {

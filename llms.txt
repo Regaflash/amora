@@ -5,12 +5,15 @@
 >
 > A two-person wedding photography and videography studio. Based in Tel Aviv,
 > Israel; shoots across the country. Stills and film are produced by the same
-> studio rather than subcontracted. The site is in Hebrew.
+> studio rather than subcontracted. The site is authored in Hebrew — the
+> single canonical document per URL — with optional in-place machine
+> translation to Arabic, English and Russian offered in the page itself.
+> There are no per-language URLs, which is why no hreflang annotations exist.
 
 ## מה יש באתר / What is on this site
 
-- [עמוד הבית / Home](https://www.amora-studios.com/): the studio's only content
-  page. Contains the portfolio gallery, the five service types, the process, a
+- [עמוד הבית / Home](https://www.amora-studios.com/): the studio's main page.
+  Contains the portfolio gallery, the five service types, the process, a
   wedding film, and a FAQ whose answers are the studio's own words on delivery
   times, coverage area and what a package contains.
 - [הציוד / The gear](https://www.amora-studios.com/camera-3d.html): an
@@ -81,5 +84,5 @@ Read these as absent, not as unknown-but-inferable:
   drafts pending review and should not be quoted as settled policy. Remaining
   URLs are static assets and carry no such directive.
 
-Last reviewed: 2026-08-02. Checked by tools/check.sh, which fails the build if a
+Last reviewed: 2026-08-09. Checked by tools/check.sh, which fails the build if a
 URL in sitemap.xml is not listed above.

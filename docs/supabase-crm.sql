@@ -75,10 +75,18 @@ create policy "admins can update leads"
 grant usage on schema public to authenticated;
 grant select on table public.leads to authenticated;
 
--- UPDATE is column-scoped: the CRM only ever flips `handled`. Even a stolen
--- owner session cannot rewrite a customer's phone number or message.
--- If you later add an editable field (say `notes`), grant it here too or the
--- PATCH comes back 403.
+-- UPDATE is column-scoped. Even a stolen owner session cannot rewrite a
+-- customer's phone number or message.
+--
+-- ⚠ PRODUCTION RUNS MORE THAN THIS LINE. The pipeline migration
+-- (supabase-crm-pipeline.sql:44) widened it to
+--   grant update (handled, status, notes) on public.leads to authenticated;
+-- plus `grant select, insert on public.lead_events to authenticated`.
+-- This file's original single-column grant is kept below for the history of
+-- the initial setup only — a session reading just this file used to conclude
+-- that setStatus() and saveNotes() must be 403ing, which is exactly the
+-- class of doc-drift the INSERT-grant incident (bottom of this file) is
+-- about. If you add an editable column, grant it in the PIPELINE file.
 grant update (handled) on table public.leads to authenticated;
 
 -- 5 · confirm the public key stayed write-only -------------------------------
@@ -153,8 +161,10 @@ commit;
 --     where table_name = 'leads' and grantee in ('anon','authenticated')
 --     order by 1, 2;
 --
--- Expected: anon → INSERT only. authenticated → SELECT, plus UPDATE on the
--- single column `handled`. Anything else is a leak.
+-- Expected: anon → INSERT only (column-scoped to the ten form columns).
+-- authenticated → SELECT, plus UPDATE on `handled, status, notes` (the
+-- pipeline migration widened the original handled-only grant), plus
+-- SELECT/INSERT on public.lead_events. Anything else is a leak.
 --
 -- And from a terminal, with the anon key — this must return an empty array or
 -- a permission error, never a lead:

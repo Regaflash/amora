@@ -233,6 +233,16 @@
   color: var(--ivory);
 }
 .crm-card__badge--past { opacity: .7; }
+/* Silence on a live lead — the site promises a same-day reply, and this
+   badge is what says whether that promise is being kept. Outlined in
+   terracotta, not filled: the filled treatment stays reserved for an
+   event that is actually imminent. */
+.crm-card__badge--stale {
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+  font-weight: 600;
+}
+.crm-card.is-stale { border-inline-start-color: var(--terracotta); }
 .crm-card__badge--status { border-color: rgba(201, 174, 140, 0.6); }
 .crm-card.is-handled .crm-card__badge--status {
   background: var(--champagne);

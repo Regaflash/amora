@@ -1194,16 +1194,6 @@
             <span class="field__error" id="err-phone" data-error="phone"></span>
           </label>
 
-          <!-- Optional on purpose. The studio answers on the phone and on
-               WhatsApp, so making this required would cost submissions — but
-               with no address at all there is no way to send a quote, a sample
-               gallery or a contract, and the site collected none anywhere. -->
-          <label class="field">
-            <span class="field__label">אימייל <span class="field__opt">(אופציונלי — כדי לשלוח הצעה וגלריות)</span></span>
-            <input class="field__control" name="email" type="email" inputmode="email" autocomplete="email" data-field="email" aria-describedby="err-email" />
-            <span class="field__error" id="err-email" data-error="email"></span>
-          </label>
-
           <div class="field-row">
             <!-- A <div> rather than a <label>: the opt-out below needs a label
                  of its own, and nesting one label inside another is invalid. -->
@@ -1230,6 +1220,19 @@
             </label>
           </div>
 
+          <!-- Optional on purpose. The studio answers on the phone and on
+               WhatsApp, so making this required would cost submissions — but
+               with no address at all there is no way to send a quote, a sample
+               gallery or a contract, and the site collected none anywhere.
+               It sits AFTER the required fields since 2026-08-09: at 390px the
+               form is one column, and an optional field third in line meant a
+               visitor could abandon before ever seeing that a date is wanted. -->
+          <label class="field">
+            <span class="field__label">אימייל <span class="field__opt">(אופציונלי — כדי לשלוח הצעה וגלריות)</span></span>
+            <input class="field__control" name="email" type="email" inputmode="email" autocomplete="email" data-field="email" aria-describedby="err-email" />
+            <span class="field__error" id="err-email" data-error="email"></span>
+          </label>
+
           <div class="field-row">
             <label class="field">
               <span class="field__label">אזור / לוקיישן <span class="field__opt">(אם ידוע)</span></span>
@@ -1238,8 +1241,11 @@
             </label>
             <label class="field">
               <span class="field__label">מה מצלמים</span>
+              <!-- The placeholder must NOT be a real answer: it was 'שניהם'
+                   once, which posted null while looking answered — and the
+                   true "both" sat one line below it under a different name. -->
               <select class="field__control" name="coverage" data-field="coverage">
-                <option value="">שניהם</option>
+                <option value="">בחרו</option>
                 <option value="both">סטילס + וידאו</option>
                 <option value="stills">סטילס בלבד</option>
                 <option value="video">וידאו בלבד</option>
@@ -1264,8 +1270,16 @@
         <div class="form__done" data-form-done hidden>
           <p class="form__done-kicker">Thank you</p>
           <h3 class="form__done-title">קיבלנו. נחזור אליכם היום.</h3>
-          <p class="form__done-text">בינתיים, אפשר לכתוב לנו ישירות בוואטסאפ.</p>
-          <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener">לוואטסאפ ←</a>
+          <!-- A paraphrase of FAQ answer 9, deliberately NOT a byte-copy: the
+               .faq__a copies are locked to the JSON-LD and this text must be
+               free to drift from them. The dead air after a submit is when
+               couples message three other studios — naming the next step is
+               the cheapest anti-shopping-around move on the page. -->
+          <p class="form__done-text">חוזרים אליכם עוד היום עם זמינות והצעה מותאמת, ואחרי זה שיחת היכרות קצרה — בלי מחויבות.</p>
+          <p class="form__done-text">רוצים להוסיף משהו בינתיים?</p>
+          <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener"
+             data-wa-text="היי, השארתי עכשיו פרטים באתר ורציתי להוסיף משהו.">לוואטסאפ ←</a>
+          <p class="form__done-text form__done-text--tel">או בטלפון — <a href="tel:+972503662699">050-3662699</a></p>
         </div>
       </form>
     </div>

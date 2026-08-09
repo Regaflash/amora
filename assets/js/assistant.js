@@ -922,11 +922,16 @@
     else if (!panel.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
   });
 
-  sheetQuery.addEventListener('change', function () {
+  // Feature-detected: Safari < 14 has no addEventListener on a
+  // MediaQueryList, and an unguarded call here threw before start() ran —
+  // no launcher, no assistant, on the browsers that degrade worst.
+  function onSheetCross() {
     if (!panel || !open) return;
     panel.setAttribute('aria-modal', String(sheetQuery.matches));
     lockScroll(sheetQuery.matches);
-  });
+  }
+  if (sheetQuery.addEventListener) sheetQuery.addEventListener('change', onSheetCross);
+  else if (sheetQuery.addListener) sheetQuery.addListener(onSheetCross);
 
   // The mobile menu is full-screen and sits above the panel; opening it while
   // the assistant is open would leave an invisible dialog behind it.
