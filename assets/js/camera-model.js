@@ -9,6 +9,18 @@
  */
 
 const stage = document.querySelector('three-d-stage');
+
+// The loading veil lives and dies in THIS module: added here, removed in the
+// finally at the very end of the file. If this module never runs there is no
+// veil; if ANY line of the build throws — stage.ready, a THREE constructor,
+// setObject — the finally still lifts it, so nothing can strand the opaque
+// veil over the stage or the fallback still. The whole build sits inside one
+// try for exactly that reason.
+const shell = document.querySelector('.stage-shell');
+if (shell) shell.classList.add('is-loading');
+
+try {
+
 const { THREE } = await stage.ready;
 
 const M = {
@@ -87,3 +99,9 @@ add('back_door_seam', new THREE.BoxGeometry(bodyW * 0.9, 0.0016, 0.0016), M.bras
 
 cam.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 stage.setObject(cam);
+
+// Deliberately unindented try body above: reindenting ~90 lines of mesh
+// placement would bury this file's real diffs forever.
+} finally {
+  if (shell) shell.classList.remove('is-loading');
+}

@@ -621,7 +621,7 @@
     });
   }
 
-  function applyFilter(next) {
+  function applyFilterCore(next) {
     filter = next;
     items.forEach(function (li) {
       li.hidden = !(filter === 'all' || li.dataset.cat === filter);
@@ -633,6 +633,26 @@
     announceCount();
     stripAfterFilter();
   }
+
+  // Where the engine has View Transitions, filtering FLIPs the wall: every
+  // frame carries a view-transition-name (assigned below), so the survivors
+  // GLIDE to their new positions and the filtered-out fade — instead of
+  // eighteen photographs teleporting. Everywhere else the same core runs
+  // with no animation, and both motion switches turn it off. The callback
+  // runs a frame later — anything that needs the filter applied
+  // SYNCHRONOUSLY (photoFromHash, which opens a photo right after unhiding
+  // it) must call applyFilterCore directly.
+  function applyFilter(next) {
+    var animate = typeof document.startViewTransition === 'function'
+      && !reducedMotion
+      && !document.documentElement.classList.contains('a11y-no-motion');
+    if (animate) document.startViewTransition(function () { applyFilterCore(next); });
+    else applyFilterCore(next);
+  }
+
+  items.forEach(function (li, i) {
+    li.style.viewTransitionName = 'photo-' + (i + 1);
+  });
 
   // A chip press silently rewrites the grid from 18 tiles to 3 or 4. aria-pressed
   // says which chip is on; nothing said how much of the gallery survived it.
@@ -709,7 +729,10 @@
     if (!m) return false;
     var li = items[Number(m[1]) - 1];
     if (!li) return false;
-    if (li.hidden) applyFilter('all');
+    // Core, not the animated wrapper: openLightbox on the next line needs the
+    // photo unhidden NOW, and startViewTransition applies a frame later —
+    // the wrapped call would open visibleItems()[-1], the last photograph.
+    if (li.hidden) applyFilterCore('all');
     openLightbox(visibleItems().indexOf(li));
     return true;
   }
@@ -898,7 +921,17 @@
     if (photoFromHash() || filterFromHash()) {
       waEngaged = true;
       onScroll();
+      return;
     }
+    // Back out of a PUSHED #gallery-<cat> entry (the assistant's gallery
+    // action pushes; the chips replace) lands on an empty hash. The address
+    // no longer claims a filter, so the wall stops holding one — otherwise
+    // the visitor sees three photos under a clean URL, copies a link that
+    // lies, and the next lightbox close resurrects the abandoned fragment.
+    // Empty hash ONLY: #faq or #about in the address is a section jump, not
+    // a statement about the gallery, and resetting a filter because someone
+    // used the nav would be destruction, not honesty.
+    if (location.hash === '' && filter !== 'all') applyFilter('all');
   });
 
   // RTL: ArrowRight walks back through the list, ArrowLeft walks forward.
@@ -976,15 +1009,27 @@
 
   function playHint() {
     if (hintSpent || reducedMotion || !strip || stripTouched || !stripInView) return;
+    // The widget's motion toggle, not just the OS preference: under
+    // html.a11y-no-motion the CSS blanks the animation, so the class would
+    // never get its animationend, stick forever, and abruptly play whenever
+    // the visitor re-enables motion. Refusing WITHOUT spending means the
+    // hint stays available for a session where motion returns — the same
+    // deal a fresh arrival gets.
+    if (document.documentElement.classList.contains('a11y-no-motion')) return;
     if (lightbox && !lightbox.hidden) return;
     if (strip.scrollWidth <= strip.clientWidth + 1) return;
     hintSpent = true;
     strip.classList.add('is-hinting');
     // animationend bubbles up from the items; the first one ends them all.
-    strip.addEventListener('animationend', function onEnd() {
+    // animationcancel too: toggling no-motion ON mid-hint kills the
+    // animation without an end event, and the class must not outlive it.
+    var onHintDone = function () {
       strip.classList.remove('is-hinting');
-      strip.removeEventListener('animationend', onEnd);
-    });
+      strip.removeEventListener('animationend', onHintDone);
+      strip.removeEventListener('animationcancel', onHintDone);
+    };
+    strip.addEventListener('animationend', onHintDone);
+    strip.addEventListener('animationcancel', onHintDone);
   }
 
   function paintStripCount() {
@@ -1723,7 +1768,15 @@
 
   /* ------------------------------------------------------ scroll reveal --- */
 
-  var revealables = $$('[data-reveal]');
+  // The wall and the plate grid are revealables too — their ENTRANCES are
+  // triggered by the container the photographs live in, not the section:
+  // measured, .gallery earns .is-revealed while the wall is still 184-294px
+  // below the fold, so a stagger hung on the section would animate to
+  // nobody. Joining this list buys the observer, the 3s watchdog and the
+  // reduced-motion bypass in one line; the generic [data-reveal] hide rule
+  // deliberately does not match them (no attribute), so only their inner
+  // pictures ever carry a hidden state.
+  var revealables = $$('[data-reveal], .masonry, .services__grid');
 
   // The CSS hides [data-reveal] only once this class is set, and a watchdog
   // reveals everything regardless after 3s. A JS error further up can no

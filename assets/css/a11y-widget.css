@@ -321,6 +321,17 @@ html.a11y-contrast body button,
 html.a11y-contrast body input,
 html.a11y-contrast body select,
 html.a11y-contrast body textarea { border: 1px solid #FFF !important; }
+/* The 3D stage's furniture sits in a shadow root the body * sweep cannot
+   enter: the host went black while the hint kept its faded ink — measured
+   1.09:1, an instruction rendered invisible by the legibility mode itself.
+   ::part is the doorway; these restate the same guarantees every light-DOM
+   control above already gets. */
+html.a11y-contrast three-d-stage::part(note) { color: #FFF !important; }
+html.a11y-contrast three-d-stage::part(button) {
+  background: #000 !important;
+  color: #FFF !important;
+  border: 1px solid #FFF !important;
+}
 /* Buttons built on <a> get no border from the rule above and were degrading
    to bare yellow links in contrast mode — the WhatsApp float and every CTA
    among them. Same 1px white frame the real <button>s get. .nf__btn is
@@ -334,7 +345,10 @@ html.a11y-contrast body a.menu__cta,
 html.a11y-contrast body a.gear__cta,
 html.a11y-contrast body a.form__done-cta,
 html.a11y-contrast body a.wa-float,
-html.a11y-contrast body a.nf__btn { border: 1px solid #FFF !important; }
+html.a11y-contrast body a.nf__btn,
+/* …and the legal drafts' back button — the only navigation control on the
+   three pages, one of which is the accessibility statement itself. */
+html.a11y-contrast body a.legal__back { border: 1px solid #FFF !important; }
 html.a11y-contrast body input::placeholder,
 html.a11y-contrast body textarea::placeholder { color: #D0D0D0 !important; }
 /* The hero's scrim is repainted opaque black by the rule above, which is what
@@ -354,7 +368,14 @@ html.a11y-invert { filter: invert(1) hue-rotate(180deg); background: #FFF; }
 html.a11y-invert img,
 html.a11y-invert video,
 html.a11y-invert iframe,
-html.a11y-invert canvas { filter: invert(1) hue-rotate(180deg); }
+html.a11y-invert canvas,
+/* The 3D stage's canvas lives in a shadow root, where the `canvas` line
+   above can never match — measured: with invert on, the camera rendered in
+   negative on camera-3d.html while the SAME model inside the homepage's
+   iframe was compensated. Re-inverting the host element covers it, at the
+   same trade the iframe line already makes: the component's own toolbar and
+   hint flip with it. */
+html.a11y-invert three-d-stage { filter: invert(1) hue-rotate(180deg); }
 
 /* --- 4. הדגשת קישורים ---------------------------------------------------- */
 html.a11y-links body a {

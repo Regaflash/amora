@@ -191,16 +191,26 @@
       const note = document.createElement('div');
       note.className = 'note';
       note.textContent = this.getAttribute('note') || 'Drag to orbit · scroll to zoom · right-drag to pan';
+      // part attributes: the ONLY styling surface an outer page has into this
+      // shadow root. The host site restyles the furniture (fonts, pill radius,
+      // focus ring, contrast/invert compensation) via ::part; the shadow
+      // stylesheet below stays intact as the fallback for every other
+      // consumer. Same for the label attributes: defaults are the original
+      // English strings, so nothing changes unless a page opts in.
+      note.setAttribute('part', 'note');
       root.appendChild(note);
       this._toolbar = document.createElement('div');
       this._toolbar.className = 'toolbar';
+      this._toolbar.setAttribute('part', 'toolbar');
       this._objBtn = document.createElement('button');
       this._objBtn.type = 'button';
-      this._objBtn.textContent = 'Download OBJ + MTL';
+      this._objBtn.setAttribute('part', 'button');
+      this._objBtn.textContent = this.getAttribute('obj-label') || 'Download OBJ + MTL';
       this._objBtn.addEventListener('click', () => this._runExport('obj'));
       this._glbBtn = document.createElement('button');
       this._glbBtn.type = 'button';
-      this._glbBtn.textContent = 'Download GLB';
+      this._glbBtn.setAttribute('part', 'button');
+      this._glbBtn.textContent = this.getAttribute('glb-label') || 'Download GLB';
       this._glbBtn.addEventListener('click', () => this._runExport('glb'));
       this._toolbar.appendChild(this._objBtn);
       this._toolbar.appendChild(this._glbBtn);

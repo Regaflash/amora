@@ -26,6 +26,26 @@
 <link rel="stylesheet" href="/assets/css/fonts.css" />
 <style>
   * { box-sizing: border-box; }
+  /* styles.css is deliberately not loaded here (see .nf__btn below), so the
+     skip link it styles site-wide arrived naked: measured static, visible,
+     71x24px above the logo on every 404 — and body's place-items grid made
+     it a full row that pushed the card down. Restated in literals, same rule
+     as the pill radius. inset-inline-start, not left: RTL. */
+  .skip-link {
+    position: absolute;
+    top: -100px;
+    inset-inline-start: 18px;
+    z-index: 100;
+    padding: 14px 22px;
+    background: #C9AE8C;
+    color: #1C1A18;
+    font-size: 14px;
+    letter-spacing: .08em;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: top 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .skip-link:focus { top: 0; }
   body {
     margin: 0;
     min-height: 100svh;
@@ -38,15 +58,31 @@
     font-weight: 300;
     text-align: center;
   }
-  .nf { max-width: 46ch; }
+  .nf { max-width: 46ch; position: relative; }
   .nf__mark { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+  /* The chapter signature the whole site opens sections with — hairline rule,
+     72px champagne segment at the reading-start — in literals, on the one
+     card this page has. background-color, never a gradient: a11y-contrast
+     blanks background-images and this decoration must survive it. */
   .nf__kicker {
     font-family: 'Cormorant Garamond', serif;
     font-style: italic;
     font-size: 15px;
     letter-spacing: .2em;
     color: #C9AE8C;
-    margin: 22px 0 10px;
+    position: relative;
+    border-top: 1px solid rgba(107, 91, 75, 0.24);
+    padding-top: 24px;
+    margin: 26px 0 10px;
+  }
+  .nf__kicker::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    inset-inline-start: 0;
+    width: 72px;
+    height: 1px;
+    background-color: #C9AE8C;
   }
   .nf__title {
     font-family: 'Frank Ruhl Libre', serif;
@@ -78,6 +114,13 @@
   .nf__btn:focus-visible { outline: 3px solid #1C1A18; outline-offset: 3px; }
   .nf__links { margin: 26px 0 0; font-size: 14px; }
   .nf__links a { color: #4A3F35; margin: 0 8px; }
+  /* The OS motion preference, answered in CSS: the site-wide copy of this
+     block lives in styles.css, which this page never loads — so until now
+     the .nf__btn transitions obeyed only the JS-driven a11y-no-motion class,
+     and with JS off the preference was ignored on this page alone. */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 <link rel="stylesheet" href="/assets/css/a11y-widget.css" />
 <script src="/assets/js/a11y-widget.js"></script>

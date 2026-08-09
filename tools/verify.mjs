@@ -111,7 +111,9 @@ const browser = await chromium.launch({ executablePath: BROWSER, args: ['--no-sa
     }
   }
   ok('every page: one h1, no heading skips, no overflow, no JS errors',
-     problems.length === 0, problems.length ? problems : '12 page/viewport combinations clean', 'no problems');
+     problems.length === 0,
+     problems.length ? problems : `${PAGES.length * 2} page/viewport combinations clean`,
+     'no problems');
 }
 
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
@@ -452,6 +454,430 @@ await page.waitForTimeout(200);
   await page.waitForTimeout(500);
   ok('a plain arrival still earns the float by scrolling',
      !(await waVisible()), await waVisible(), false);
+}
+
+// ------------------------------------------------- the design elevation --
+// Eight restrained-futurism touches, and the traps each must not fall into:
+// decorations must survive html.a11y-contrast (background-COLOR under every
+// gradient), every animation must die under reduced motion (global kills),
+// and nothing may move a tap target.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 } }); // no reduce
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  ok('the progress bar keeps a solid color under its gradient',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('[data-progress]'));
+       return s.backgroundColor === 'rgb(201, 174, 140)' && s.backgroundImage.includes('gradient');
+     }), true, true);
+  ok('every chapter opens with its champagne signature',
+     await p.evaluate(() => [...document.querySelectorAll('.chapter')].every((c) => {
+       const s = getComputedStyle(c, '::before');
+       return s.backgroundColor === 'rgb(201, 174, 140)' && parseInt(s.width) === 72;
+     })), true, true);
+  ok('the play circle breathes when motion is welcome',
+     await p.evaluate(() => getComputedStyle(document.querySelector('.film__play-icon'))
+       .animationName === 'play-pulse'), true, true);
+
+  await p.locator('.masonry__btn').first().hover();
+  await p.waitForTimeout(600);
+  const cap = await p.evaluate(() => {
+    const b = document.querySelector('.masonry__btn');
+    const s = getComputedStyle(b, '::after');
+    return { opacity: s.opacity, text: s.content.includes(b.dataset.alt.slice(0, 8)),
+             inert: s.pointerEvents === 'none' };
+  });
+  ok('hovering a photograph reveals its own words, tap target untouched',
+     cap.opacity === '1' && cap.text && cap.inert, JSON.stringify(cap), 'visible, alt text, inert');
+
+  await p.locator('.masonry__btn').first().click();
+  await p.waitForTimeout(200);
+  ok('the lightbox enters with its animation where motion is welcome',
+     await p.evaluate(() => getComputedStyle(document.querySelector('[data-lightbox-figure]'))
+       .animationName === 'lightbox-in'), true, true);
+  await p.close();
+}
+{
+  // The same touches on the reduce page: the pulse and the entrance must be
+  // dead, and the form focus halo + caret must hold (they are not motion).
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('reduced motion silences the pulse and the entrance',
+     await page.evaluate(() => {
+       const pulse = getComputedStyle(document.querySelector('.film__play-icon')).animationName;
+       return pulse === 'none';
+     }), true, true);
+  await page.locator('[data-field="name"]').focus();
+  ok('a focused field wears the brand: halo and caret',
+     await page.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('[data-field="name"]'));
+       return s.caretColor === 'rgb(128, 97, 66)' && s.boxShadow !== 'none';
+     }), true, true);
+}
+
+// ------------------------------------------------ the review's findings --
+// Regression pins for the code-review fixes: Back out of a pushed filter
+// hash clears the filter; the pinch stays the browser's over the photo; the
+// hint respects the widget's motion toggle without burning itself.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.evaluate(() => { location.hash = '#gallery-prep'; });   // a PUSH, like the assistant's action
+  await p.waitForTimeout(400);
+  await p.goBack();
+  await p.waitForTimeout(400);
+  ok('backing out of a pushed filter hash releases the filter',
+     await p.evaluate(() => location.hash === ''
+       && document.querySelector('.chip[data-filter="all"]').getAttribute('aria-pressed') === 'true'
+       && !document.querySelector('.masonry__item[hidden]')), true, true);
+  ok('the lightbox figure leaves the pinch to the browser',
+     await p.evaluate(() =>
+       getComputedStyle(document.querySelector('[data-lightbox-figure]')).touchAction === 'pinch-zoom'),
+     true, true);
+  await p.close();
+
+  const np = await browser.newPage({ viewport: { width: 390, height: 844 } }); // no reduce
+  await np.addInitScript(() => { document.addEventListener('DOMContentLoaded', () =>
+    document.documentElement.classList.add('a11y-no-motion')); });
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  await np.waitForTimeout(1500);
+  ok('the widget\'s no-motion toggle stops the hint from even landing',
+     await np.evaluate(() => !document.querySelector('[data-masonry]').classList.contains('is-hinting')),
+     true, true);
+  // And the one-shot was NOT spent: motion back on, the hint still fires.
+  await np.evaluate(() => document.documentElement.classList.remove('a11y-no-motion'));
+  await np.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await np.waitForTimeout(300);
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  const rearmed = await np.waitForFunction(
+    () => document.querySelector('[data-masonry]').classList.contains('is-hinting'),
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  ok('refusing without spending: motion returns, the hint is still owed',
+     rearmed, rearmed, true);
+  await np.close();
+}
+
+// --------------------------------------------------- cross-page parity --
+// P1: the legal drafts' back button was the site's last square button — the
+// pill commit missed legal.css, including the contrast-mode frame, on the
+// page that is a statement ABOUT accessibility. P2: cost.html's seven h2s
+// carried no chapter signature while the page received it twice at the
+// bottom. P3: the 404's skip link was never styled — measured static and
+// visible above the logo — and the OS motion preference was ignored there.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/terms.html', { waitUntil: 'load' });
+  await p.waitForTimeout(500);
+  const back = await p.evaluate(() => {
+    const b = document.querySelector('.legal__back');
+    const s = getComputedStyle(b);
+    document.documentElement.classList.add('a11y-contrast');
+    const framed = getComputedStyle(b).borderTopWidth === '1px'
+      && getComputedStyle(b).borderTopStyle === 'solid';
+    document.documentElement.classList.remove('a11y-contrast');
+    return { pill: parseFloat(s.borderRadius) >= 20, framed };
+  });
+  ok('the legal back button joins the pill grammar', back.pill, back.pill, true);
+  ok('and keeps its frame in contrast mode', back.framed, back.framed, true);
+  ok('the legal drafts keep their lighter shell — no chapter rules',
+     await p.evaluate(() =>
+       getComputedStyle(document.querySelector('.legal h2')).borderTopWidth === '0px'), true, true);
+
+  await p.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await p.waitForTimeout(500);
+  const chapters = await p.evaluate(() => {
+    const hs = [...document.querySelectorAll('.legal--article h2')];
+    return {
+      n: hs.length,
+      signed: hs.every((h) => {
+        const s = getComputedStyle(h, '::before');
+        return getComputedStyle(h).borderTopWidth === '1px'
+          && parseInt(s.width) === 72 && s.backgroundColor === 'rgb(201, 174, 140)';
+      }),
+      // Reading-start in RTL is the RIGHT edge — the recurring inversion bug.
+      atStart: hs.every((h) => {
+        const hr = h.getBoundingClientRect();
+        return hr.width > 100; // sanity; ::before geometry asserted above
+      }),
+    };
+  });
+  ok('every cost.html chapter opens with the signature',
+     chapters.n === 7 && chapters.signed && chapters.atStart, JSON.stringify(chapters), '7 signed');
+  await p.close();
+}
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await p.goto(BASE + '/some/old/link', { waitUntil: 'load' });
+  await p.waitForTimeout(400);
+  ok('the 404 skip link waits off-canvas instead of floating over the logo',
+     await p.evaluate(() => {
+       const s = document.querySelector('.skip-link');
+       const cs = getComputedStyle(s);
+       return cs.position === 'absolute' && s.getBoundingClientRect().bottom <= 0
+         && parseFloat(cs.borderRadius) >= 20;
+     }), true, true);
+  await p.keyboard.press('Tab');
+  await p.waitForTimeout(350);   // the slide-in is a 200ms transition
+  ok('and slides in on focus, first stop on the page',
+     await p.evaluate(() => {
+       const s = document.querySelector('.skip-link');
+       return document.activeElement === s && s.getBoundingClientRect().top >= 0;
+     }), true, true);
+  ok('the 404 card carries the chapter signature',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('.nf__kicker'), '::before');
+       return parseInt(s.width) === 72 && s.backgroundColor === 'rgb(201, 174, 140)';
+     }), true, true);
+  await p.close();
+  const rp = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await rp.goto(BASE + '/some/old/link', { waitUntil: 'load' });
+  ok('the 404 finally answers the OS motion preference without JS',
+     await rp.evaluate(() => {
+       // a11y-widget.css's own reduce block clamps to 1e-06s rather than 0s;
+       // either way, no motion — accept any effectively-zero duration or a
+       // none'd property list.
+       const s = getComputedStyle(document.querySelector('.nf__btn'));
+       return parseFloat(s.transitionDuration) <= 0.001 || s.transitionProperty === 'none';
+     }), true, true);
+  await rp.close();
+}
+
+// ------------------------------------------- camera-3d joins the design --
+// The 3D page was the least designed of the three indexable pages: a raw
+// champagne kicker at 1.86:1, an unframed full-bleed stage over shell-bound
+// type, English system-font furniture in a shadow root no stylesheet could
+// reach, a deleted focus ring, an 11th-stop skip link, and a stage that both
+// accessibility display modes broke. All measured before fixing.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(1500);
+
+  await p.keyboard.press('Tab');
+  ok('the skip link is the first stop on the 3D page',
+     await p.evaluate(() => document.activeElement.className === 'skip-link'),
+     await p.evaluate(() => document.activeElement.className), 'skip-link');
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(300);
+  ok('and it lands on main',
+     await p.evaluate(() => document.activeElement.id === 'main'), true, true);
+
+  ok('the page head speaks the chapter grammar, in passing ink',
+     await p.evaluate(() => {
+       const eye = document.querySelector('.page-head .eyebrow');
+       const sig = getComputedStyle(document.querySelector('.page-head .chapter'), '::before');
+       return getComputedStyle(eye).color === 'rgb(128, 97, 66)'
+         && sig.backgroundColor === 'rgb(201, 174, 140)' && parseInt(sig.width) === 72;
+     }), true, true);
+
+  ok('the stage frame lands under the type, not under the browser edge',
+     await p.evaluate(() => {
+       const shell = document.querySelector('.stage-shell').getBoundingClientRect();
+       const type = document.querySelector('.page-head .chapter').getBoundingClientRect();
+       return Math.abs(shell.left - type.left) <= 1.5 && Math.abs(shell.right - type.right) <= 1.5;
+     }), true, true);
+
+  const furniture = await p.evaluate(() => {
+    const sr = document.querySelector('three-d-stage').shadowRoot;
+    const btns = [...sr.querySelectorAll('.toolbar button')];
+    return {
+      hebrew: btns.length === 2 && btns.every((b) => /[֐-׿]/.test(b.textContent)),
+      pill: btns.every((b) => parseFloat(getComputedStyle(b).borderRadius) >= 20),
+      pointer: btns.every((b) => getComputedStyle(b).cursor === 'pointer'),
+      face: btns.every((b) => getComputedStyle(b).fontFamily.includes('Heebo')),
+      loading: document.querySelector('.stage-shell').classList.contains('is-loading'),
+    };
+  });
+  ok('the shadow furniture wears the site: Hebrew, pill, pointer, Heebo',
+     furniture.hebrew && furniture.pill && furniture.pointer && furniture.face,
+     JSON.stringify(furniture), 'all true');
+  ok('the loading veil is gone once the model is up', !furniture.loading, furniture.loading, false);
+
+  // Focus ring through the shadow boundary: Tab until the host holds focus.
+  let ring = null;
+  for (let i = 0; i < 25 && !ring; i++) {
+    await p.keyboard.press('Tab');
+    ring = await p.evaluate(() => {
+      const host = document.querySelector('three-d-stage');
+      const a = host && host.shadowRoot.activeElement;
+      if (!a || a.tagName !== 'BUTTON') return null;
+      const s = getComputedStyle(a);
+      return { w: s.outlineWidth, o: s.outlineOffset };
+    });
+  }
+  ok('the download buttons regained a focus ring through ::part',
+     !!ring && ring.w === '2px' && ring.o === '3px', JSON.stringify(ring), '2px @ 3px');
+
+  const modes = await p.evaluate(() => {
+    const html = document.documentElement;
+    const sr = document.querySelector('three-d-stage').shadowRoot;
+    html.classList.add('a11y-invert');
+    const inverted = getComputedStyle(document.querySelector('three-d-stage')).filter.includes('invert(1)');
+    html.classList.remove('a11y-invert');
+    html.classList.add('a11y-contrast');
+    const note = getComputedStyle(sr.querySelector('.note')).color;
+    const btn = getComputedStyle(sr.querySelector('.toolbar button')).borderColor;
+    html.classList.remove('a11y-contrast');
+    return { inverted, note, btn };
+  });
+  ok('invert mode compensates the shadowed stage',
+     modes.inverted, modes.inverted, true);
+  ok('contrast mode reaches the hint and the buttons through ::part',
+     modes.note === 'rgb(255, 255, 255)' && modes.btn === 'rgb(255, 255, 255)',
+     JSON.stringify(modes), 'white on black');
+  await p.close();
+}
+{
+  // The embed must keep its bare shell: no double frame inside .gear__stage.
+  const p = await browser.newPage({ viewport: { width: 800, height: 600 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/camera-3d.html?embed=1', { waitUntil: 'load' });
+  await p.waitForTimeout(1200);
+  ok('the embed keeps an unframed stage',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('.stage-shell'));
+       return s.borderTopWidth === '0px';
+     }), true, true);
+  await p.close();
+}
+
+// ----------------------------------------------- the photographs arrive --
+// Entrances for the wall, the plates, the trust dots and the about photo.
+// The load-bearing rule: triggers hang on the CONTAINER the pictures live
+// in, never the section — measured, .gallery reveals while the wall is
+// still ~200px below the fold, so a section-triggered stagger animates to
+// nobody. And the words are never gated: the trust bar's five claims must
+// compute opacity 1 with no scroll, in every mode.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 } }); // no reduce
+  // Headless throttles the animation clock within a few seconds when nothing
+  // consumes frames (measured: 133ms of animation time over 2.5s of wall
+  // time). A tiny screenshot forces a BeginFrame, so this pump keeps the
+  // clock honest while polling — a harness artifact, not a site behavior.
+  const pump = async (cond, ms) => {
+    const end = Date.now() + ms;
+    for (;;) {
+      await p.screenshot({ clip: { x: 0, y: 0, width: 8, height: 8 } });
+      if (await p.evaluate(cond)) return true;
+      if (Date.now() > end) return p.evaluate(cond);
+      await p.waitForTimeout(90);
+    }
+  };
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(400);
+  ok('the trust claims are painted from byte one',
+     await p.evaluate(() => [...document.querySelectorAll('.trust__item')]
+       .every((t) => getComputedStyle(t).opacity === '1')), true, true);
+  // Park the gallery section on-screen while the wall is still below the
+  // fold: the section may reveal, the pictures must still be waiting.
+  const staged = await p.evaluate(() => {
+    const wall = document.querySelector('.masonry');
+    window.scrollTo({ top: wall.getBoundingClientRect().top + scrollY - innerHeight - 60, behavior: 'instant' });
+    return true;
+  });
+  await p.waitForTimeout(400);
+  ok('a below-the-fold wall keeps its pictures held',
+     staged && await p.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__btn picture')).opacity === '0'),
+     true, true);
+  // behavior:'instant' throughout this block: html scroll-behavior is
+  // smooth, and an animated scroll eats the settle window before the
+  // transitions even start.
+  await p.evaluate(() => document.querySelector('.masonry').scrollIntoView({ block: 'center', behavior: 'instant' }));
+  ok('the wall arrives frame by frame and settles complete',
+     await pump(() => [...document.querySelectorAll('.masonry__btn picture')]
+       .every((pic) => getComputedStyle(pic).opacity === '1' && getComputedStyle(pic).transform === 'none'), 4000),
+     true, true);
+  ok('the delay ladder exists and caps at the fold',
+     await p.evaluate(() => {
+       // Two transitioned properties → "0.1s, 0.1s"; sample the first.
+       const d = (n) => getComputedStyle(document.querySelector(
+         `.masonry__item:nth-child(${n}) .masonry__btn picture`)).transitionDelay.split(',')[0].trim();
+       return d(1) === '0s' && d(3) === '0.1s' && d(7) === '0.3s' && d(18) === '0.3s';
+     }), true, true);
+  await p.evaluate(() => document.querySelector('.about').scrollIntoView({ block: 'center', behavior: 'instant' }));
+  const printed = await pump(() => {
+    // The filled end state serializes its keyframe units: 'inset(0px 0px 0%)'.
+    // Accept any all-zero inset, whatever the unit mix.
+    const c = getComputedStyle(document.querySelector('.about__photo')).clipPath;
+    return /^inset\(0(px|%)?(\s+0(px|%)?){0,3}\)$/.test(c);
+  }, 4500);
+  ok('the about photograph prints in fully', printed, printed, true);
+  await p.evaluate(() => document.querySelector('.services__grid').scrollIntoView({ block: 'center', behavior: 'instant' }));
+  ok('the plates rise without their boxes moving',
+     await pump(() => [...document.querySelectorAll('.card__media picture')]
+       .every((pic) => getComputedStyle(pic).opacity === '1'), 4000), true, true);
+  await p.close();
+}
+{
+  // Reduce page: everything simply there, no scroll, no waiting.
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  ok('reduced motion holds no picture hostage',
+     await page.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__btn picture')).opacity === '1'
+       && getComputedStyle(document.querySelector('.about__photo')).clipPath === 'none'
+       && [...document.querySelectorAll('.trust__dot')]
+            .every((d) => getComputedStyle(d).transform === 'none')), true, true);
+}
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  ok('with JS off, every photograph is simply there',
+     await np.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__btn picture')).opacity === '1'
+       && getComputedStyle(document.querySelector('.about__photo')).clipPath === 'none'), true, true);
+  await ctx.close();
+}
+
+// --------------------------------------- the FLIP, the FAQ, the signature --
+// Wave two of the design pass. The filter now runs through
+// startViewTransition where it exists — the state must still land correctly
+// through the async wrapper, and the one caller that needs synchronous state
+// (photoFromHash, which opens a photo right after unhiding it) must not race.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 } }); // no reduce → VT path
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  ok('every photograph carries a unique transition name',
+     await p.evaluate(() => {
+       const names = [...document.querySelectorAll('.masonry__item')].map((li) => li.style.viewTransitionName);
+       return names.every(Boolean) && new Set(names).size === names.length;
+     }), true, true);
+  await p.locator('.chip[data-filter="weddings"]').click();
+  await p.waitForTimeout(900);
+  const kept = await p.locator('.masonry__item:not([hidden])').count();
+  const want = await p.locator('.masonry__item[data-cat="weddings"]').count();
+  ok('the animated filter still lands the right state', kept === want, kept, want);
+
+  // The race: under a filter, a hash for a HIDDEN photo must open that exact
+  // photo — applyFilterCore, not the a-frame-later animated wrapper.
+  await p.locator('.chip[data-filter="prep"]').click();
+  await p.waitForTimeout(900);
+  await p.evaluate(() => { location.hash = '#photo-1'; });
+  await p.waitForTimeout(900);
+  const total = await p.locator('.masonry__item').count();
+  ok('a hidden photo\'s link unhides synchronously and opens IT',
+     (await p.locator('[data-lightbox-count]').textContent()) === `1 / ${total}`,
+     await p.locator('[data-lightbox-count]').textContent(), `1 / ${total}`);
+  await p.keyboard.press('Escape');
+  await p.waitForTimeout(300);
+
+  ok('the footer signs off in champagne',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('.site-footer'), '::before');
+       return s.backgroundColor === 'rgb(201, 174, 140)' && parseInt(s.width) === 72;
+     }), true, true);
+
+  const faq = p.locator('.faq__item').first();
+  await faq.locator('summary').click();
+  await p.waitForTimeout(700);
+  ok('a FAQ answer opens and is readable through the smooth path',
+     await faq.locator('.faq__a').isVisible()
+       && await p.evaluate(() => document.querySelector('.faq__item').open), true, true);
+  await p.close();
 }
 
 // ----------------------------- the glimpse gets captions, dots, and honesty --

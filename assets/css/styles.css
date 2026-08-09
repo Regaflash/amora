@@ -99,7 +99,13 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* The page's own scrollbar in the brand's ink — the last uncoloured
+     browser furniture. Firefox reads this directly; WebKit falls back to
+     its default, which is an acceptable place to fall. */
+  scrollbar-color: var(--champagne) transparent;
+}
 
 body {
   margin: 0;
@@ -216,9 +222,23 @@ summary::-webkit-details-marker { display: none; }
    Where a section is two columns (faq, about, gear, contact) the rule sits
    at the same height in both, so it reads as one line broken by the gutter. */
 .chapter {
+  position: relative;
   border-top: 1px solid var(--rule);
   padding-top: var(--sp-5);
   margin: 0 0 var(--chapter-gap);
+}
+/* A 72px champagne segment where the chapter rule begins — the reading-start
+   corner, so inset-inline-start, never `right`. One quiet signature repeated
+   at every chapter head. background-color, not a gradient: it must survive
+   html.a11y-contrast blanking background-images. */
+.chapter::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  inset-inline-start: 0;
+  width: 72px;
+  height: 1px;
+  background-color: var(--champagne);
 }
 .chapter .eyebrow { margin-bottom: var(--sp-5); }
 .chapter .h2 { margin: 0; }
@@ -527,7 +547,16 @@ summary::-webkit-details-marker { display: none; }
    fill itself loses nothing: at the top of the page it is 0% wide anyway. */
 .progress { height: 1px; background: var(--line); transition: background 400ms var(--ease); }
 .site-header:not(.is-scrolled) .progress { background: transparent; }
-.progress__bar { height: 1px; width: 0%; background: var(--champagne); }
+/* background-color AND a gradient on top: html.a11y-contrast blanks every
+   background-image, so the glow and the sheen are decoration over a solid
+   bar that survives contrast mode intact. */
+.progress__bar {
+  height: 1px;
+  width: 0%;
+  background-color: var(--champagne);
+  background-image: linear-gradient(to left, var(--champagne), var(--sand));
+  box-shadow: 0 0 8px rgba(201, 174, 140, 0.55);
+}
 
 /* Mobile menu overlay */
 .menu {
@@ -541,6 +570,24 @@ summary::-webkit-details-marker { display: none; }
   padding: clamp(24px, 8vw, 60px);
 }
 .menu[hidden] { display: none; }
+/* The overlay's items rise in reading order, ~55ms apart — the one place a
+   stagger earns its keep, because the menu appears from nothing and the
+   cascade gives the eye an order to follow. hidden toggles display, so the
+   animation replays on every open. Media-gated on top of the global kills;
+   the close button is excluded — it must be exactly where the finger that
+   opened the menu already is, instantly. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes menu-item-in {
+    from { opacity: 0; transform: translateY(14px); }
+  }
+  .menu:not([hidden]) > :not(.menu__close) { animation: menu-item-in 460ms var(--ease) backwards; }
+  .menu:not([hidden]) > :nth-child(3) { animation-delay: 55ms; }
+  .menu:not([hidden]) > :nth-child(4) { animation-delay: 110ms; }
+  .menu:not([hidden]) > :nth-child(5) { animation-delay: 165ms; }
+  .menu:not([hidden]) > :nth-child(6) { animation-delay: 220ms; }
+  .menu:not([hidden]) > :nth-child(7) { animation-delay: 275ms; }
+  .menu:not([hidden]) > :nth-child(8) { animation-delay: 330ms; }
+}
 .menu__close {
   position: absolute;
   top: 18px;
@@ -850,6 +897,26 @@ summary::-webkit-details-marker { display: none; }
    carrying the eye across the strip. */
 .trust__dot { width: 3px; height: 3px; background: var(--champagne); border-radius: 50%; }
 
+/* "Four small marks carrying the eye across the strip" — now they arrive in
+   reading order, 70ms apart. data-reveal on .trust is a CLASS CARRIER only:
+   the first rule cancels the generic hide on the node itself, so the five
+   claims are painted from byte one and only these aria-hidden dots animate.
+   Children run item,dot,item,dot… — the dots are 2,4,6,8. scale only, no
+   directional offset: RTL order comes from the DOM, not from a transform. */
+.js.reveal-ready .trust[data-reveal] { opacity: 1; transform: none; }
+.js.reveal-ready .trust[data-reveal] .trust__dot {
+  transform: scale(0);
+  transition: transform 420ms var(--ease);
+}
+.js.reveal-ready .trust[data-reveal].is-revealed .trust__dot { transform: none; }
+.js.reveal-ready .trust[data-reveal] .trust__dot:nth-child(4) { transition-delay: 70ms; }
+.js.reveal-ready .trust[data-reveal] .trust__dot:nth-child(6) { transition-delay: 140ms; }
+.js.reveal-ready .trust[data-reveal] .trust__dot:nth-child(8) { transition-delay: 210ms; }
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .trust[data-reveal] .trust__dot { transform: none !important; }
+}
+html.a11y-no-motion .trust[data-reveal] .trust__dot { transform: none !important; }
+
 /* -------------------------------------------------------------- about --- */
 
 /* align-items:start, not center, so the chapter's hairline lands on the top
@@ -869,6 +936,31 @@ summary::-webkit-details-marker { display: none; }
   display: block;
   border-radius: 0;
 }
+/* The first photograph on the page prints in — a bottom-up unmask, because
+   "no frame … the picture is the object" (above) rules out drawing anything
+   around it, and an unmask draws nothing: the picture simply finishes
+   arriving. Measured: .about reveals with this photo at the fold on both
+   viewports, so the section's own trigger is already correct — no new JS.
+   VERTICAL insets only: inset() is physical, and a top/bottom pair is the
+   one thing RTL cannot flip. End state is inset(0 0 0 0), not none — same
+   function, so it interpolates instead of snapping. */
+.js.reveal-ready .about[data-reveal] .about__photo { clip-path: inset(0 0 100% 0); }
+/* A keyframe ANIMATION, not a clip-path transition: measured in the harness,
+   the transition advanced 0.4ms and froze at inset(0 0 99.95%) while the
+   sibling opacity/transform transitions ran fine — the swipe hint's
+   animation machinery is the proven path, so the print uses it. `both`
+   holds the open end state after the run. */
+@keyframes about-print {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.js.reveal-ready .about[data-reveal].is-revealed .about__photo {
+  animation: about-print 900ms var(--ease) 120ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .about[data-reveal] .about__photo { clip-path: none !important; animation: none !important; }
+}
+html.a11y-no-motion .about[data-reveal] .about__photo { clip-path: none !important; animation: none !important; }
 /* Real hierarchy inside the copy: the lead is charcoal and a size up, the
    paragraphs under it are mocha and a size down. Same words, read in order. */
 .about__lead {
@@ -973,6 +1065,26 @@ summary::-webkit-details-marker { display: none; }
 }
 /* The accent arrives on hover, and only then. */
 .card:hover .card__body { border-top-color: var(--champagne); }
+
+/* The plates rise the same way the wall does — pictures only, inside their
+   overflow-hidden media boxes, triggered by .services__grid itself (the
+   section reveals while the grid straddles the fold, measured). The card
+   box never moves, so the phone strip's snap points and the dots'
+   aria-current bookkeeping are untouched. */
+.js.reveal-ready .services__grid .card__media picture {
+  opacity: 0;
+  transform: translateY(10px) scale(1.06);
+  transition: opacity 520ms var(--ease), transform 520ms var(--ease);
+}
+.js.reveal-ready .services__grid.is-revealed .card__media picture { opacity: 1; transform: none; }
+.js.reveal-ready .services__grid > .card:nth-child(2) .card__media picture { transition-delay: 60ms; }
+.js.reveal-ready .services__grid > .card:nth-child(3) .card__media picture { transition-delay: 120ms; }
+.js.reveal-ready .services__grid > .card:nth-child(4) .card__media picture { transition-delay: 180ms; }
+.js.reveal-ready .services__grid > .card:nth-child(5) .card__media picture { transition-delay: 240ms; }
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .services__grid .card__media picture { opacity: 1 !important; transform: none !important; }
+}
+html.a11y-no-motion .services__grid .card__media picture { opacity: 1 !important; transform: none !important; }
 .card__kicker {
   display: block;
   font-family: var(--script);
@@ -1173,6 +1285,7 @@ summary::-webkit-details-marker { display: none; }
 .masonry__item[hidden] { display: none; }
 .masonry__btn {
   display: block;
+  position: relative;   /* anchors the hover frame and caption below */
   width: 100%;
   height: 100%;
   padding: 0;
@@ -1182,6 +1295,49 @@ summary::-webkit-details-marker { display: none; }
   cursor: zoom-in;
   overflow: hidden;
   border-radius: 0;
+}
+/* Desktop hover reveal: a hairline champagne frame floats in over the
+   photograph and the frame's own words rise from the corner — content is
+   attr(data-alt), the same text the lightbox announces, so no markup and no
+   second copy to drift. Pointer-gated: on touch there is no hover, the strip
+   already captions itself with the counter, and a chip flashing under every
+   tap would be noise. The caption chip is background-COLOR ink — it survives
+   html.a11y-contrast, which blanks background-images, with its legibility
+   intact. Both layers are pointer-events: none, so the tap target underneath
+   is exactly what it was. */
+@media (hover: hover) and (min-width: 561px) {
+  .masonry__btn::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border: 1px solid rgba(201, 174, 140, 0.85);
+    opacity: 0;
+    transition: opacity 400ms var(--ease);
+    pointer-events: none;
+  }
+  .masonry__btn::after {
+    content: attr(data-alt);
+    position: absolute;
+    inset-inline-start: 10px;
+    inset-block-end: 10px;
+    max-width: calc(100% - 20px);
+    padding: 6px 12px;
+    background-color: rgba(21, 19, 17, 0.78);
+    color: var(--ivory);
+    font-size: var(--t-micro);
+    letter-spacing: .12em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 400ms var(--ease), transform 400ms var(--ease);
+    pointer-events: none;
+  }
+  .masonry__btn:hover::before,
+  .masonry__btn:focus-visible::before { opacity: 1; }
+  .masonry__btn:hover::after,
+  .masonry__btn:focus-visible::after { opacity: 1; transform: none; }
 }
 .masonry__btn picture { display: block; width: 100%; height: 100%; }
 /* object-fit is what lets a frame fill its slot without distorting: the row
@@ -1194,6 +1350,56 @@ summary::-webkit-details-marker { display: none; }
   transition: transform 900ms var(--ease);
 }
 .masonry__btn:hover .masonry__photo { transform: scale(1.03); }
+
+/* The wall arrives frame by frame: the first time .masonry itself is
+   revealed (main.js observes it directly — the SECTION reveals while the
+   wall is still below the fold, measured), each picture rises inside its
+   frame. The moving element is the picture, never the item: the item
+   carries the viewTransitionName, the phone hint animates the item's
+   transform, and stripIO reads the item's intersection for "3 / 18" —
+   moving it would collide with all three. scale(1.08) covers the 10px
+   rise so no sliver of ink shows under the frame. The delay ladder caps
+   at frame 6: the rest are past the fold or past the strip's edge, and an
+   850ms tail nobody sees is not craft. Both motion switches get their own
+   kill rules — the generic [data-reveal] forcings do not reach
+   descendants of a class-carrier.
+   The delay ladders repeat the full .js.reveal-ready scope on purpose: the
+   transition SHORTHAND above implicitly resets transition-delay to 0s, and
+   at lower specificity a bare nth-child delay rule silently loses to it —
+   measured as all-zero delays before the scope was added. */
+.js.reveal-ready .masonry .masonry__btn picture {
+  opacity: 0;
+  transform: translateY(10px) scale(1.08);
+  transition: opacity 520ms var(--ease), transform 520ms var(--ease);
+}
+.js.reveal-ready .masonry.is-revealed .masonry__btn picture { opacity: 1; transform: none; }
+.js.reveal-ready .masonry .masonry__item:nth-child(2) .masonry__btn picture { transition-delay: 50ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(3) .masonry__btn picture { transition-delay: 100ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(4) .masonry__btn picture { transition-delay: 150ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(5) .masonry__btn picture { transition-delay: 200ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(6) .masonry__btn picture { transition-delay: 250ms; }
+.js.reveal-ready .masonry .masonry__item:nth-child(n+7) .masonry__btn picture { transition-delay: 300ms; }
+@media (prefers-reduced-motion: reduce) {
+  .js.reveal-ready .masonry .masonry__btn picture { opacity: 1 !important; transform: none !important; }
+}
+html.a11y-no-motion .masonry .masonry__btn picture { opacity: 1 !important; transform: none !important; }
+
+/* The filter's FLIP (main.js names each frame and wraps applyFilter in
+   startViewTransition): house easing over the UA default, and the motion
+   switches answered again at the pseudo level — the global kills match
+   elements and ::before/::after, and the view-transition tree is neither. */
+::view-transition-group(*) {
+  animation-duration: 350ms;
+  animation-timing-function: var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+html.a11y-no-motion::view-transition-group(*),
+html.a11y-no-motion::view-transition-old(*),
+html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
 
 @media (max-width: 900px) { .masonry { --row: clamp(150px, 22vw, 200px); } }
 
@@ -1350,7 +1556,25 @@ summary::-webkit-details-marker { display: none; }
   place-items: center;
   padding: clamp(16px, 4vw, 60px);
 }
+/* Where the engine can frost the page behind the photo, the scrim lightens
+   and blurs instead of going near-opaque — the photograph floats over the
+   site the way a phone's own photo viewer floats over the camera roll.
+   @supports-gated so the opaque scrim above stays the fallback everywhere
+   else, at full legibility. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .lightbox {
+    background: rgba(28, 26, 24, 0.82);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
+    backdrop-filter: blur(18px) saturate(1.1);
+  }
+}
 .lightbox[hidden] { display: none; }
+/* Entrance: hidden toggles display, so the animation replays on every open.
+   Killed globally under prefers-reduced-motion and html.a11y-no-motion. */
+@keyframes lightbox-in {
+  from { opacity: 0; transform: scale(0.965); }
+}
+.lightbox__figure { animation: lightbox-in 420ms var(--ease); }
 .lightbox__figure {
   display: grid;
   place-items: center;
@@ -1367,14 +1591,19 @@ summary::-webkit-details-marker { display: none; }
    no physical side, nothing to mirror under dir="rtl". */
 .lightbox__figure[data-loading] { opacity: 0.55; }
 /* The figure is also the swipe surface (see the lightbox pointer handlers in
-   main.js). touch-action: none is safe only because this is a modal with body
-   scroll already locked — nothing legitimate pans here — and without it a
-   vertical drag becomes a pointercancel that never reaches pointerup, the
-   same trap the quotes viewport documents. user-select/user-drag off so a
-   mouse drag steps photographs instead of ghost-dragging the <img>. */
+   main.js). pinch-zoom, NOT none: `none` also disabled two-finger zoom over
+   a near-full-screen photograph — a WCAG 1.4.4 regression for exactly the
+   low-vision visitor a photo viewer serves. pinch-zoom still suppresses
+   single-finger browser panning (the modal has body scroll locked anyway),
+   so a vertical drag keeps reaching pointerup instead of dying as the
+   pointercancel the quotes viewport documents — while a two-finger pinch
+   stays the browser's, magnifying the visual viewport. The pinch itself
+   surfaces as a pointercancel to the swipe handlers, which already reset on
+   it. user-select/user-drag off so a mouse drag steps photographs instead
+   of ghost-dragging the <img>. */
 .lightbox__figure {
   position: relative;
-  touch-action: none;
+  touch-action: pinch-zoom;
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -1534,6 +1763,20 @@ summary::-webkit-details-marker { display: none; }
 .film__play:hover .film__play-icon {
   background: rgba(201, 174, 140, 0.28);
   transform: translate(-50%, -50%) scale(1.06);
+}
+/* A slow champagne ring breathes off the play circle — the one resting
+   element on the page allowed to move, because it is an invitation to press.
+   box-shadow only: the element's transform is load-bearing (centring).
+   Media-gated on top of the global kills, so the ring never even starts
+   under reduced motion; hover pauses it because the button is already
+   answering the hand. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes play-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(201, 174, 140, 0.4); }
+    70%, 100% { box-shadow: 0 0 0 22px rgba(201, 174, 140, 0); }
+  }
+  .film__play-icon { animation: play-pulse 3.2s var(--ease) infinite; }
+  .film__play:hover .film__play-icon { animation-play-state: paused; }
 }
 .film__frame iframe {
   display: block;
@@ -1929,6 +2172,29 @@ html:not(.js) .quotes__controls { display: none; }
   transition: transform 320ms var(--ease), color 320ms;
 }
 .faq__item[open] .faq__sign { transform: rotate(45deg); color: var(--champagne-ink); }
+/* Where interpolate-size exists, an answer glides open instead of snapping;
+   everywhere else <details> behaves exactly as it always did. CSS only —
+   the byte-locked .faq__a is untouched. The global motion kills do not
+   reach ::details-content (they match elements and ::before/::after), so
+   both switches are answered here explicitly. */
+@supports (interpolate-size: allow-keywords) {
+  /* On the FAQ item, NOT :root: the property is inherited, and opting the
+     whole document into keyword-size interpolation would silently animate
+     any future auto-sized panel — a global side effect of a FAQ-local
+     feature. It inherits from the item into ::details-content, which is
+     the one box that needs it. */
+  .faq__item { interpolate-size: allow-keywords; }
+  .faq__item::details-content {
+    height: 0;
+    overflow: clip;
+    transition: height 380ms var(--ease), content-visibility 380ms allow-discrete;
+  }
+  .faq__item[open]::details-content { height: auto; }
+  @media (prefers-reduced-motion: reduce) {
+    .faq__item::details-content { transition: none; }
+  }
+  html.a11y-no-motion .faq__item::details-content { transition: none; }
+}
 .faq__a {
   font-size: var(--t-body);
   color: var(--mocha);
@@ -2061,7 +2327,14 @@ html:not(.js) .quotes__controls { display: none; }
 select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
 /* There was no :focus rule on the controls at all — a mouse click produced no
    border change whatsoever. */
-.field__control:focus { border-color: var(--champagne-ink); background: var(--ivory); }  /* Firefox dims it without opacity:1 */
+.field__control:focus {
+  border-color: var(--champagne-ink);
+  background: var(--ivory);   /* Firefox dims it without opacity:1 */
+  /* A soft champagne halo, outside the border so the field reads "live"
+     without its text moving a pixel. Decoration only — the border-color
+     change above stays the state that carries the meaning. */
+  box-shadow: 0 0 0 3px rgba(201, 174, 140, 0.22);
+}
 /* Inputs stay square while every action is a pill (8.2026): shape is what
    separates "type here" from "press me", and rounded ends would crowd the
    LTR-forced tel/date values against the curve. */
@@ -2072,6 +2345,7 @@ select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
   border: 1px solid var(--rule-strong);
   border-radius: 0;
   font-size: var(--t-small);
+  caret-color: var(--champagne-ink);   /* the blinking cursor wears the brand */
 }
 .field__control[aria-invalid="true"] { border-color: var(--terracotta); }
 /* Phone numbers and dates are LTR sequences. Inside dir="rtl" they otherwise
@@ -2182,7 +2456,80 @@ textarea.field__control { resize: vertical; }
 
 /* ------------------------------------------------------------- footer --- */
 
-.site-footer { background: var(--cream); border-top: 1px solid var(--rule); }
+/* ---------------------------------------------- 3D stage (camera page) --- */
+
+/* The full-page stage on camera-3d.html. Width matches the .shell CONTENT
+   box (shell minus gutters), so the frame's edges land exactly under the
+   chapter type above it — the homepage's .gear__stage frames the same view,
+   and the page that owns the model was the unframed one. ::part is the only
+   styling surface into the component's shadow root; its own stylesheet
+   remains the fallback for any other consumer. */
+.stage-shell {
+  position: relative;
+  width: min(calc(100% - 2 * var(--gutter)), calc(var(--shell) - 2 * var(--gutter)));
+  margin-inline: auto;
+  border: 1px solid var(--rule);
+  background: var(--cream);
+  overflow: hidden;
+}
+.stage-shell::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  inset-inline-start: 0;
+  width: 72px;
+  height: 1px;
+  background-color: var(--champagne);
+  z-index: 2;
+}
+three-d-stage::part(button) {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: .12em;
+  padding: 10px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: rgba(255, 253, 249, 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--charcoal);
+  cursor: pointer;   /* the shadow default is `default`, which reads disabled */
+  transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
+}
+three-d-stage::part(button):hover { background: var(--champagne); color: var(--charcoal); }
+/* The site's focus grammar cannot cross the shadow boundary on its own —
+   restated through the part, or the download buttons have no ring at all. */
+three-d-stage::part(button):focus-visible { outline: 2px solid var(--charcoal); outline-offset: 3px; }
+three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
+/* Added and removed by camera-model.js around the three.js load: 2MB of
+   vendored library used to buy an unexplained empty cream rectangle. Text
+   only, no motion — nothing for the motion switches to kill. */
+.stage-shell.is-loading::after {
+  content: "טוען את הדגם…";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background-color: var(--cream);
+  color: var(--mocha);
+  font-size: var(--t-small);
+  letter-spacing: .12em;
+}
+
+.site-footer { position: relative; background: var(--cream); border-top: 1px solid var(--rule); }
+/* The chapters' champagne signature, once more where the page signs off —
+   aligned to the content shell's reading-start edge, not the viewport's.
+   background-color: survives html.a11y-contrast. */
+.site-footer::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  height: 1px;
+  width: 72px;
+  inset-inline-start: max(var(--gutter), calc((100% - var(--shell)) / 2 + var(--gutter)));
+  background-color: var(--champagne);
+}
 .site-footer__top {
   max-width: var(--shell);
   margin: 0 auto;
@@ -2285,7 +2632,8 @@ textarea.field__control { resize: vertical; }
 .quotes__arrow:active,
 .quotes__pause:active,
 .lightbox__close:active,
-.lightbox__step:active { transform: translateY(1px); }
+.lightbox__step:active,
+.legal__back:active { transform: translateY(1px); }
 
 /* --------------------------------------------------------- responsive --- */
 
