@@ -10,7 +10,7 @@ private CRM at `admin.html` reads it back.
 ```
 Before any change goes out:
 1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 211 runtime checks in a real browser
+   node tools/verify.mjs   # must exit 0 — 225 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
    # check.sh number was right and untouched, the verify.mjs one had been
@@ -235,6 +235,30 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the profile is valid and useful but not installable until a real logo master
   arrives. That is the same outstanding owner item, now blocking something
   visible.
+
+- **One scroll lock, three holders — and it is position:fixed, not
+  overflow:hidden.** iOS Safari scrolls a body that merely wears
+  `overflow:hidden`, so `main.js` owns `window.AMORA_LOCK`: the mobile menu,
+  the lightbox and the assistant's phone sheet hold it **by name**, the body
+  is pinned with `top: -scrollY`, and the last release restores the exact
+  position with scroll-behavior forced to auto (html scrolls smooth — an
+  animated restore paints as a glide from the top). Two consequences that
+  are not obvious from either file: the `#photo-<n>` load path scrolls the
+  gallery into view *instantly, before* opening, because a fixed body cannot
+  be scrolled after the lock lands and a lock taken mid-smooth-glide pins
+  the page wherever the animation happened to be; and `measure()` re-runs on
+  release because the ResizeObserver cached the viewport-sized scrollHeight
+  of the pinned body.
+
+- **The assistant's matcher has a stem pass, and the assistant's tier 2 has
+  a seam.** Every KB key ending in ה also matches its ־ת/־ות forms through a
+  stem scored one under the full key — with a build-time conflict guard
+  (a stem living inside another entry's key is dropped: 'מצלמ' would have
+  sent every "אתם מצלמים…" to the gear answer) and one named veto: 'אמור',
+  from אמורה, is the everyday "supposed to". Tier 2 activates only when a
+  page sets `window.AMORA_ASSISTANT_REMOTE = true` before assistant.js runs —
+  a flag, not a CONFIG edit, so `verify.mjs` drives the whole remote path
+  against a stubbed endpoint; no page ships the flag today.
 
 - **The assistant launcher and the accessibility trigger live in the mobile
   header bar**, beside the burger and the availability CTA, and share its

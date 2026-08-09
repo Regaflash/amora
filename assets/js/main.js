@@ -131,7 +131,7 @@
   // Set by the #gallery-<cat> / #photo-<n> load paths: a visitor who was SENT
   // here has already been vouched for, and measured at 390×844 they land at
   // 29.8% — fifteen pixels under WA_THRESHOLD, with the only always-on CTA
-  // switched off. For #photo-<n> it is worse: body overflow is hidden behind
+  // switched off. For #photo-<n> it is worse: the body is pinned behind
   // the lightbox, so they cannot even scroll to earn it. ORed into the
   // threshold term ONLY — never past !formOnScreen, which owns its own test.
   var waEngaged = false;
@@ -208,6 +208,57 @@
   window.addEventListener('resize', onScroll, { passive: true });
   onScroll();
 
+  /* ----------------------------------------------------------- scroll lock --- */
+
+  // One lock, three holders: the mobile menu, the lightbox, and the
+  // assistant's phone sheet (which reaches it through window.AMORA_LOCK —
+  // assistant.js loads after this file on every page that carries both).
+  // overflow:hidden was the old mechanism, and iOS Safari ignores it: the
+  // page behind a full-screen dialog rubber-band scrolls, so a swipe that
+  // meant "next photo" dragged the whole document. position:fixed is the
+  // lock Safari respects; body.style.top carries minus the scroll position
+  // so nothing appears to move, and the position is handed back on release.
+  // Each holder adds or removes only its own name — closing the assistant
+  // under an open menu releases nothing, which is the bug the old
+  // three-way overflow guards existed to prevent, now solved by counting.
+  var lockOwners = [];
+  var lockedY = 0;
+
+  // Not a scroll — the undo of a layout trick. html's scroll-behavior:smooth
+  // would paint it as a visible glide from the top of the page, so the
+  // restore forces auto for exactly one call.
+  function instantScrollTo(y) {
+    var root = document.documentElement;
+    var prev = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollTo(0, y);
+    root.style.scrollBehavior = prev;
+  }
+
+  function holdScroll(owner, held) {
+    var at = lockOwners.indexOf(owner);
+    if (held && at === -1) lockOwners.push(owner);
+    else if (!held && at !== -1) lockOwners.splice(at, 1);
+    var want = lockOwners.length > 0;
+    if (want === document.body.classList.contains('is-locked')) return;
+    if (want) {
+      lockedY = window.scrollY;
+      document.body.style.top = -lockedY + 'px';
+      document.body.classList.add('is-locked');
+    } else {
+      document.body.classList.remove('is-locked');
+      document.body.style.top = '';
+      // A fixed body shrank scrollHeight to the viewport, and the
+      // ResizeObserver cached that as `scrollable` — remeasure BEFORE the
+      // restore so the onScroll below computes the progress bar and the
+      // float against the real page, not a one-frame stale denominator.
+      measure();
+      instantScrollTo(lockedY);
+      onScroll();
+    }
+  }
+  window.AMORA_LOCK = holdScroll;
+
   /* ---------------------------------------------------------- mobile menu --- */
 
   var menu = $('#mobile-menu');
@@ -219,7 +270,7 @@
     if (wasOpen === open) return;
     menu.hidden = !open;
     burger.setAttribute('aria-expanded', String(open));
-    document.body.style.overflow = open ? 'hidden' : '';
+    holdScroll('menu', open);
     if (open) {
       var first = $('.menu__close', menu);
       if (first) first.focus();
@@ -842,7 +893,7 @@
     if (lightbox.hidden) {
       lastFocused = document.activeElement;
       lightbox.hidden = false;
-      document.body.style.overflow = 'hidden';
+      holdScroll('lightbox', true);
       $('[data-lightbox-close]').focus();
     }
 
@@ -892,7 +943,10 @@
     // region can announce. The caption follows: :empty is what hides its bar.
     if (lbLabel) lbLabel.textContent = '';
     if (lbCaption) lbCaption.textContent = '';
-    if (menu && menu.hidden) document.body.style.overflow = '';
+    // Released BEFORE playHint below: the release restores the scroll
+    // position, and the hint's own in-view test must see the page where the
+    // visitor left it, not pinned at the lock's captured offset.
+    holdScroll('lightbox', false);
     // The opener can be filtered out from under us, and focusing a hidden
     // element silently drops focus to <body>.
     // The #photo-<n> visitor sees the strip for the first time NOW — retry
@@ -968,6 +1022,26 @@
 
   // The deferred load-path call (see the note above filterFromHash's group):
   // safe now that lbGen and the lightbox wiring exist.
+  // For #photo-<n> the gallery is scrolled into view BEFORE the lightbox
+  // opens: openLightbox pins the body (position:fixed) at whatever scroll
+  // position it finds, and a fixed body cannot be scrolled after the fact —
+  // the old overflow:hidden lock could, which is how this used to work by
+  // accident. The jump is instant on purpose: html's smooth scrolling is
+  // asynchronous, and a lock taken mid-glide pins the page wherever the
+  // animation happened to be — while the lightbox that opens this same
+  // frame covers the movement anyway. Validity is checked first so a dead
+  // #photo-999 link does not scroll a page it will never open anything on.
+  var deepPhoto = /^#photo-(\d+)$/.exec(location.hash);
+  if (deepPhoto && items[Number(deepPhoto[1]) - 1]) {
+    var galleryAhead = $('#gallery');
+    if (galleryAhead) {
+      var rootStyle = document.documentElement.style;
+      var prevBehavior = rootStyle.scrollBehavior;
+      rootStyle.scrollBehavior = 'auto';
+      galleryAhead.scrollIntoView();
+      rootStyle.scrollBehavior = prevBehavior;
+    }
+  }
   if (filterFromHash() || photoFromHash()) {
     var gallerySection = $('#gallery');
     if (gallerySection) gallerySection.scrollIntoView();

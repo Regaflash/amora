@@ -137,6 +137,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* The scroll lock (main.js holdScroll — menu, lightbox, assistant sheet).
+   position:fixed rather than overflow:hidden because iOS Safari scrolls the
+   page straight through the latter: behind a full-screen dialog the document
+   rubber-band scrolled under the visitor's swipes. main.js pairs the class
+   with body.style.top = minus the scroll position, so the page does not
+   appear to move, and restores the position on release. */
+body.is-locked {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
 img { display: block; max-width: 100%; }
 
 a { color: var(--champagne-ink); text-decoration: none; }
