@@ -2622,7 +2622,8 @@ three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
 .quotes__arrow:active,
 .quotes__pause:active,
 .lightbox__close:active,
-.lightbox__step:active { transform: translateY(1px); }
+.lightbox__step:active,
+.legal__back:active { transform: translateY(1px); }
 
 /* --------------------------------------------------------- responsive --- */
 

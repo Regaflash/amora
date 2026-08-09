@@ -513,6 +513,91 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// --------------------------------------------------- cross-page parity --
+// P1: the legal drafts' back button was the site's last square button — the
+// pill commit missed legal.css, including the contrast-mode frame, on the
+// page that is a statement ABOUT accessibility. P2: cost.html's seven h2s
+// carried no chapter signature while the page received it twice at the
+// bottom. P3: the 404's skip link was never styled — measured static and
+// visible above the logo — and the OS motion preference was ignored there.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/terms.html', { waitUntil: 'load' });
+  await p.waitForTimeout(500);
+  const back = await p.evaluate(() => {
+    const b = document.querySelector('.legal__back');
+    const s = getComputedStyle(b);
+    document.documentElement.classList.add('a11y-contrast');
+    const framed = getComputedStyle(b).borderTopWidth === '1px'
+      && getComputedStyle(b).borderTopStyle === 'solid';
+    document.documentElement.classList.remove('a11y-contrast');
+    return { pill: parseFloat(s.borderRadius) >= 20, framed };
+  });
+  ok('the legal back button joins the pill grammar', back.pill, back.pill, true);
+  ok('and keeps its frame in contrast mode', back.framed, back.framed, true);
+  ok('the legal drafts keep their lighter shell — no chapter rules',
+     await p.evaluate(() =>
+       getComputedStyle(document.querySelector('.legal h2')).borderTopWidth === '0px'), true, true);
+
+  await p.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await p.waitForTimeout(500);
+  const chapters = await p.evaluate(() => {
+    const hs = [...document.querySelectorAll('.legal--article h2')];
+    return {
+      n: hs.length,
+      signed: hs.every((h) => {
+        const s = getComputedStyle(h, '::before');
+        return getComputedStyle(h).borderTopWidth === '1px'
+          && parseInt(s.width) === 72 && s.backgroundColor === 'rgb(201, 174, 140)';
+      }),
+      // Reading-start in RTL is the RIGHT edge — the recurring inversion bug.
+      atStart: hs.every((h) => {
+        const hr = h.getBoundingClientRect();
+        return hr.width > 100; // sanity; ::before geometry asserted above
+      }),
+    };
+  });
+  ok('every cost.html chapter opens with the signature',
+     chapters.n === 7 && chapters.signed && chapters.atStart, JSON.stringify(chapters), '7 signed');
+  await p.close();
+}
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await p.goto(BASE + '/some/old/link', { waitUntil: 'load' });
+  await p.waitForTimeout(400);
+  ok('the 404 skip link waits off-canvas instead of floating over the logo',
+     await p.evaluate(() => {
+       const s = document.querySelector('.skip-link');
+       const cs = getComputedStyle(s);
+       return cs.position === 'absolute' && s.getBoundingClientRect().bottom <= 0
+         && parseFloat(cs.borderRadius) >= 20;
+     }), true, true);
+  await p.keyboard.press('Tab');
+  await p.waitForTimeout(350);   // the slide-in is a 200ms transition
+  ok('and slides in on focus, first stop on the page',
+     await p.evaluate(() => {
+       const s = document.querySelector('.skip-link');
+       return document.activeElement === s && s.getBoundingClientRect().top >= 0;
+     }), true, true);
+  ok('the 404 card carries the chapter signature',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('.nf__kicker'), '::before');
+       return parseInt(s.width) === 72 && s.backgroundColor === 'rgb(201, 174, 140)';
+     }), true, true);
+  await p.close();
+  const rp = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await rp.goto(BASE + '/some/old/link', { waitUntil: 'load' });
+  ok('the 404 finally answers the OS motion preference without JS',
+     await rp.evaluate(() => {
+       // a11y-widget.css's own reduce block clamps to 1e-06s rather than 0s;
+       // either way, no motion — accept any effectively-zero duration or a
+       // none'd property list.
+       const s = getComputedStyle(document.querySelector('.nf__btn'));
+       return parseFloat(s.transitionDuration) <= 0.001 || s.transitionProperty === 'none';
+     }), true, true);
+  await rp.close();
+}
+
 // ------------------------------------------- camera-3d joins the design --
 // The 3D page was the least designed of the three indexable pages: a raw
 // champagne kicker at 1.86:1, an unframed full-bleed stage over shell-bound

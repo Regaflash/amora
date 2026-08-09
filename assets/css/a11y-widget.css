@@ -345,7 +345,10 @@ html.a11y-contrast body a.menu__cta,
 html.a11y-contrast body a.gear__cta,
 html.a11y-contrast body a.form__done-cta,
 html.a11y-contrast body a.wa-float,
-html.a11y-contrast body a.nf__btn { border: 1px solid #FFF !important; }
+html.a11y-contrast body a.nf__btn,
+/* …and the legal drafts' back button — the only navigation control on the
+   three pages, one of which is the accessibility statement itself. */
+html.a11y-contrast body a.legal__back { border: 1px solid #FFF !important; }
 html.a11y-contrast body input::placeholder,
 html.a11y-contrast body textarea::placeholder { color: #D0D0D0 !important; }
 /* The hero's scrim is repainted opaque black by the rule above, which is what
