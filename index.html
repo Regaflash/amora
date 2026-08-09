@@ -229,6 +229,22 @@
     "@type": "Answer",
     "text": "אנחנו מצלמים על גוף פול־פריים ועדשות פריים מהירות, כאלה שאוספות הרבה אור, ומשלימים בתאורה שמכבדת את האור שכבר יש בחדר. בלי פלאשים שמסמאים את האורחים."
    }
+  },
+  {
+   "@type": "Question",
+   "name": "מה קורה אחרי שמשאירים פרטים?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "חוזרים אליכם עוד באותו יום עם זמינות והצעה מותאמת. אחר כך שיחת היכרות של 20 דקות, בטלפון או על קפה, ובה נשלח לכם 2–3 גלריות מלאות של חתונות דומות לשלכם."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "אתם מצלמים גם וידאו, או שצריך צלם וידאו בנפרד?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "הכול אצלנו, תחת קורת גג אחת. שנינו מצלמים ביחד — אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות. בסוף מקבלים גם גלריה מלאה וגם סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם."
+   }
   }
  ]
 }
@@ -991,6 +1007,41 @@
         <p class="step__text">תוך 30 יום: הגלריה המלאה והסרט. האלבום המודפס — שבועיים אחרי שאתם מאשרים את הבחירה. אצלכם, לתמיד.</p>
       </div>
     </div>
+
+    <!-- The deliverables ledger: what physically lands in the couple's hands,
+         each with its own delivery window. The facts were scattered across the
+         trust bar, a COLLAPSED FAQ answer, process step 04 and cost.html —
+         nowhere scannable. Appended INSIDE #process on purpose: the eyebrows
+         are a hand-numbered 01→09 sequence and a new top-level section would
+         renumber four of them and the nav. Every string is lifted from copy
+         already on the site (verify.mjs pins each timing to a .faq__a, so
+         this list cannot drift from the byte-locked answers Google is
+         served). The album carries (תוספת) — FAQ 4 and cost.html both put it
+         outside the base package, and printing it unqualified would re-open
+         the album contradiction resolved 2026-08-09. -->
+    <h3 class="deliver__title">מה נשאר לכם ביד</h3>
+    <ul class="deliver">
+      <li class="deliver__item">
+        <span class="deliver__what">גלריית תמונות ראשונה</span>
+        <span class="deliver__when">תוך 7 ימים</span>
+      </li>
+      <li class="deliver__item">
+        <span class="deliver__what">הגלריה המלאה, לצפייה ולשיתוף</span>
+        <span class="deliver__when">תוך 30 יום</span>
+      </li>
+      <li class="deliver__item">
+        <span class="deliver__what">סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם</span>
+        <span class="deliver__when">תוך 30 יום</span>
+      </li>
+      <li class="deliver__item">
+        <span class="deliver__what">מגנטים עם סורק AR שהופך כל תמונה לסרטון</span>
+        <span class="deliver__when">בחתונה מלאה</span>
+      </li>
+      <li class="deliver__item">
+        <span class="deliver__what">אלבום מודפס (תוספת)</span>
+        <span class="deliver__when">שבועיים אחרי שאתם מאשרים את הבחירה</span>
+      </li>
+    </ul>
   </section>
 
   <!-- ===== 08 · המלצות ===== -->
@@ -1076,6 +1127,18 @@
       <details class="faq__item">
         <summary class="faq__q">האולם שלנו חשוך — איך זה מצטלם?<span class="faq__sign" aria-hidden="true">+</span></summary>
         <p class="faq__a">אנחנו מצלמים על גוף פול־פריים ועדשות פריים מהירות, כאלה שאוספות הרבה אור, ומשלימים בתאורה שמכבדת את האור שכבר יש בחדר. בלי פלאשים שמסמאים את האורחים.</p>
+      </details>
+      <!-- Answers 9 and 10, added 2026-08-09. Both are restatements: 9 stitches
+           the form promise, process step 01 and FAQ 6; 10 unfolds the trust
+           bar's "צילום + וידאו תחת קורת גג אחת" for the couple searching for a
+           separate videographer. Plain text, zero tags — the byte-lock. -->
+      <details class="faq__item">
+        <summary class="faq__q">מה קורה אחרי שמשאירים פרטים?<span class="faq__sign" aria-hidden="true">+</span></summary>
+        <p class="faq__a">חוזרים אליכם עוד באותו יום עם זמינות והצעה מותאמת. אחר כך שיחת היכרות של 20 דקות, בטלפון או על קפה, ובה נשלח לכם 2–3 גלריות מלאות של חתונות דומות לשלכם.</p>
+      </details>
+      <details class="faq__item">
+        <summary class="faq__q">אתם מצלמים גם וידאו, או שצריך צלם וידאו בנפרד?<span class="faq__sign" aria-hidden="true">+</span></summary>
+        <p class="faq__a">הכול אצלנו, תחת קורת גג אחת. שנינו מצלמים ביחד — אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות. בסוף מקבלים גם גלריה מלאה וגם סרט חתונה של 3–5 דקות וטיזר קצר לאינסטגרם.</p>
       </details>
         <!-- Outside the <details> list on purpose: the FAQ answers must stay
              byte-identical to the FAQPage JSON-LD, and tools/ invariant checks
@@ -1265,6 +1328,13 @@
     <span class="lightbox__count" data-lightbox-count></span>
     <button class="lightbox__step" type="button" data-lightbox-next aria-label="הבאה">←</button>
   </div>
+  <!-- The gallery does more persuading than the five service cards, and until
+       now it ended in ✕: the wa-float sits UNDER this full-screen overlay, so
+       the most engaged moment on the site had no route to the form. Markup,
+       not JS: the lightbox only exists when main.js runs, so this can never
+       be a control that opens nothing. Deliberately NOT .lightbox__step —
+       that class is mirrored in LTR and this one carries text. -->
+  <a class="lightbox__cta" href="#contact" data-lightbox-cta>לבדיקת זמינות ←</a>
 </div>
 
 <script src="assets/js/main.js"></script>

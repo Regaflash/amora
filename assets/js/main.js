@@ -952,6 +952,20 @@
     lbNav.appendChild(lbShare);
   }
 
+  // The enquiry route out of the lightbox — close FIRST, then scroll, and
+  // never write #contact while #photo-<n> is live: a competing hash write is
+  // what resurrects an abandoned fragment (see the hashchange handler).
+  // closeLightbox() restores the filter's hash on its own.
+  var lbCta = $('[data-lightbox-cta]');
+  if (lbCta) {
+    lbCta.addEventListener('click', function (e) {
+      e.preventDefault();
+      closeLightbox();
+      var contact = $('#contact');
+      if (contact) contact.scrollIntoView();
+    });
+  }
+
   // The deferred load-path call (see the note above filterFromHash's group):
   // safe now that lbGen and the lightbox wiring exist.
   if (filterFromHash() || photoFromHash()) {

@@ -515,6 +515,75 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ----------------------------------------------- the additions earn their keep --
+// Two new FAQ answers (byte-locked pair grows to ten), the deliverables
+// ledger whose every timing is pinned to a .faq__a so it cannot drift from
+// the copy Google is served, and an enquiry route out of the lightbox that
+// must respect the URL contract (never write #contact over #photo-<n>).
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  ok('ten FAQ items, and the two new ones open readable',
+     await p.evaluate(() => {
+       const items = [...document.querySelectorAll('.faq__item')];
+       if (items.length !== 10) return false;
+       items[8].open = true; items[9].open = true;
+       const a9 = items[8].querySelector('.faq__a');
+       const a10 = items[9].querySelector('.faq__a');
+       return a9.textContent.includes('שיחת היכרות') && a10.textContent.includes('קורת גג אחת')
+         && items.every((i) =>
+           // Browser-side twin of the no-tag lock. children, not an
+           // innerHTML string compare: a literal & entity-encodes in
+           // innerHTML and fails a byte compare on legal text.
+           i.querySelector('.faq__a').children.length === 0);
+     }), true, true);
+
+  ok('the ledger holds five rows and every timing lives in a byte-locked answer',
+     await p.evaluate(() => {
+       const rows = [...document.querySelectorAll('#process .deliver__item')];
+       if (rows.length !== 5) return false;
+       const faqs = [...document.querySelectorAll('.faq__a')].map((a) => a.textContent);
+       return rows.every((r) => {
+         const when = r.querySelector('.deliver__when').textContent.trim();
+         return faqs.some((f) => f.includes(when));
+       }) && rows[4].querySelector('.deliver__what').textContent.includes('תוספת');
+     }), true, true);
+
+  await p.goto(BASE + '/#photo-5', { waitUntil: 'load' });
+  await p.waitForTimeout(900);
+  await p.locator('[data-lightbox-cta]').click();
+  await p.waitForTimeout(600);
+  ok('the lightbox CTA closes, lands on the form, and never leaks #contact over #photo',
+     await p.evaluate(() => document.querySelector('[data-lightbox]').hidden
+       && Math.abs(document.querySelector('#contact').getBoundingClientRect().top) < innerHeight
+       && !location.hash.startsWith('#photo')
+       && location.hash !== '#contact'), true, true);
+  ok('the CTA is on-screen, tappable and focus-ringed at 390',
+     await p.evaluate(() => {
+       document.querySelector('.masonry__btn').click();
+       return new Promise((r) => setTimeout(() => {
+         const c = document.querySelector('[data-lightbox-cta]');
+         const b = c.getBoundingClientRect();
+         c.focus();
+         const s = getComputedStyle(c);
+         document.querySelector('[data-lightbox-close]').click();
+         r(b.left >= 0 && b.right <= innerWidth && b.height >= 44
+           && s.outlineColor !== 'rgba(0, 0, 0, 0)');
+       }, 500));
+     }), true, true);
+  await p.close();
+}
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  ok('with JS off, all ten answers and the five ledger rows are served',
+     await np.evaluate(() => document.querySelectorAll('.faq__a').length === 10
+       && document.querySelectorAll('.deliver__item').length === 5), true, true);
+  await ctx.close();
+}
+
 // ----------------------------------------- the direction boots before paint --
 // A returning visitor with a stored LTR language used to get a full Hebrew
 // RTL paint and then a WHOLE-PAGE mirror once deferred i18n.js mounted. A
