@@ -623,6 +623,11 @@ summary::-webkit-details-marker { display: none; }
   .menu:not([hidden]) > :nth-child(6) { animation-delay: 220ms; }
   .menu:not([hidden]) > :nth-child(7) { animation-delay: 275ms; }
   .menu:not([hidden]) > :nth-child(8) { animation-delay: 330ms; }
+  /* Everything past the addressed range — the CTA, the phone link, and the
+     language group i18n injects — rides the END of the cascade. Without
+     this they animated at 0ms and appeared before the links above them:
+     the reading-order rise played bottom-first for the tail of the menu. */
+  .menu:not([hidden]) > :nth-child(n+9) { animation-delay: 385ms; }
 }
 .menu__close {
   position: absolute;
