@@ -1497,8 +1497,12 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
      with no code of its own. */
   @keyframes masonry-hint {
     0%, 100% { transform: translateX(0); }
-    38%, 62% { transform: translateX(16px); }
+    38%, 62% { transform: translateX(var(--hint-shift, 16px)); }
   }
+  /* +16px leans toward the next frame in RTL, where it waits on the left;
+     in the i18n system's LTR languages the next frame waits on the RIGHT,
+     and the unflipped lean advertised the wrong direction. */
+  [dir="ltr"] .masonry { --hint-shift: -16px; }
   .masonry.is-hinting .masonry__item { animation: masonry-hint 1100ms var(--ease); }
 }
 
@@ -1732,6 +1736,15 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
    otherwise. Inline SVG, so the glyph inherits the step buttons' ink and
    hover; grid centring because the sibling steps centre a text glyph. */
 .lightbox__share { display: grid; place-items: center; }
+/* Standalone arrow glyphs cannot be translated — an "←" text node has no
+   Hebrew, so i18n's worth() skips it by design — and in LTR they point away
+   from what they mean. scaleX(-1) mirrors the GLYPH; the rule must never
+   grow to an element containing words. Arrow-only controls and the glimpse
+   captions' aria-hidden arrow span, nothing else. */
+[dir="ltr"] .quotes__arrow,
+[dir="ltr"] .lightbox__step:not(.lightbox__share) { transform: scaleX(-1); }
+[dir="ltr"] .glimpse__cap [aria-hidden] { display: inline-block; transform: scaleX(-1); }
+
 /* "1 / 18" renders as "18 / 1" inside the RTL document without this; and
    nowrap, because a fourth control in the row (the share button) squeezed
    the span until the count folded into two lines. */
@@ -2567,7 +2580,10 @@ three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
    vendored library used to buy an unexplained empty cream rectangle. Text
    only, no motion — nothing for the motion switches to kill. */
 .stage-shell.is-loading::after {
-  content: "טוען את הדגם…";
+  /* From the host attribute, not a literal: a CSS content string has no
+     node and no attribute — no translator can ever reach it. The Hebrew
+     lives on data-loading-text in camera-3d.html, inside i18n's ATTRS. */
+  content: attr(data-loading-text);
   position: absolute;
   inset: 0;
   z-index: 1;

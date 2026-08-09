@@ -515,6 +515,80 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ---------------------------------------- the other three languages' turn --
+// The i18n system flips the document to LTR for en/ru, and three surfaces
+// hardcoded "right to left": the swipe hint's lean, the swipe sign
+// convention, and standalone arrow glyphs (an "←" text node has no Hebrew,
+// so the translator skips it by design). Plus: the 3D stage's Hebrew lived
+// in attributes no walker read and a CSS content string nothing could ever
+// reach. All asserted by setting dir=ltr directly — the exact state
+// i18n.js produces — with no network involved.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  ok('the hint leans toward the next frame in BOTH directions',
+     await p.evaluate(() => {
+       const m = document.querySelector('.masonry');
+       const rtl = getComputedStyle(m).getPropertyValue('--hint-shift').trim();
+       document.documentElement.dir = 'ltr';
+       const ltr = getComputedStyle(m).getPropertyValue('--hint-shift').trim();
+       document.documentElement.dir = 'rtl';
+       return (rtl === '' || rtl === '16px') && ltr === '-16px';
+     }), true, true);
+
+  await p.goto(BASE + '/#photo-3', { waitUntil: 'load' });
+  await p.waitForTimeout(900);
+  const total = await p.locator('.masonry__item').count();
+  const swipe = async () => {
+    const fig = await p.locator('[data-lightbox-figure]').boundingBox();
+    const cx = fig.x + fig.width / 2, cy = fig.y + fig.height / 2;
+    await p.mouse.move(cx + 80, cy); await p.mouse.down();
+    await p.mouse.move(cx - 80, cy, { steps: 6 }); await p.mouse.up();
+    await p.waitForTimeout(500);
+    return p.locator('[data-lightbox-count]').textContent();
+  };
+  // The document's convention: dragging left is "back" in RTL (3 → 2), and
+  // the same physical gesture is "forward" once the document flips to LTR
+  // (2 → 3). One gesture, two meanings, decided by dir — that is the fix.
+  ok('a leftward swipe steps back in RTL',
+     (await swipe()) === `2 / ${total}`, await p.locator('[data-lightbox-count]').textContent(), `2 / ${total}`);
+  await p.evaluate(() => { document.documentElement.dir = 'ltr'; });
+  ok('and the same gesture steps forward once the document is LTR',
+     (await swipe()) === `3 / ${total}`, await p.locator('[data-lightbox-count]').textContent(), `3 / ${total}`);
+  ok('the arrow glyphs mirror under LTR',
+     await p.evaluate(() =>
+       getComputedStyle(document.querySelector('[data-lightbox-prev]')).transform !== 'none'),
+     true, true);
+  await p.evaluate(() => { document.documentElement.dir = 'rtl'; });
+  await p.close();
+}
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(1500);
+  ok('the stage speaks through attributes a translator can reach',
+     await p.evaluate(() => {
+       const shell = document.querySelector('.stage-shell');
+       const host = document.querySelector('three-d-stage');
+       return shell.hasAttribute('data-loading-text')
+         && host.hasAttribute('obj-label') && host.hasAttribute('note');
+     }), true, true);
+  ok('a rewritten label crosses into the shadow root',
+     await p.evaluate(() => {
+       const host = document.querySelector('three-d-stage');
+       host.setAttribute('obj-label', 'OBJ-TEST');
+       host.setAttribute('note', 'NOTE-TEST');
+       const sr = host.shadowRoot;
+       return sr.querySelector('.toolbar button').textContent === 'OBJ-TEST'
+         && sr.querySelector('.note').textContent === 'NOTE-TEST';
+     }), true, true);
+  ok('no Hebrew literal survives inside a CSS content string',
+     !/content:\s*["'][^"']*[֐-׿]/.test(
+       fs.readFileSync(path.join(ROOT, 'assets/css/styles.css'), 'utf8')), true, true);
+  await p.close();
+}
+
 // ----------------------------------------------- the lead form, sharpened --
 // LF1: the "(חובה)" marker moves with the requirement — it used to stay on
 // the greyed, disabled date field. LF2: a filled field validates on leaving

@@ -1008,7 +1008,10 @@
         return;
       }
       if (Math.abs(dx) < SWIPE_MIN) return;
-      step(dx < 0 ? -1 : 1);
+      // The sign convention is the DOCUMENT's, not the device's: dragging
+      // left means "back" in RTL and "forward" once i18n flips the page to
+      // LTR. Identical behaviour in Hebrew; inverted for en/ru.
+      step((dx < 0) !== (document.documentElement.dir === 'ltr') ? -1 : 1);
     });
     lbFigure.addEventListener('pointercancel', function () { lbStartX = lbStartY = null; });
   }
@@ -1296,8 +1299,10 @@
         var dx = e.clientX - startX;
         startX = null;
         if (Math.abs(dx) < SWIPE_MIN) return;
-        // Dragging left in RTL means "back to the previous quote".
-        goTo(slide + (dx < 0 ? -1 : 1), true);
+        // Dragging left in RTL means "back to the previous quote" — and the
+        // opposite once i18n flips the document to LTR, same rule as the
+        // lightbox swipe.
+        goTo(slide + ((dx < 0) !== (document.documentElement.dir === 'ltr') ? -1 : 1), true);
       });
       viewport.addEventListener('pointercancel', function () { startX = null; });
     }

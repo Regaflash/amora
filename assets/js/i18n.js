@@ -48,7 +48,12 @@
   var NO_TRANSLATE_PAGE = /(privacy|terms|accessibility)\.html$/i;
 
   var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, CODE: 1, PRE: 1, TEXTAREA: 1 };
-  var ATTRS = ['alt', 'title', 'placeholder', 'aria-label'];
+  // The last five are the 3D stage's light-DOM attributes and the loading
+  // veil's text source: shadow-root strings are unreachable to any walker,
+  // so the Hebrew lives on host attributes this list CAN see, and
+  // three-d-stage forwards changes inward via observedAttributes.
+  var ATTRS = ['alt', 'title', 'placeholder', 'aria-label',
+               'note', 'obj-label', 'glb-label', 'fallback-alt', 'data-loading-text'];
 
   /* ------------------------------------------------------------ helpers -- */
 
