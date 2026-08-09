@@ -515,6 +515,79 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ------------------------------------------------- the phone's own traps --
+// Three WebKit behaviors a desktop harness never surfaces, fixed and pinned:
+// sub-16px inputs make Safari zoom the page on focus (and never zoom back);
+// :hover latches after a tap, so transform/ground hovers stick; the default
+// grey tap flash paints whole 24px hit areas over 2px marks.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  for (const url of ['/', '/cost.html']) {
+    await p.goto(BASE + url, { waitUntil: 'load' });
+    await p.waitForTimeout(500);
+    const small = await p.evaluate(() =>
+      [...document.querySelectorAll('[data-form] input, [data-form] select, [data-form] textarea')]
+        .filter((el) => el.type !== 'checkbox' && el.type !== 'hidden' && !el.closest('.honeypot'))
+        .map((el) => ({ f: el.dataset.field || el.name, px: parseFloat(getComputedStyle(el).fontSize) }))
+        .filter((x) => x.px < 16));
+    ok(`no form control invites the iOS focus-zoom on ${url}`,
+       small.length === 0, JSON.stringify(small), '[]');
+  }
+  ok('the WebKit opt-outs are set: no tap flash, no rotation inflation',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.documentElement);
+       return s.webkitTapHighlightColor === 'rgba(0, 0, 0, 0)'
+         && s.webkitTextSizeAdjust === '100%';
+     }), true, true);
+  await p.close();
+}
+{
+  // Static guard, off disk: any :hover rule that declares transform or a
+  // ground (background/box-shadow/opacity) must live inside a
+  // @media (hover: hover) block — the rule that keeps a future hover from
+  // re-introducing the sticky-tap defect. Colour-only hovers are exempt.
+  const css = fs.readFileSync(path.join(ROOT, 'assets/css/styles.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  const offenders = [];
+  let depth = 0, inHoverMedia = 0, buf = '', sel = '';
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    if (ch === '{') {
+      if (/@media[^{]*hover:\s*hover/.test(buf)) inHoverMedia = depth + 1;
+      sel = buf.trim(); buf = ''; depth++;
+    } else if (ch === '}') {
+      depth--;
+      if (inHoverMedia && depth < inHoverMedia - 1) inHoverMedia = 0;
+      buf = '';
+    } else buf += ch;
+    if (ch === ';' && sel.includes(':hover') && !inHoverMedia
+        && /(transform|background(-color)?|box-shadow|opacity)\s*:/.test(buf)
+        && !/::after|::before/.test(sel)) {
+      offenders.push(sel.slice(0, 60)); buf = '';
+    }
+  }
+  ok('every ground/transform hover is pointer-gated (static sweep)',
+     offenders.length === 0, JSON.stringify([...new Set(offenders)]), '[]');
+}
+{
+  // Runtime: on a touch device (hover: none), a tap must not leave the
+  // thumbnail scaled.
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(700);
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  await np.waitForTimeout(400);
+  await np.locator('.masonry__btn').first().tap();
+  await np.waitForTimeout(600);
+  await np.keyboard.press('Escape');
+  await np.waitForTimeout(400);
+  ok('a tapped thumbnail does not stay swollen after the lightbox closes',
+     await np.evaluate(() =>
+       getComputedStyle(document.querySelector('.masonry__photo')).transform === 'none'), true, true);
+  await ctx.close();
+}
+
 // ------------------------------------------------ the review's findings --
 // Regression pins for the code-review fixes: Back out of a pushed filter
 // hash clears the filter; the pinch stays the browser's over the photo; the

@@ -75,6 +75,14 @@
   --t-lead: clamp(1.0625rem, 1.25vw, 1.25rem);
   --t-body: 1.0625rem;
   --t-small: 0.9375rem;
+  /* A fifth type step, for form controls only, and the comment is the
+     justification the four-step comment above demands: --t-small computes
+     to 15px, and mobile Safari zooms the whole page on focusing any input
+     under 16 CSS px — and does not zoom back out on blur. One pixel under
+     the threshold, on the one form that turns a visitor into an enquiry.
+     max(), not a literal: a visitor whose browser default is LARGER keeps
+     their preference; the 16px floor only clears Safari's fixed bar. */
+  --t-input: max(1rem, 16px);
   --t-micro: 0.75rem;
 
   /* Hebrew has no ascender/descender variety to help the eye find the next
@@ -105,6 +113,16 @@ html {
      browser furniture. Firefox reads this directly; WebKit falls back to
      its default, which is an acceptable place to fall. */
   scrollbar-color: var(--champagne) transparent;
+  /* Two WebKit defaults the site never opted out of. The tap highlight
+     paints a grey box over the whole HIT AREA — a 24px square flashing on a
+     2px dot is the exact effect the background-clip comment on the dots
+     exists to prevent; every control below pairs this with an :active state
+     so touch feedback is replaced, not deleted. text-size-adjust is 100%,
+     NEVER none: none suppresses user text scaling on some builds — the same
+     WCAG 1.4.4 objection that made the lightbox pinch-zoom, not none. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -325,7 +343,15 @@ summary::-webkit-details-marker { display: none; }
               transform var(--t-btn) var(--ease), border-color var(--t-btn) var(--ease);
 }
 .btn--solid { background: var(--champagne); color: var(--charcoal); }
+/* Gated: iOS latches :hover onto the last-tapped element until the next tap
+   elsewhere, so an ungated transform/ground hover STICKS after touch — a
+   tapped thumbnail stayed at 1.03 for the session. Gated IN PLACE, never
+   relocated: two source-order tiebreaks in this file are load-bearing and
+   documented where they live. Touch keeps its own feedback via the :active
+   block. Colour-only hovers stay ungated on purpose. */
+@media (hover: hover) {
 .btn--solid:hover { background: var(--sand); color: var(--charcoal); transform: translateY(-2px); }
+}
 
 /* ---------------------------------------------------------------------------
    Glass over the film.
@@ -353,18 +379,22 @@ summary::-webkit-details-marker { display: none; }
   border-color: rgba(201, 174, 140, 0.9);
   color: var(--ivory);
 }
+@media (hover: hover) {
 .hero__actions .btn--solid:hover {
   background: rgba(201, 174, 140, 0.52);
   border-color: var(--champagne);
   color: var(--ivory);
 }
+}
 .hero__actions .btn--ghost-light {
   background: rgba(255, 253, 249, 0.10);
   border-color: rgba(255, 253, 249, 0.5);
 }
+@media (hover: hover) {
 .hero__actions .btn--ghost-light:hover {
   background: rgba(255, 253, 249, 0.2);
   border-color: var(--ivory);
+}
 }
 
 /* Dark glass here, light glass on the hero buttons, and the difference is
@@ -397,14 +427,18 @@ summary::-webkit-details-marker { display: none; }
   color: var(--ivory);
   border-color: rgba(255, 253, 249, 0.45);
 }
+@media (hover: hover) {
 .btn--ghost-light:hover { background: rgba(255, 253, 249, 0.12); border-color: var(--ivory); color: var(--ivory); }
+}
 
 .btn--outline {
   background: transparent;
   color: var(--charcoal);
   letter-spacing: .18em;
 }
+@media (hover: hover) {
 .btn--outline:hover { background: var(--champagne); color: var(--charcoal); }
+}
 
 .link-underline {
   display: inline-block;
@@ -505,8 +539,10 @@ summary::-webkit-details-marker { display: none; }
   transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
 }
 .site-header.is-scrolled .nav__cta { color: var(--charcoal); }
+@media (hover: hover) {
 .nav__cta:hover,
 .site-header.is-scrolled .nav__cta:hover { background: var(--champagne); color: var(--charcoal); }
+}
 
 .nav-mobile { display: none; align-items: center; gap: 10px; }
 .nav-mobile__cta {
@@ -633,7 +669,9 @@ summary::-webkit-details-marker { display: none; }
   margin-top: var(--sp-6);
   transition: background var(--t-btn) var(--ease), transform var(--t-btn) var(--ease);
 }
+@media (hover: hover) {
 .menu__cta:hover { background: var(--sand); transform: translateY(-2px); }
+}
 .menu__phone { font-size: var(--t-small); color: var(--mocha); text-align: center; margin-top: var(--sp-2); }
 
 /* --------------------------------------------------------------- hero --- */
@@ -1055,7 +1093,9 @@ html.a11y-no-motion .about[data-reveal] .about__photo { clip-path: none !importa
 .card__media { display: block; overflow: hidden; }
 .card__media picture { display: block; }
 .card__photo { width: 100%; height: auto; display: block; transition: transform 900ms var(--ease); }
+@media (hover: hover) {
 .card:hover .card__photo { transform: scale(1.035); }
+}
 .card__body {
   display: block;
   padding: var(--sp-5) 0 0;
@@ -1197,12 +1237,16 @@ html.a11y-no-motion .services__grid .card__media picture { opacity: 1 !important
 /* The filter words were mocha 6.4:1 / charcoal 16:1 on cream. On ink those are
    2.83:1 and about 1.1:1 — the selected word would be invisible. */
 .gallery .chip { color: rgba(255, 253, 249, .72); }   /* ~9.9:1 */
-.gallery .chip:hover,
 .gallery .chip[aria-pressed="true"] { color: var(--ivory); }
+@media (hover: hover) {
+  .gallery .chip:hover { color: var(--ivory); }
+}
 .gallery .chip::after { background: var(--rule-dark); }
 .gallery .chip[aria-pressed="true"]::after { background: var(--ivory); height: 2px; }
 .gallery .btn--outline { color: var(--ivory); border-color: rgba(255, 253, 249, .5); }
+@media (hover: hover) {
 .gallery .btn--outline:hover { background: var(--champagne); color: var(--charcoal); }
+}
 
 /* Five champagne-filled pills became five words with a rule under them —
    a masthead, not a toolbar. Ink is mocha at 6.4:1, the selected word is
@@ -1349,7 +1393,9 @@ html.a11y-no-motion .services__grid .card__media picture { opacity: 1 !important
   display: block;
   transition: transform 900ms var(--ease);
 }
+@media (hover: hover) {
 .masonry__btn:hover .masonry__photo { transform: scale(1.03); }
+}
 
 /* The wall arrives frame by frame: the first time .masonry itself is
    revealed (main.js observes it directly — the SECTION reveals while the
@@ -1503,7 +1549,9 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
   object-fit: cover;
   transition: transform 900ms var(--ease);
 }
+@media (hover: hover) {
 .glimpse__link:hover .glimpse__photo { transform: scale(1.03); }
+}
 /* The visible word under each frame ("חתונות ←"): on a touch screen the
    hover scale does not exist and the aria-label is silent, so these six
    category links read as decoration — the routing to the filtered galleries
@@ -1732,7 +1780,9 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
   object-fit: cover;
   transition: opacity 400ms, transform 700ms var(--ease);
 }
+@media (hover: hover) {
 .film__play:hover .film__poster { opacity: .82; transform: scale(1.02); }
+}
 
 /* Champagne play triangle, drawn with borders so it needs no asset. */
 .film__play-icon {
@@ -1760,9 +1810,11 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
   border-width: 11px 0 11px 18px;
   border-color: transparent transparent transparent var(--sand);
 }
+@media (hover: hover) {
 .film__play:hover .film__play-icon {
   background: rgba(201, 174, 140, 0.28);
   transform: translate(-50%, -50%) scale(1.06);
+}
 }
 /* A slow champagne ring breathes off the play circle — the one resting
    element on the page allowed to move, because it is an invitation to press.
@@ -1846,7 +1898,9 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
   transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease),
               transform var(--t-btn) var(--ease);
 }
+@media (hover: hover) {
 .gear__cta:hover { background: var(--champagne); color: var(--charcoal); }
+}
 .gear__stage {
   border: 1px solid var(--rule);
   border-radius: 0;
@@ -2009,7 +2063,9 @@ html:not(.js) .quotes__controls { display: none; }
   opacity: .72;
   transition: opacity 200ms var(--ease), background 200ms var(--ease);
 }
+@media (hover: hover) {
 .lang__btn:hover { opacity: 1; }
+}
 .lang__btn[aria-pressed="true"] {
   opacity: 1;
   background: var(--champagne);
@@ -2344,7 +2400,7 @@ select.field__control:has(option[value=""]:checked) { color: var(--mocha); }
   background: var(--cream);
   border: 1px solid var(--rule-strong);
   border-radius: 0;
-  font-size: var(--t-small);
+  font-size: var(--t-input);   /* 16px floor — see the token: iOS zooms under it */
   caret-color: var(--champagne-ink);   /* the blinking cursor wears the brand */
 }
 .field__control[aria-invalid="true"] { border-color: var(--terracotta); }
@@ -2407,7 +2463,9 @@ textarea.field__control { resize: vertical; }
   color: var(--charcoal);
   transition: background var(--t-btn) var(--ease), transform var(--t-btn) var(--ease);
 }
+@media (hover: hover) {
 .form__submit:hover { background: var(--sand); transform: translateY(-2px); }
+}
 .form__submit.is-sending { background: var(--sand); cursor: wait; opacity: .75; }
 .form__alt { font-size: var(--t-small); color: var(--mocha); margin: 0; text-align: center; }
 .form__consent { font-size: var(--t-micro); color: var(--mocha); margin: 0 0 var(--sp-1); text-align: center; }
@@ -2452,7 +2510,9 @@ textarea.field__control { resize: vertical; }
   color: var(--charcoal);
   transition: background var(--t-btn) var(--ease), transform var(--t-btn) var(--ease);
 }
+@media (hover: hover) {
 .form__done-cta:hover { background: var(--champagne); color: var(--charcoal); }
+}
 
 /* ------------------------------------------------------------- footer --- */
 
@@ -2496,7 +2556,9 @@ three-d-stage::part(button) {
   cursor: pointer;   /* the shadow default is `default`, which reads disabled */
   transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
 }
+@media (hover: hover) {
 three-d-stage::part(button):hover { background: var(--champagne); color: var(--charcoal); }
+}
 /* The site's focus grammar cannot cross the shadow boundary on its own —
    restated through the part, or the download buttons have no ring at all. */
 three-d-stage::part(button):focus-visible { outline: 2px solid var(--charcoal); outline-offset: 3px; }
@@ -2604,10 +2666,12 @@ three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
 .wa-float.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 /* After .is-visible in source: both set transform at equal specificity, and
    the hover must win once the float is on screen. */
+@media (hover: hover) {
 .wa-float:hover {
   background: var(--sand);
   transform: translateY(-2px);
   box-shadow: 0 8px 28px rgba(28, 26, 24, 0.22);
+}
 }
 .wa-float span { font-size: var(--t-micro); letter-spacing: .14em; }
 
@@ -2634,6 +2698,15 @@ three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
 .lightbox__close:active,
 .lightbox__step:active,
 .legal__back:active { transform: translateY(1px); }
+/* The controls the list above missed, now that the grey tap flash is off —
+   the press must be replaced, not deleted. The dots are 2px tall and cannot
+   translate visibly, so their press is an ink step instead. */
+.chip:active,
+.masonry__btn:active,
+.glimpse__link:active { transform: translateY(1px); }
+.services__dot:active,
+.glimpse__dot:active,
+.quotes__dot:active { background-color: var(--champagne-ink); }
 
 /* --------------------------------------------------------- responsive --- */
 
