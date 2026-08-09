@@ -10,7 +10,7 @@ private CRM at `admin.html` reads it back.
 ```
 Before any change goes out:
 1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 174 runtime checks in a real browser
+   node tools/verify.mjs   # must exit 0 — 211 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
    # check.sh number was right and untouched, the verify.mjs one had been
@@ -312,8 +312,8 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `decoding="async"`.
 - **Do not start a performance project.** Measured, not assumed: LCP 148ms
   mobile / 160ms desktop with the `<h1>` as the LCP element, CLS 0.001, 570 DOM
-  nodes, one `<h1>`, zero skipped heading levels, and 602 words plus all eight
-  FAQ answers rendered with JavaScript off. The YouTube hero is not the LCP
+  nodes, one `<h1>`, zero skipped heading levels, and 602 words plus every
+  FAQ answer (ten since 2026-08-09) rendered with JavaScript off. The YouTube hero is not the LCP
   element and is not hurting anything.
 - **AI crawler policy: citation yes, training no.** `robots.txt` allows
   OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User and PerplexityBot,
@@ -377,7 +377,8 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   name and phone. Nothing measures a visitor who does not submit, and
   `privacy.html` promises exactly that.
 - **The FAQ answers on the homepage are byte-identical to the FAQPage JSON-LD**
-  and `tools/check.sh` checks it one-for-one — eight answers, plus a separate
+  and `tools/check.sh` checks it one-for-one — ten answers since 2026-08-09
+  (the historical eight plus "מה קורה אחרי" and the video question), plus a separate
   assertion that no `.faq__a` contains a tag. Do not put a link, or anything
   else, inside a `.faq__a`. That broke the invariant once; the link out to
   `cost.html` lives after the `<details>` list as `.faq__more` for that reason.

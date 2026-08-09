@@ -1659,6 +1659,112 @@ await page.waitForTimeout(200);
   await ctx.close();
 }
 
+// --------------------------------- the assistant's routing, regression table --
+// The key edits are load-bearing: 'ספר' once answered "מספר הצלמים" with the
+// ALBUM, and bare 'צלמים' stole prep's own question. Each row is a question a
+// real visitor could type, pinned to the answer that must own it — and, where
+// a wrong owner once existed, to the words that must NOT come back.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  const askLast = async (q) => {
+    await np.locator('.am-form__input').fill(q);
+    await np.locator('.am-form__send').click();
+    await np.waitForTimeout(800);
+    const all = await np.locator('.am-msg--bot .am-bubble').allTextContents();
+    return all[all.length - 1] || '';
+  };
+  const table = [
+    ['"מי הצלמים" belongs to the photographers', 'מי הצלמים אצלכם?', 'אחד על הסטילס', null],
+    ['"מספר הצלמים" no longer buys an album', 'מה מספר הצלמים בחתונה?', 'אחד על הסטילס', 'אלבום מודפס'],
+    ['"יש ווטסאפ" reaches the contact card', 'יש ווטסאפ?', '050-3662699', null],
+    ['a couple with no date meets the hatch, not the fallback', 'עוד לא קבענו תאריך, אפשר לדבר?', 'גם בלי תאריך', 'אין לי תשובה'],
+    ['"כמה שעות" is about our day, not the delivery clock', 'כמה שעות אתם איתנו ביום החתונה?', 'מספר השעות', 'תוך 7 ימים'],
+  ];
+  for (const [name, q, want, refuse] of table) {
+    const last = await askLast(q);
+    ok(name, last.includes(want) && (!refuse || !last.includes(refuse)),
+       last.slice(0, 45) + '…', `contains "${want}"` + (refuse ? `, not "${refuse}"` : ''));
+  }
+  await ctx.close();
+}
+
+// ------------------------------ the two pages the assistant can now hand out --
+// The price answer links cost.html, the gear answer links the 3D model — real
+// <a>s wearing location.search by hand, because carryCampaign() rewrote the
+// document's links long before these are built per-message. On the target page
+// itself makeAction returns null and the row skips it: a link to where the
+// visitor already stands is the dead control this repo refuses to ship.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/?utm_source=check', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('מה המחיר?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(800);
+  const cost = np.locator('.am-action', { hasText: 'מה משפיע על המחיר' });
+  const costHref = (await cost.count()) ? await cost.first().getAttribute('href') : 'missing';
+  ok('the price answer links the cost page, campaign tag riding along',
+     costHref === 'cost.html?utm_source=check', costHref, 'cost.html?utm_source=check');
+
+  await np.locator('.am-form__input').fill('עם מה אתם מצלמים?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(800);
+  const cam = np.locator('.am-action', { hasText: 'לדגם התלת־ממד' });
+  const camHref = (await cam.count()) ? await cam.first().getAttribute('href') : 'missing';
+  ok('the gear answer links the 3D model page the same way',
+     camHref === 'camera-3d.html?utm_source=check', camHref, 'camera-3d.html?utm_source=check');
+
+  await np.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('מה המחיר?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(800);
+  ok('on cost.html the same answer keeps that control to itself',
+     (await np.locator('.am-action', { hasText: 'מה משפיע על המחיר' }).count()) === 0
+       && (await np.locator('.am-msg--bot .am-bubble').count()) > 0,
+     'present', 'absent');
+  await ctx.close();
+}
+
+// -------------------------- every assistant answer has a road leading to it --
+// The KB is a graph the visitor walks by chips; an entry no next list names is
+// real code no one can reach. Parsed from source with the file's own
+// indentation as the anchor — the parse breaks loudly if the shape changes,
+// which is the point.
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/assistant.js'), 'utf8');
+  const kbText = src.slice(src.indexOf('var KB = ['), src.indexOf('var OPENING_CHIPS'));
+  const marks = [...kbText.matchAll(/^      id: '(\w+)'/gm)];
+  const ids = marks.map((m) => m[1]);
+  const nexts = {};
+  for (let i = 0; i < marks.length; i++) {
+    const seg = kbText.slice(marks[i].index, i + 1 < marks.length ? marks[i + 1].index : undefined);
+    const nx = /next: \[([^\]]*)\]/.exec(seg);
+    nexts[marks[i][1]] = nx ? [...nx[1].matchAll(/'(\w+)'/g)].map((m) => m[1]) : [];
+  }
+  const chips = [...(/OPENING_CHIPS = \[([^\]]*)\]/.exec(src)?.[1] || '').matchAll(/'(\w+)'/g)].map((m) => m[1]);
+  const seen = new Set(chips);
+  const queue = [...chips];
+  while (queue.length) {
+    for (const n of nexts[queue.shift()] || []) if (!seen.has(n)) { seen.add(n); queue.push(n); }
+  }
+  const unreached = ids.filter((id) => !seen.has(id));
+  const dangling = Object.values(nexts).flat().filter((n) => !ids.includes(n));
+  ok('every KB entry is reachable from the opening chips, and no next dangles',
+     ids.length >= 22 && chips.length === 5 && unreached.length === 0 && dangling.length === 0,
+     JSON.stringify({ ids: ids.length, unreached, dangling }), '{ids:22+, unreached:[], dangling:[]}');
+}
+
 // ----------------------------------------------------- the swipe hint, phone --
 // The peek shows a sliver of the next frame; only motion proves the strip
 // moves. Once, when the strip first fills half the viewport untouched, the

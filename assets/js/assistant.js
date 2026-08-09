@@ -64,11 +64,11 @@
     {
       id: 'price',
       chip: 'מה המחיר?',
-      keys: ['מחיר', 'מחירון', 'עלות', 'כמה עולה', 'כמה זה עולה', 'תקציב', 'הצעת מחיר', 'כמה תעלה', 'שקל', 'עולה לי'],
+      keys: ['מחיר', 'מחירון', 'עלות', 'עלויות', 'כמה עולה', 'כמה עולות', 'כמה זה עולה', 'כמה כסף', 'תקציב', 'הצעת מחיר', 'כמה תעלה', 'שקל', 'עולה לי'],
       a: 'אין לנו מחירון קבוע — כל חתונה נבנית אחרת: מספר שעות, מספר צלמים, לוקיישנים.\n' +
          'השאירו פרטים ונשמח לשלוח הצעה מותאמת עוד באותו יום.',
-      actions: ['form', 'wa'],
-      next: ['package', 'delivery', 'availability']
+      actions: ['cost', 'form', 'wa'],
+      next: ['package', 'hours', 'availability']
     },
     {
       id: 'delivery',
@@ -89,14 +89,18 @@
     {
       id: 'photographers',
       chip: 'יש צלם שני?',
-      keys: ['צלם שני', 'שני צלמים', 'כמה צלמים', 'צוות', 'מי מצלם', 'צלמת'],
+      // 'הצלמים', not bare 'צלמים': the bare form silently stole "אתם מצלמים
+      // גם את ההכנות" from prep in simulation (מצלמים contains צלמימ).
+      keys: ['צלם שני', 'שני צלמים', 'כמה צלמים', 'צוות', 'מי מצלם', 'צלמת', 'הצלם', 'הצלמים', 'עוד צלם', 'צלם נוסף'],
       a: 'בחתונה מלאה תמיד. אחד על הסטילס ואחד על הווידאו, ובחופה ובריקודים שניהם על הזוג משתי זוויות.',
-      next: ['package', 'gear', 'about']
+      next: ['package', 'people', 'gear']
     },
     {
       id: 'package',
       chip: 'מה כוללת החבילה?',
-      keys: ['מה כולל', 'כוללת', 'חבילה', 'מה מקבלים', 'מה נכנס', 'מה יש בפנים', 'כלול'],
+      // חבילות/חבילת: the plural and construct forms never contain חבילה, and
+      // the widget's own chip subject scored 0 on "מה יש בחבילות".
+      keys: ['מה כולל', 'כוללת', 'חבילה', 'חבילות', 'חבילת', 'מה מקבלים', 'מה נכנס', 'מה יש בפנים', 'כלול'],
       a: 'כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, ' +
          'סרט חתונה של 3–5 דקות, טיזר קצר לאינסטגרם ומגנטים עם סורק AR שהופך כל תמונה לסרטון.\n' +
          'אלבום מודפס וצילומי Save the Date אפשר להוסיף.',
@@ -105,7 +109,8 @@
     {
       id: 'magnets',
       chip: 'יש מגנטים?',
-      keys: ['מגנט', 'מגנטים', 'מגנטים בחתונה', 'סורק', 'AR', 'מציאות רבודה', 'תמונה שזזה', 'מתעורר', 'מתעוררים לחיים'],
+      // 'AR' normalises to 2 chars — below WEAK, it could never win. Dead key.
+      keys: ['מגנט', 'מגנטים', 'מגנטים בחתונה', 'סורק', 'מציאות רבודה', 'מציאות מוגברת', 'תמונה שזזה', 'מתעורר', 'מתעוררים לחיים'],
       a: 'כן, ובכל עסקה — לא כתוספת בתשלום.\n' +
          'הם מגיעים עם סורק AR: מכוונים את הטלפון למגנט והתמונה הופכת לסרטון.\n' +
          'את זה מייצר Regaflash, העסק האח שלנו.',
@@ -122,7 +127,7 @@
       a: 'בשמחה. בשיחה נשלח לכם 2–3 גלריות מלאות של חתונות דומות לשלכם, מהבוקר ועד הסוף — לא רק את הפריים המושלם.\n' +
          'בינתיים יש כאן באתר גלריה: בטלפון מחליקים בין התמונות, אפשר לסנן לפי סוג אירוע, ולפתוח כל תמונה במסך מלא.',
       actions: ['gallery:weddings', 'gallery', 'form'],
-      next: ['film', 'package', 'availability']
+      next: ['film', 'std', 'events']
     },
     {
       id: 'postpone',
@@ -138,7 +143,7 @@
       a: 'זמינות אני לא יכול לבדוק מכאן — היומן לא אצלי.\n' +
          'השאירו תאריך ופרטים בטופס ונחזור אליכם היום עם תשובה, או כתבו לנו בוואטסאפ.',
       actions: ['form', 'wa'],
-      next: ['price', 'area', 'postpone']
+      next: ['contact', 'datetbd', 'postpone']
     },
     {
       id: 'film',
@@ -146,7 +151,9 @@
       // "שלוש דקות" stays in the keys: it is what a visitor might type, and the
       // section used to be titled that. Only the section name in the answer had
       // to move, and it moved because the heading did.
-      keys: ['סרט', 'סרטון', 'וידאו', 'קליפ', 'טיזר', 'הפקה', 'צילום וידאו', 'שלוש דקות', 'נראה סרט'],
+      // The length/teaser phrasings outrank delivery's 'כמה זמן' (7) and
+      // contact's 'אינסטגרם' (8): a question about the FILM gets the film.
+      keys: ['סרט', 'סרטון', 'וידאו', 'קליפ', 'טיזר', 'הפקה', 'צילום וידאו', 'שלוש דקות', 'נראה סרט', 'זמן הסרט', 'אורך הסרט', 'כמה דקות', 'סרטון לאינסטגרם', 'טיזר לאינסטגרם'],
       a: 'סרט חתונה של 3–5 דקות, ועוד טיזר קצר לאינסטגרם.\n' +
          'יש באתר סרט אחד שלם שאנחנו הכי אוהבים להראות — בקטע "חתונה אחת, סרט אחד". שווה אוזניות.',
       actions: ['film', 'form'],
@@ -197,14 +204,15 @@
          // approved. The widget contradicted itself inside one session.
          '4. תוך 30 יום: הגלריה המלאה והסרט. האלבום המודפס — שבועיים אחרי אישור הבחירה.',
       actions: ['form'],
-      next: ['delivery', 'package', 'availability']
+      next: ['delivery', 'about', 'availability']
     },
     {
       id: 'gear',
       chip: 'עם מה אתם מצלמים?',
       keys: ['ציוד', 'מצלמה', 'עדשות', 'עדשה', 'פלאש', 'תאורה', 'פול פריים', 'מצלמות', 'עם מה אתם מצלמים'],
       a: 'גוף פול־פריים, עדשות פריים מהירות, ותאורה שמכבדת את האור שיש בחדר — בלי פלאשים שמסמאים את האורחים.\n' +
-         'יש באתר דגם תלת־מימד של המצלמה, אפשר לסובב אותו.',
+         'יש באתר דגם תלת־ממד של המצלמה, אפשר לסובב אותו.',
+      actions: ['camera', 'form'],
       next: ['light', 'photographers', 'package']
     },
     {
@@ -222,9 +230,33 @@
       next: ['gear', 'photographers', 'package']
     },
     {
+      id: 'hours',
+      chip: 'עד איזו שעה אתם נשארים?',
+      // 'כמה זמן אתם' outranks delivery's 'כמה זמן' by length: a question
+      // about how long WE stay gets the hours answer, not turnaround times.
+      keys: ['כמה שעות', 'שעות צילום', 'מספר שעות', 'שעות של צילום', 'עד מתי', 'עד סוף הריקודים', 'כמה זמן אתם'],
+      a: 'בחתונה מלאה אנחנו איתכם מההכנות ועד השיר האחרון — לא הולכים באמצע הריקודים.\n' +
+         'מספר השעות הוא אחד מהדברים שקובעים את המחיר, יחד עם מספר הצלמים והלוקיישנים, ולכן אין לנו מחירון קבוע.',
+      actions: ['cost', 'form'],
+      next: ['package', 'price', 'prep']
+    },
+    {
+      id: 'datetbd',
+      chip: 'עוד אין לנו תאריך — אפשר לדבר?',
+      // The form's own checkbox says 'עוד לא קבענו תאריך'; the answer quotes
+      // it so the visitor recognises the control when they reach it.
+      keys: ['לא קבענו', 'עוד לא קבענו תאריך', 'אין לנו תאריך', 'עדיין אין תאריך', 'לא סגרנו אולם', 'בלי תאריך'],
+      a: 'ברור. בטופס יש סימון "עוד לא קבענו תאריך" — משאירים פרטים גם בלי תאריך, ומדברים על הסגנון והחבילה עוד לפני שסוגרים אולם.\n' +
+         'כשיהיה תאריך, פשוט תעדכנו אותנו.',
+      actions: ['form', 'wa'],
+      next: ['availability', 'price', 'area']
+    },
+    {
       id: 'album',
       chip: 'יש אלבום מודפס?',
-      keys: ['אלבום מודפס', 'הדפסה', 'אלבום', 'להדפיס', 'ספר'],
+      // 'ספר' is gone: 3 chars = exactly WEAK, and a substring of מספר — the
+      // site's own price vocabulary. "מספר הצלמים" was answered with the ALBUM.
+      keys: ['אלבום מודפס', 'הדפסה', 'אלבום', 'להדפיס', 'ספר תמונות'],
       a: 'כן, אפשר להוסיף אלבום מודפס לחבילה. הוא מגיע אליכם כשבועיים אחרי שאתם מאשרים את בחירת התמונות.',
       next: ['package', 'delivery', 'price']
     },
@@ -242,7 +274,7 @@
       // 'עונים להודעה' must be here: without it "תוך כמה זמן עונים להודעה
       // בוואטסאפ" matched the delivery entry and answered with photo turnaround
       // times. Longer keys win, so this outranks the shorter delivery match.
-      keys: ['ליצור קשר', 'טלפון', 'וואטסאפ', 'להתקשר', 'מייל', 'אינסטגרם', 'לדבר איתכם', 'לדבר עם בן אדם', 'נציג', 'עונים להודעה', 'אתכם קשר'],
+      keys: ['ליצור קשר', 'טלפון', 'וואטסאפ', 'ווטסאפ', 'וואצאפ', 'whatsapp', 'להתקשר', 'מייל', 'אינסטגרם', 'לדבר איתכם', 'לדבר עם בן אדם', 'נציג', 'עונים להודעה', 'אתכם קשר'],
       a: 'בטלפון 050-3662699, בוואטסאפ, או דרך טופס בדיקת הזמינות באתר — ונחזור אליכם היום.\n' +
          'גם באינסטגרם, @amora___studio.',
       actions: ['wa', 'tel', 'form'],
@@ -512,6 +544,17 @@
     return null;
   }
 
+  /** Two actions are PAGES, not sections. The href carries location.search by
+   *  hand — carryCampaign() rewrote the document's links long before these are
+   *  built per-message, so the utm rule has to be applied here. On the target
+   *  page itself the control would be a link to where the visitor already
+   *  stands, so makeAction returns null and the callers skip it — the same
+   *  dead-control rule that keeps the strip counter off the desktop. */
+  var PAGE_ACTIONS = {
+    cost: { file: 'cost.html', label: 'מה משפיע על המחיר' },
+    camera: { file: 'camera-3d.html', label: 'לדגם התלת־ממד' }
+  };
+
   // Same four names cost.html's glimpse links use, so a visitor sent to
   // "לגלריית ההכנות" from either surface arrives at the same place.
   var GALLERY_LABELS = {
@@ -544,6 +587,13 @@
     if (kind === 'tel') {
       node = el('a', 'am-action', CONFIG.phone);
       node.href = 'tel:' + CONFIG.tel;
+      return node;
+    }
+    if (PAGE_ACTIONS[kind]) {
+      var page = PAGE_ACTIONS[kind];
+      if (window.location.pathname.split('/').pop() === page.file) return null;
+      node = el('a', 'am-action', page.label);
+      node.href = page.file + window.location.search;
       return node;
     }
     if (kind.indexOf('gallery:') === 0) {
@@ -594,8 +644,11 @@
 
     if (actions && actions.length) {
       var row = el('div', 'am-msg__actions');
-      for (var a = 0; a < actions.length; a++) row.appendChild(makeAction(actions[a]));
-      wrap.appendChild(row);
+      for (var a = 0; a < actions.length; a++) {
+        var act = makeAction(actions[a]);
+        if (act) row.appendChild(act);
+      }
+      if (row.childNodes.length) wrap.appendChild(row);
     }
 
     logEl.appendChild(wrap);
