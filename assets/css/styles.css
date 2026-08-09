@@ -2446,6 +2446,67 @@ textarea.field__control { resize: vertical; }
 
 /* ------------------------------------------------------------- footer --- */
 
+/* ---------------------------------------------- 3D stage (camera page) --- */
+
+/* The full-page stage on camera-3d.html. Width matches the .shell CONTENT
+   box (shell minus gutters), so the frame's edges land exactly under the
+   chapter type above it — the homepage's .gear__stage frames the same view,
+   and the page that owns the model was the unframed one. ::part is the only
+   styling surface into the component's shadow root; its own stylesheet
+   remains the fallback for any other consumer. */
+.stage-shell {
+  position: relative;
+  width: min(calc(100% - 2 * var(--gutter)), calc(var(--shell) - 2 * var(--gutter)));
+  margin-inline: auto;
+  border: 1px solid var(--rule);
+  background: var(--cream);
+  overflow: hidden;
+}
+.stage-shell::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  inset-inline-start: 0;
+  width: 72px;
+  height: 1px;
+  background-color: var(--champagne);
+  z-index: 2;
+}
+three-d-stage::part(button) {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: .12em;
+  padding: 10px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: rgba(255, 253, 249, 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--charcoal);
+  cursor: pointer;   /* the shadow default is `default`, which reads disabled */
+  transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
+}
+three-d-stage::part(button):hover { background: var(--champagne); color: var(--charcoal); }
+/* The site's focus grammar cannot cross the shadow boundary on its own —
+   restated through the part, or the download buttons have no ring at all. */
+three-d-stage::part(button):focus-visible { outline: 2px solid var(--charcoal); outline-offset: 3px; }
+three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
+/* Added and removed by camera-model.js around the three.js load: 2MB of
+   vendored library used to buy an unexplained empty cream rectangle. Text
+   only, no motion — nothing for the motion switches to kill. */
+.stage-shell.is-loading::after {
+  content: "טוען את הדגם…";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background-color: var(--cream);
+  color: var(--mocha);
+  font-size: var(--t-small);
+  letter-spacing: .12em;
+}
+
 .site-footer { position: relative; background: var(--cream); border-top: 1px solid var(--rule); }
 /* The chapters' champagne signature, once more where the page signs off —
    aligned to the content shell's reading-start edge, not the viewport's.

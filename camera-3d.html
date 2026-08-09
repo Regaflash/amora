@@ -86,37 +86,19 @@
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; background: #F7F2EA; color: #1C1A18; font-family: Heebo, sans-serif; font-weight: 300; }
-  a { color: #1C1A18; }
   three-d-stage:not(:defined) { visibility: hidden; }
 
-  /* Top padding clears the fixed site header, the same way .legal does on
-     cost.html. In the homepage iframe the header is gone and so is the need,
-     which .is-embed below takes back. */
+  /* The head's type is the shipped chapter grammar from styles.css (.chapter,
+     .eyebrow, .h2, .chapter__deck) — the bespoke kicker/title/sub rules that
+     lived here measured 1.86:1 on the kicker and are gone. Only shell width
+     and the header-clearing top padding remain local. The page-level
+     `a { color }` override went with them: the global champagne-ink link
+     colour applies here like everywhere else. */
   .page-head {
     max-width: 1320px;
     margin: 0 auto;
     padding: clamp(96px, 11vw, 140px) clamp(18px, 4vw, 56px) 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
   }
-  .page-head__kicker {
-    font-family: 'Cormorant Garamond', serif;
-    font-style: italic;
-    font-size: 15px;
-    letter-spacing: .2em;
-    color: #C9AE8C;
-    margin: 0 0 8px;
-  }
-  .page-head__title {
-    font-family: 'Frank Ruhl Libre', serif;
-    font-weight: 600;
-    font-size: clamp(1.7rem, 3.6vw, 2.6rem);
-    margin: 0;
-  }
-  .page-head__sub { font-size: 15px; color: #6B5B4B; margin: 10px 0 0; max-width: 56ch; }
   three-d-stage { display: block; width: 100%; height: 78vh; min-height: 520px; }
 
   /* Embedded in the homepage's #gear iframe: chrome off, stage fills the frame.
@@ -135,6 +117,10 @@
   .is-embed .am-panel { display: none; }
   .is-embed .page-head { padding-top: 0; }
   .is-embed three-d-stage { height: 100vh; min-height: 0; }
+  /* Inside the homepage iframe the .gear__stage frame already surrounds the
+     view — a second frame here would draw a double border. */
+  .is-embed .stage-shell { width: auto; max-width: none; border: 0; }
+  .is-embed .stage-shell::before { content: none; }
 </style>
 <script>
   if (new URLSearchParams(location.search).has('embed')) {
@@ -149,6 +135,11 @@
 <script src="assets/js/a11y-widget.js"></script>
 </head>
 <body>
+
+<!-- First child of body, as on every other public page: it used to sit AFTER
+     the header and menu, making it the 11th tab stop — a bypass mechanism
+     reached only after traversing the block it exists to bypass. -->
+<a class="skip-link" href="#main">דילוג לתוכן</a>
 
 <!-- This page is index,follow and one of only three entries in sitemap.xml, and
      until now its entire body was a title, the 3D stage and a single "back to
@@ -204,24 +195,32 @@
   <a class="menu__phone" href="tel:+972503662699">050-3662699</a>
 </div>
 
-<a class="skip-link" href="#main">דילוג לתוכן</a>
 <main id="main" tabindex="-1">
+  <!-- The shipped chapter grammar, not a bespoke head: the old hand-rolled
+       kicker was raw champagne on cream — measured 1.86:1 at 15px, the exact
+       failure styles.css's token comment predicts, on an index,follow page.
+       .eyebrow carries --champagne-ink and passes; .chapter brings the same
+       72px signature every homepage chapter opens with.
+       The "← חזרה לאתר" button that once sat here stays gone: the header
+       carries the brand mark and the whole nav. -->
   <div class="page-head">
-    <div>
-      <p class="page-head__kicker">The tool behind the look</p>
-      <h1 class="page-head__title">המצלמה שלנו, מכל זווית</h1>
-      <p class="page-head__sub">גררו לסיבוב, גלגלו לזום. הדגם זמין להורדה בפורמט OBJ או GLB.</p>
+    <div class="chapter">
+      <p class="eyebrow" lang="en" dir="ltr">The tool behind the look</p>
+      <h1 class="h2">המצלמה שלנו, מכל זווית</h1>
+      <p class="chapter__deck">גררו לסיבוב, גלגלו לזום. הדגם זמין להורדה בפורמט OBJ או GLB.</p>
     </div>
-    <!-- The "← חזרה לאתר" button that used to sit here is gone: the header
-         above carries the brand mark and the whole nav, so it was a second
-         route home a few pixels away from the first. It could not be kept
-         "for the embed" either — .is-embed hides this entire block. -->
   </div>
 
-  <three-d-stage name="amora-camera" background="#F7F2EA" autorotate
-                 note="גררו לסיבוב · גלגלו לזום · גרירה ימנית להזזה"
-                 fallback="assets/img/camera-still.jpg"
-                 fallback-alt="דגם תלת־ממדי של המצלמה של Amora Studio"></three-d-stage>
+  <!-- The homepage's copy of this exact view is framed (.gear__stage); the
+       full page, the one in sitemap.xml, was the unframed one — the stage
+       bled 0→100vw while the type above stopped at the shell. -->
+  <div class="stage-shell">
+    <three-d-stage name="amora-camera" background="#F7F2EA" autorotate
+                   note="גררו לסיבוב · גלגלו לזום · גרירה ימנית להזזה"
+                   obj-label="הורדת OBJ + MTL" glb-label="הורדת GLB"
+                   fallback="assets/img/camera-still.jpg"
+                   fallback-alt="דגם תלת־ממדי של המצלמה של Amora Studio"></three-d-stage>
+  </div>
 </main>
 
 <footer class="site-footer">

@@ -9,7 +9,20 @@
  */
 
 const stage = document.querySelector('three-d-stage');
-const { THREE } = await stage.ready;
+
+// The loading veil lives and dies in THIS module: added here, removed after
+// setObject below (or on failure). If this module never runs there is no
+// veil, so nothing can strand a spinner over the fallback still.
+const shell = document.querySelector('.stage-shell');
+if (shell) shell.classList.add('is-loading');
+
+let THREE;
+try {
+  ({ THREE } = await stage.ready);
+} catch (e) {
+  if (shell) shell.classList.remove('is-loading');
+  throw e;
+}
 
 const M = {
   leather: new THREE.MeshStandardMaterial({ name: 'leatherette', color: 0x241f1b, roughness: 0.92, metalness: 0.05 }),
@@ -87,3 +100,4 @@ add('back_door_seam', new THREE.BoxGeometry(bodyW * 0.9, 0.0016, 0.0016), M.bras
 
 cam.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
 stage.setObject(cam);
+if (shell) shell.classList.remove('is-loading');

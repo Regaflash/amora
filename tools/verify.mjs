@@ -513,6 +513,104 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ------------------------------------------- camera-3d joins the design --
+// The 3D page was the least designed of the three indexable pages: a raw
+// champagne kicker at 1.86:1, an unframed full-bleed stage over shell-bound
+// type, English system-font furniture in a shadow root no stylesheet could
+// reach, a deleted focus ring, an 11th-stop skip link, and a stage that both
+// accessibility display modes broke. All measured before fixing.
+{
+  const p = await browser.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/camera-3d.html', { waitUntil: 'load' });
+  await p.waitForTimeout(1500);
+
+  await p.keyboard.press('Tab');
+  ok('the skip link is the first stop on the 3D page',
+     await p.evaluate(() => document.activeElement.className === 'skip-link'),
+     await p.evaluate(() => document.activeElement.className), 'skip-link');
+  await p.keyboard.press('Enter');
+  await p.waitForTimeout(300);
+  ok('and it lands on main',
+     await p.evaluate(() => document.activeElement.id === 'main'), true, true);
+
+  ok('the page head speaks the chapter grammar, in passing ink',
+     await p.evaluate(() => {
+       const eye = document.querySelector('.page-head .eyebrow');
+       const sig = getComputedStyle(document.querySelector('.page-head .chapter'), '::before');
+       return getComputedStyle(eye).color === 'rgb(128, 97, 66)'
+         && sig.backgroundColor === 'rgb(201, 174, 140)' && parseInt(sig.width) === 72;
+     }), true, true);
+
+  ok('the stage frame lands under the type, not under the browser edge',
+     await p.evaluate(() => {
+       const shell = document.querySelector('.stage-shell').getBoundingClientRect();
+       const type = document.querySelector('.page-head .chapter').getBoundingClientRect();
+       return Math.abs(shell.left - type.left) <= 1.5 && Math.abs(shell.right - type.right) <= 1.5;
+     }), true, true);
+
+  const furniture = await p.evaluate(() => {
+    const sr = document.querySelector('three-d-stage').shadowRoot;
+    const btns = [...sr.querySelectorAll('.toolbar button')];
+    return {
+      hebrew: btns.length === 2 && btns.every((b) => /[֐-׿]/.test(b.textContent)),
+      pill: btns.every((b) => parseFloat(getComputedStyle(b).borderRadius) >= 20),
+      pointer: btns.every((b) => getComputedStyle(b).cursor === 'pointer'),
+      face: btns.every((b) => getComputedStyle(b).fontFamily.includes('Heebo')),
+      loading: document.querySelector('.stage-shell').classList.contains('is-loading'),
+    };
+  });
+  ok('the shadow furniture wears the site: Hebrew, pill, pointer, Heebo',
+     furniture.hebrew && furniture.pill && furniture.pointer && furniture.face,
+     JSON.stringify(furniture), 'all true');
+  ok('the loading veil is gone once the model is up', !furniture.loading, furniture.loading, false);
+
+  // Focus ring through the shadow boundary: Tab until the host holds focus.
+  let ring = null;
+  for (let i = 0; i < 25 && !ring; i++) {
+    await p.keyboard.press('Tab');
+    ring = await p.evaluate(() => {
+      const host = document.querySelector('three-d-stage');
+      const a = host && host.shadowRoot.activeElement;
+      if (!a || a.tagName !== 'BUTTON') return null;
+      const s = getComputedStyle(a);
+      return { w: s.outlineWidth, o: s.outlineOffset };
+    });
+  }
+  ok('the download buttons regained a focus ring through ::part',
+     !!ring && ring.w === '2px' && ring.o === '3px', JSON.stringify(ring), '2px @ 3px');
+
+  const modes = await p.evaluate(() => {
+    const html = document.documentElement;
+    const sr = document.querySelector('three-d-stage').shadowRoot;
+    html.classList.add('a11y-invert');
+    const inverted = getComputedStyle(document.querySelector('three-d-stage')).filter.includes('invert(1)');
+    html.classList.remove('a11y-invert');
+    html.classList.add('a11y-contrast');
+    const note = getComputedStyle(sr.querySelector('.note')).color;
+    const btn = getComputedStyle(sr.querySelector('.toolbar button')).borderColor;
+    html.classList.remove('a11y-contrast');
+    return { inverted, note, btn };
+  });
+  ok('invert mode compensates the shadowed stage',
+     modes.inverted, modes.inverted, true);
+  ok('contrast mode reaches the hint and the buttons through ::part',
+     modes.note === 'rgb(255, 255, 255)' && modes.btn === 'rgb(255, 255, 255)',
+     JSON.stringify(modes), 'white on black');
+  await p.close();
+}
+{
+  // The embed must keep its bare shell: no double frame inside .gear__stage.
+  const p = await browser.newPage({ viewport: { width: 800, height: 600 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/camera-3d.html?embed=1', { waitUntil: 'load' });
+  await p.waitForTimeout(1200);
+  ok('the embed keeps an unframed stage',
+     await p.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('.stage-shell'));
+       return s.borderTopWidth === '0px';
+     }), true, true);
+  await p.close();
+}
+
 // ----------------------------------------------- the photographs arrive --
 // Entrances for the wall, the plates, the trust dots and the about photo.
 // The load-bearing rule: triggers hang on the CONTAINER the pictures live
