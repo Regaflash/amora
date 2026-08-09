@@ -1591,14 +1591,19 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
    no physical side, nothing to mirror under dir="rtl". */
 .lightbox__figure[data-loading] { opacity: 0.55; }
 /* The figure is also the swipe surface (see the lightbox pointer handlers in
-   main.js). touch-action: none is safe only because this is a modal with body
-   scroll already locked — nothing legitimate pans here — and without it a
-   vertical drag becomes a pointercancel that never reaches pointerup, the
-   same trap the quotes viewport documents. user-select/user-drag off so a
-   mouse drag steps photographs instead of ghost-dragging the <img>. */
+   main.js). pinch-zoom, NOT none: `none` also disabled two-finger zoom over
+   a near-full-screen photograph — a WCAG 1.4.4 regression for exactly the
+   low-vision visitor a photo viewer serves. pinch-zoom still suppresses
+   single-finger browser panning (the modal has body scroll locked anyway),
+   so a vertical drag keeps reaching pointerup instead of dying as the
+   pointercancel the quotes viewport documents — while a two-finger pinch
+   stays the browser's, magnifying the visual viewport. The pinch itself
+   surfaces as a pointercancel to the swipe handlers, which already reset on
+   it. user-select/user-drag off so a mouse drag steps photographs instead
+   of ghost-dragging the <img>. */
 .lightbox__figure {
   position: relative;
-  touch-action: none;
+  touch-action: pinch-zoom;
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -2173,7 +2178,12 @@ html:not(.js) .quotes__controls { display: none; }
    reach ::details-content (they match elements and ::before/::after), so
    both switches are answered here explicitly. */
 @supports (interpolate-size: allow-keywords) {
-  :root { interpolate-size: allow-keywords; }
+  /* On the FAQ item, NOT :root: the property is inherited, and opting the
+     whole document into keyword-size interpolation would silently animate
+     any future auto-sized panel — a global side effect of a FAQ-local
+     feature. It inherits from the item into ::details-content, which is
+     the one box that needs it. */
+  .faq__item { interpolate-size: allow-keywords; }
   .faq__item::details-content {
     height: 0;
     overflow: clip;

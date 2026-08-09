@@ -111,7 +111,9 @@ const browser = await chromium.launch({ executablePath: BROWSER, args: ['--no-sa
     }
   }
   ok('every page: one h1, no heading skips, no overflow, no JS errors',
-     problems.length === 0, problems.length ? problems : '12 page/viewport combinations clean', 'no problems');
+     problems.length === 0,
+     problems.length ? problems : `${PAGES.length * 2} page/viewport combinations clean`,
+     'no problems');
 }
 
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
@@ -511,6 +513,50 @@ await page.waitForTimeout(200);
        const s = getComputedStyle(document.querySelector('[data-field="name"]'));
        return s.caretColor === 'rgb(128, 97, 66)' && s.boxShadow !== 'none';
      }), true, true);
+}
+
+// ------------------------------------------------ the review's findings --
+// Regression pins for the code-review fixes: Back out of a pushed filter
+// hash clears the filter; the pinch stays the browser's over the photo; the
+// hint respects the widget's motion toggle without burning itself.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.evaluate(() => { location.hash = '#gallery-prep'; });   // a PUSH, like the assistant's action
+  await p.waitForTimeout(400);
+  await p.goBack();
+  await p.waitForTimeout(400);
+  ok('backing out of a pushed filter hash releases the filter',
+     await p.evaluate(() => location.hash === ''
+       && document.querySelector('.chip[data-filter="all"]').getAttribute('aria-pressed') === 'true'
+       && !document.querySelector('.masonry__item[hidden]')), true, true);
+  ok('the lightbox figure leaves the pinch to the browser',
+     await p.evaluate(() =>
+       getComputedStyle(document.querySelector('[data-lightbox-figure]')).touchAction === 'pinch-zoom'),
+     true, true);
+  await p.close();
+
+  const np = await browser.newPage({ viewport: { width: 390, height: 844 } }); // no reduce
+  await np.addInitScript(() => { document.addEventListener('DOMContentLoaded', () =>
+    document.documentElement.classList.add('a11y-no-motion')); });
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  await np.waitForTimeout(1500);
+  ok('the widget\'s no-motion toggle stops the hint from even landing',
+     await np.evaluate(() => !document.querySelector('[data-masonry]').classList.contains('is-hinting')),
+     true, true);
+  // And the one-shot was NOT spent: motion back on, the hint still fires.
+  await np.evaluate(() => document.documentElement.classList.remove('a11y-no-motion'));
+  await np.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await np.waitForTimeout(300);
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  const rearmed = await np.waitForFunction(
+    () => document.querySelector('[data-masonry]').classList.contains('is-hinting'),
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  ok('refusing without spending: motion returns, the hint is still owed',
+     rearmed, rearmed, true);
+  await np.close();
 }
 
 // --------------------------------------------------- cross-page parity --

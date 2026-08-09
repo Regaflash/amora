@@ -921,7 +921,17 @@
     if (photoFromHash() || filterFromHash()) {
       waEngaged = true;
       onScroll();
+      return;
     }
+    // Back out of a PUSHED #gallery-<cat> entry (the assistant's gallery
+    // action pushes; the chips replace) lands on an empty hash. The address
+    // no longer claims a filter, so the wall stops holding one — otherwise
+    // the visitor sees three photos under a clean URL, copies a link that
+    // lies, and the next lightbox close resurrects the abandoned fragment.
+    // Empty hash ONLY: #faq or #about in the address is a section jump, not
+    // a statement about the gallery, and resetting a filter because someone
+    // used the nav would be destruction, not honesty.
+    if (location.hash === '' && filter !== 'all') applyFilter('all');
   });
 
   // RTL: ArrowRight walks back through the list, ArrowLeft walks forward.
@@ -999,15 +1009,27 @@
 
   function playHint() {
     if (hintSpent || reducedMotion || !strip || stripTouched || !stripInView) return;
+    // The widget's motion toggle, not just the OS preference: under
+    // html.a11y-no-motion the CSS blanks the animation, so the class would
+    // never get its animationend, stick forever, and abruptly play whenever
+    // the visitor re-enables motion. Refusing WITHOUT spending means the
+    // hint stays available for a session where motion returns — the same
+    // deal a fresh arrival gets.
+    if (document.documentElement.classList.contains('a11y-no-motion')) return;
     if (lightbox && !lightbox.hidden) return;
     if (strip.scrollWidth <= strip.clientWidth + 1) return;
     hintSpent = true;
     strip.classList.add('is-hinting');
     // animationend bubbles up from the items; the first one ends them all.
-    strip.addEventListener('animationend', function onEnd() {
+    // animationcancel too: toggling no-motion ON mid-hint kills the
+    // animation without an end event, and the class must not outlive it.
+    var onHintDone = function () {
       strip.classList.remove('is-hinting');
-      strip.removeEventListener('animationend', onEnd);
-    });
+      strip.removeEventListener('animationend', onHintDone);
+      strip.removeEventListener('animationcancel', onHintDone);
+    };
+    strip.addEventListener('animationend', onHintDone);
+    strip.addEventListener('animationcancel', onHintDone);
   }
 
   function paintStripCount() {
