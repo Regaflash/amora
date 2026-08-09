@@ -71,7 +71,10 @@
     if (test('facebook.com') || test('fb.com')) return 'facebook';
     if (test('whatsapp.com') || test('wa.me')) return 'whatsapp';
     if (test('tiktok.com')) return 'tiktok';
-    if (/^google\./.test(h) || test('google.com')) return 'google';
+    // Fully anchored, unlike the prefix regex this replaces: google.evil.example
+    // began with "google." and earned the badge, bypassing the suffix rule the
+    // comment above promises. ccTLD forms (google.co.il) are end-anchored too.
+    if (test('google.com') || /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/.test(h)) return 'google';
     return null;
   }
   function parseSource(source) {
@@ -1072,8 +1075,12 @@
                       contract_sent: 'חוזה נשלח' };
   var lastEventsSignature = null;
   function loadEvents(silent) {
+    // One global newest-first window, not a per-lead query — PostgREST has
+    // no cheap top-N-per-group. At ~3 events per worked lead this covers the
+    // last ~300 worked leads; beyond the window an old lead simply shows no
+    // stamp (nothing extra renders), it never shows a WRONG one.
     return api('/rest/v1/lead_events' +
-      '?select=lead_id,type,detail,created_at&order=created_at.desc&limit=' + PAGE_LIMIT, {})
+      '?select=lead_id,type,detail,created_at&order=created_at.desc&limit=1000', {})
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (rows) {
         if (!Array.isArray(rows)) return;

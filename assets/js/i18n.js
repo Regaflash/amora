@@ -52,7 +52,10 @@
   // veil's text source: shadow-root strings are unreachable to any walker,
   // so the Hebrew lives on host attributes this list CAN see, and
   // three-d-stage forwards changes inward via observedAttributes.
-  var ATTRS = ['alt', 'title', 'placeholder', 'aria-label',
+  // data-alt: the gallery buttons' caption source — the desktop hover chip
+  // renders it via CSS content AND openLightbox composes the caption from
+  // it, so an untranslated data-alt leaks Hebrew into both on an EN page.
+  var ATTRS = ['alt', 'title', 'placeholder', 'aria-label', 'data-alt',
                'note', 'obj-label', 'glb-label', 'fallback-alt', 'data-loading-text'];
 
   /* ------------------------------------------------------------ helpers -- */
@@ -86,7 +89,9 @@
      captions, the assistant builds its whole panel after load — and the old
      `if (targets) return targets` meant every one of those spoke Hebrew
      into a translated page forever. collect() now appends only what it has
-     not seen; the WeakSet/WeakMap let removed nodes be garbage-collected. */
+     not seen, and prune() drops targets whose nodes have left the document —
+     the ARRAY is what pins memory, not the WeakSet, and live regions replace
+     their text node on every announcement. */
   var targets = [];
   var seenText = ('WeakSet' in window) ? new WeakSet() : null;
   var seenAttr = ('WeakMap' in window) ? new WeakMap() : null;
@@ -197,7 +202,10 @@
         seen[t.hash] = 1;
         misses.push({ h: t.hash, s: norm(t.he) });
       });
-      if (cachedAny) applyTo(all, fromCache);
+      /* Same guard as the network path below: hashing is async, and a batch
+         resolving after the visitor switched back must not write foreign
+         strings onto the restored page. */
+      if (cachedAny && current === code) applyTo(all, fromCache);
       /* done(applied): whether at least one string in this batch was ever
          written in the requested language. The full pass uses it to decide
          a failed switch must be UNDONE, not merely un-announced. */
@@ -296,9 +304,16 @@
     });
   }
 
+  function prune() {
+    targets = targets.filter(function (t) {
+      return t.node.isConnected !== false;   // attr targets are elements too
+    });
+  }
+
   function flush() {
     flushTimer = null;
     if (current === 'he') return;
+    prune();
     var before = targets.length;
     collect();
     var fresh = targets.slice(before);

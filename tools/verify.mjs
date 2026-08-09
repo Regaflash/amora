@@ -515,6 +515,75 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ----------------------------------------------- the additions earn their keep --
+// Two new FAQ answers (byte-locked pair grows to ten), the deliverables
+// ledger whose every timing is pinned to a .faq__a so it cannot drift from
+// the copy Google is served, and an enquiry route out of the lightbox that
+// must respect the URL contract (never write #contact over #photo-<n>).
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  ok('ten FAQ items, and the two new ones open readable',
+     await p.evaluate(() => {
+       const items = [...document.querySelectorAll('.faq__item')];
+       if (items.length !== 10) return false;
+       items[8].open = true; items[9].open = true;
+       const a9 = items[8].querySelector('.faq__a');
+       const a10 = items[9].querySelector('.faq__a');
+       return a9.textContent.includes('שיחת היכרות') && a10.textContent.includes('קורת גג אחת')
+         && items.every((i) =>
+           // Browser-side twin of the no-tag lock. children, not an
+           // innerHTML string compare: a literal & entity-encodes in
+           // innerHTML and fails a byte compare on legal text.
+           i.querySelector('.faq__a').children.length === 0);
+     }), true, true);
+
+  ok('the ledger holds five rows and every timing lives in a byte-locked answer',
+     await p.evaluate(() => {
+       const rows = [...document.querySelectorAll('#process .deliver__item')];
+       if (rows.length !== 5) return false;
+       const faqs = [...document.querySelectorAll('.faq__a')].map((a) => a.textContent);
+       return rows.every((r) => {
+         const when = r.querySelector('.deliver__when').textContent.trim();
+         return faqs.some((f) => f.includes(when));
+       }) && rows[4].querySelector('.deliver__what').textContent.includes('תוספת');
+     }), true, true);
+
+  await p.goto(BASE + '/#photo-5', { waitUntil: 'load' });
+  await p.waitForTimeout(900);
+  await p.locator('[data-lightbox-cta]').click();
+  await p.waitForTimeout(600);
+  ok('the lightbox CTA closes, lands on the form, and never leaks #contact over #photo',
+     await p.evaluate(() => document.querySelector('[data-lightbox]').hidden
+       && Math.abs(document.querySelector('#contact').getBoundingClientRect().top) < innerHeight
+       && !location.hash.startsWith('#photo')
+       && location.hash !== '#contact'), true, true);
+  ok('the CTA is on-screen, tappable and focus-ringed at 390',
+     await p.evaluate(() => {
+       document.querySelector('.masonry__btn').click();
+       return new Promise((r) => setTimeout(() => {
+         const c = document.querySelector('[data-lightbox-cta]');
+         const b = c.getBoundingClientRect();
+         c.focus();
+         const s = getComputedStyle(c);
+         document.querySelector('[data-lightbox-close]').click();
+         r(b.left >= 0 && b.right <= innerWidth && b.height >= 44
+           && s.outlineColor !== 'rgba(0, 0, 0, 0)');
+       }, 500));
+     }), true, true);
+  await p.close();
+}
+{
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  ok('with JS off, all ten answers and the five ledger rows are served',
+     await np.evaluate(() => document.querySelectorAll('.faq__a').length === 10
+       && document.querySelectorAll('.deliver__item').length === 5), true, true);
+  await ctx.close();
+}
+
 // ----------------------------------------- the direction boots before paint --
 // A returning visitor with a stored LTR language used to get a full Hebrew
 // RTL paint and then a WHOLE-PAGE mirror once deferred i18n.js mounted. A
@@ -1588,6 +1657,112 @@ await page.waitForTimeout(200);
      last.includes('פול־פריים') && !last.includes('אין לי תשובה'),
      last.slice(0, 40) + '…', 'the FAQ answer, not the fallback');
   await ctx.close();
+}
+
+// --------------------------------- the assistant's routing, regression table --
+// The key edits are load-bearing: 'ספר' once answered "מספר הצלמים" with the
+// ALBUM, and bare 'צלמים' stole prep's own question. Each row is a question a
+// real visitor could type, pinned to the answer that must own it — and, where
+// a wrong owner once existed, to the words that must NOT come back.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  const askLast = async (q) => {
+    await np.locator('.am-form__input').fill(q);
+    await np.locator('.am-form__send').click();
+    await np.waitForTimeout(800);
+    const all = await np.locator('.am-msg--bot .am-bubble').allTextContents();
+    return all[all.length - 1] || '';
+  };
+  const table = [
+    ['"מי הצלמים" belongs to the photographers', 'מי הצלמים אצלכם?', 'אחד על הסטילס', null],
+    ['"מספר הצלמים" no longer buys an album', 'מה מספר הצלמים בחתונה?', 'אחד על הסטילס', 'אלבום מודפס'],
+    ['"יש ווטסאפ" reaches the contact card', 'יש ווטסאפ?', '050-3662699', null],
+    ['a couple with no date meets the hatch, not the fallback', 'עוד לא קבענו תאריך, אפשר לדבר?', 'גם בלי תאריך', 'אין לי תשובה'],
+    ['"כמה שעות" is about our day, not the delivery clock', 'כמה שעות אתם איתנו ביום החתונה?', 'מספר השעות', 'תוך 7 ימים'],
+  ];
+  for (const [name, q, want, refuse] of table) {
+    const last = await askLast(q);
+    ok(name, last.includes(want) && (!refuse || !last.includes(refuse)),
+       last.slice(0, 45) + '…', `contains "${want}"` + (refuse ? `, not "${refuse}"` : ''));
+  }
+  await ctx.close();
+}
+
+// ------------------------------ the two pages the assistant can now hand out --
+// The price answer links cost.html, the gear answer links the 3D model — real
+// <a>s wearing location.search by hand, because carryCampaign() rewrote the
+// document's links long before these are built per-message. On the target page
+// itself makeAction returns null and the row skips it: a link to where the
+// visitor already stands is the dead control this repo refuses to ship.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/?utm_source=check', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('מה המחיר?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(800);
+  const cost = np.locator('.am-action', { hasText: 'מה משפיע על המחיר' });
+  const costHref = (await cost.count()) ? await cost.first().getAttribute('href') : 'missing';
+  ok('the price answer links the cost page, campaign tag riding along',
+     costHref === 'cost.html?utm_source=check', costHref, 'cost.html?utm_source=check');
+
+  await np.locator('.am-form__input').fill('עם מה אתם מצלמים?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(800);
+  const cam = np.locator('.am-action', { hasText: 'לדגם התלת־ממד' });
+  const camHref = (await cam.count()) ? await cam.first().getAttribute('href') : 'missing';
+  ok('the gear answer links the 3D model page the same way',
+     camHref === 'camera-3d.html?utm_source=check', camHref, 'camera-3d.html?utm_source=check');
+
+  await np.goto(BASE + '/cost.html', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  await np.locator('.am-form__input').fill('מה המחיר?');
+  await np.locator('.am-form__send').click();
+  await np.waitForTimeout(800);
+  ok('on cost.html the same answer keeps that control to itself',
+     (await np.locator('.am-action', { hasText: 'מה משפיע על המחיר' }).count()) === 0
+       && (await np.locator('.am-msg--bot .am-bubble').count()) > 0,
+     'present', 'absent');
+  await ctx.close();
+}
+
+// -------------------------- every assistant answer has a road leading to it --
+// The KB is a graph the visitor walks by chips; an entry no next list names is
+// real code no one can reach. Parsed from source with the file's own
+// indentation as the anchor — the parse breaks loudly if the shape changes,
+// which is the point.
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets/js/assistant.js'), 'utf8');
+  const kbText = src.slice(src.indexOf('var KB = ['), src.indexOf('var OPENING_CHIPS'));
+  const marks = [...kbText.matchAll(/^      id: '(\w+)'/gm)];
+  const ids = marks.map((m) => m[1]);
+  const nexts = {};
+  for (let i = 0; i < marks.length; i++) {
+    const seg = kbText.slice(marks[i].index, i + 1 < marks.length ? marks[i + 1].index : undefined);
+    const nx = /next: \[([^\]]*)\]/.exec(seg);
+    nexts[marks[i][1]] = nx ? [...nx[1].matchAll(/'(\w+)'/g)].map((m) => m[1]) : [];
+  }
+  const chips = [...(/OPENING_CHIPS = \[([^\]]*)\]/.exec(src)?.[1] || '').matchAll(/'(\w+)'/g)].map((m) => m[1]);
+  const seen = new Set(chips);
+  const queue = [...chips];
+  while (queue.length) {
+    for (const n of nexts[queue.shift()] || []) if (!seen.has(n)) { seen.add(n); queue.push(n); }
+  }
+  const unreached = ids.filter((id) => !seen.has(id));
+  const dangling = Object.values(nexts).flat().filter((n) => !ids.includes(n));
+  ok('every KB entry is reachable from the opening chips, and no next dangles',
+     ids.length >= 22 && chips.length === 5 && unreached.length === 0 && dangling.length === 0,
+     JSON.stringify({ ids: ids.length, unreached, dangling }), '{ids:22+, unreached:[], dangling:[]}');
 }
 
 // ----------------------------------------------------- the swipe hint, phone --

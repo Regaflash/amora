@@ -623,6 +623,11 @@ summary::-webkit-details-marker { display: none; }
   .menu:not([hidden]) > :nth-child(6) { animation-delay: 220ms; }
   .menu:not([hidden]) > :nth-child(7) { animation-delay: 275ms; }
   .menu:not([hidden]) > :nth-child(8) { animation-delay: 330ms; }
+  /* Everything past the addressed range — the CTA, the phone link, and the
+     language group i18n injects — rides the END of the cascade. Without
+     this they animated at 0ms and appeared before the links above them:
+     the reading-order rise played bottom-first for the tail of the menu. */
+  .menu:not([hidden]) > :nth-child(n+9) { animation-delay: 385ms; }
 }
 .menu__close {
   position: absolute;
@@ -1745,11 +1750,74 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
 [dir="ltr"] .lightbox__step:not(.lightbox__share) { transform: scaleX(-1); }
 [dir="ltr"] .glimpse__cap [aria-hidden] { display: inline-block; transform: scaleX(-1); }
 
+/* The enquiry route out of the lightbox: an ivory-bordered pill under the
+   nav row. NOT .lightbox__step (mirrored in LTR; this carries text). */
+.lightbox__cta {
+  position: absolute;
+  bottom: 84px;
+  right: 50%;
+  transform: translateX(50%);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 26px;
+  font-size: 12px;
+  letter-spacing: .16em;
+  color: var(--ivory);
+  border: 1px solid var(--champagne);
+  border-radius: var(--r-pill);
+  text-decoration: none;
+  transition: background var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
+}
+@media (hover: hover) {
+  .lightbox__cta:hover { background: var(--champagne); color: var(--charcoal); }
+}
+.lightbox__cta:active { transform: translateX(50%) translateY(1px); }
+
 /* "1 / 18" renders as "18 / 1" inside the RTL document without this; and
    nowrap, because a fourth control in the row (the share button) squeezed
    the span until the count folded into two lines. */
 .lightbox__count { font-family: var(--script); font-size: 16px; color: var(--sand);
   direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+
+/* ------------------------------------------------ deliverables ledger --- */
+
+/* "מה נשאר לכם ביד" — inside #process. Two columns: the thing, then its
+   delivery window in the champagne script the step numbers already wear.
+   Logical properties only; collapses to stacked rows on a phone. */
+.deliver__title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  margin: clamp(40px, 6vw, 64px) 0 var(--sp-4);
+}
+.deliver {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 720px;
+}
+.deliver__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-4);
+  padding-block: 12px;
+  border-block-end: 1px solid var(--rule);
+}
+.deliver__what { font-size: var(--t-body); color: var(--charcoal); }
+.deliver__when {
+  font-family: var(--script);
+  font-style: italic;
+  font-size: var(--t-small);
+  color: var(--champagne-ink);
+  white-space: nowrap;
+  text-align: end;
+}
+@media (max-width: 560px) {
+  .deliver__item { flex-direction: column; gap: 2px; align-items: flex-start; }
+  .deliver__when { white-space: normal; }
+}
 
 /* --------------------------------------------------------------- film --- */
 
