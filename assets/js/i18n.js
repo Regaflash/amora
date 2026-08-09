@@ -211,10 +211,22 @@
          a failed switch must be UNDONE, not merely un-announced. */
       if (!misses.length) { if (done) done(true); return; }
       var applied = cachedAny;
+      /* Bounded, like assistant.js's askRemote and unlike the first version
+         of this fetch. A connection that ACCEPTS and never ANSWERS — captive
+         portals do exactly this — used to hang the promise forever, and
+         done() below is the only thing that clears `inflight` and runs the
+         full-revert: the visitor was latched on lang="en" dir="ltr" over
+         Hebrew glyphs, every switcher click (Hebrew included) refused at the
+         inflight guard, and the poisoned localStorage key reproduced the
+         strand on every future load. Eight seconds, then it is a failure
+         like any other: silent, reverted, retryable. */
+      var abort = typeof AbortController === 'function' ? new AbortController() : null;
+      var hangTimer = abort ? setTimeout(function () { abort.abort(); }, 8000) : 0;
       fetch(ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lang: code, items: misses })
+        body: JSON.stringify({ lang: code, items: misses }),
+        signal: abort ? abort.signal : undefined
       }).then(function (res) {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
@@ -228,7 +240,10 @@
       })['catch'](function () {
         /* Deliberately silent to the visitor. The page is still the Hebrew
            they could already read; an error banner would be noise. */
-      }).then(function () { if (done) done(applied); });
+      }).then(function () {
+        if (hangTimer) clearTimeout(hangTimer);
+        if (done) done(applied);
+      });
     });
   }
 

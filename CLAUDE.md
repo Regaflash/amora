@@ -10,7 +10,7 @@ private CRM at `admin.html` reads it back.
 ```
 Before any change goes out:
 1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 225 runtime checks in a real browser
+   node tools/verify.mjs   # must exit 0 — 247 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
    # check.sh number was right and untouched, the verify.mjs one had been
@@ -229,12 +229,11 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 
   `site.webmanifest` is referenced **root-absolute** for the same reason every
   other `404.html` reference is: Vercel serves that page AT the address that
-  was not found, so a relative href resolves against the dead path. Note the
-  manifest ships **without a 512px icon** — the source logo is 150×150, so one
-  would be upscaled garbage. Chrome's install prompt wants 192 *and* 512, so
-  the profile is valid and useful but not installable until a real logo master
-  arrives. That is the same outstanding owner item, now blocking something
-  visible.
+  was not found, so a relative href resolves against the dead path. The
+  512px-icon story is CLOSED: this entry used to say the manifest ships
+  without one because the logo was 150×150 — a real 4096px master arrived,
+  `assets/img/logo.jpg` is now 512×512, `icon-512.png` exists and the
+  manifest lists it. Do not re-open the "not installable" problem.
 
 - **One scroll lock, three holders — and it is position:fixed, not
   overflow:hidden.** iOS Safari scrolls a body that merely wears
@@ -572,8 +571,8 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   text talks about "the two of us" with no name or face anywhere on the site.
 - Legal review of `accessibility.html`, `privacy.html` and `terms.html` (all
   three are drafts with `[להשלים]` markers and a visible banner).
-- A logo master of 512px or more. `assets/img/logo.jpg` is 150×150, so the
-  180 and 192 icons `tools/make-icons.mjs` produces are upscaled from it.
+- ~~A logo master of 512px or more~~ — **done.** A 4096px master arrived;
+  `assets/img/logo.jpg` is 512×512 and the icon set is generated from it.
 - **A Google Business Profile.** The single biggest local lever and the one
   thing no code in this repo can produce: the local pack renders above the
   organic results. The site's entire declared off-site footprint is one

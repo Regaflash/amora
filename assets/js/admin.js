@@ -34,6 +34,15 @@
   var POLL_INTERVAL = 120000;
   var SOON_DAYS = 30;        // an event this close is "approaching"
   var HORIZON_DAYS = 90;     // beyond this an event is not yet pressing
+  var STALE_DAYS = 2;        // a live lead silent this long wears an alarm —
+                             // the site promises a same-day reply in six places
+
+  // Unsaved note drafts and open/closed <details> state, keyed by lead id.
+  // render() tears the whole list down and rebuilds it — on every keystroke,
+  // chip press and background poll — and before these existed that rebuild
+  // DESTROYED the note the owner was typing, mid-call, on a phone.
+  var dirtyNotes = {};
+  var openBoxes = {};
 
   var TYPE_LABEL = { wedding: 'חתונה', std: 'Save the Date', henna: 'חינה / אירוסין',
                      mitzvah: 'בר / בת מצווה', other: 'אירוע אחר' };
@@ -572,6 +581,12 @@
       channel.label));
     badges.appendChild(el('span', 'crm-card__badge crm-card__badge--status',
       STATUS_LABEL[lead.status] || (lead.handled ? 'טופל' : 'ממתין')));
+    var silent = silenceDays(lead);
+    if (silent !== null) {
+      badges.appendChild(el('span', 'crm-card__badge crm-card__badge--stale',
+        'ללא מענה ' + silent + ' ימים'));
+      li.classList.add('is-stale');
+    }
     head.appendChild(badges);
     li.appendChild(head);
 
@@ -630,6 +645,10 @@
       if (evs.length > 1) {
         var hist = document.createElement('details');
         hist.className = 'crm-note crm-history';
+        if (openBoxes['h' + lead.id]) hist.open = true;
+        hist.addEventListener('toggle', function () {
+          openBoxes['h' + lead.id] = hist.open;
+        });
         var histSum = el('summary', 'crm-note__summary', 'היסטוריה (' + evs.length + ')');
         hist.appendChild(histSum);
         var histList = el('ul', 'crm-history__list');
@@ -664,18 +683,32 @@
       li.appendChild(statusWrap);
 
       // The note. Opens closed unless there already is one — a card is a
-      // phone-screen object and most leads never need a note.
+      // phone-screen object and most leads never need a note. An unsaved
+      // draft survives the rebuild through dirtyNotes, and a hand-toggled
+      // open state through openBoxes — keyed by lead id, never by index.
       var noteBox = document.createElement('details');
       noteBox.className = 'crm-note';
-      if (lead.notes) noteBox.open = true;
+      var hasDraft = dirtyNotes[lead.id] !== undefined;
+      var noteOpenKey = 'n' + lead.id;
+      noteBox.open = openBoxes[noteOpenKey] !== undefined
+        ? openBoxes[noteOpenKey]
+        : Boolean(lead.notes || hasDraft);
+      noteBox.addEventListener('toggle', function () {
+        openBoxes[noteOpenKey] = noteBox.open;
+      });
       var noteSummary = el('summary', 'crm-note__summary',
-        lead.notes ? 'פתק' : 'הוספת פתק');
+        lead.notes || hasDraft ? 'פתק' : 'הוספת פתק');
       noteBox.appendChild(noteSummary);
       var noteArea = document.createElement('textarea');
       noteArea.className = 'crm-note__area';
       noteArea.rows = 3;
       noteArea.maxLength = 4000;
-      noteArea.value = lead.notes || '';
+      noteArea.value = hasDraft ? dirtyNotes[lead.id] : (lead.notes || '');
+      noteArea.dataset.lead = lead.id;
+      noteArea.addEventListener('input', function () {
+        if (noteArea.value !== (lead.notes || '')) dirtyNotes[lead.id] = noteArea.value;
+        else delete dirtyNotes[lead.id];
+      });
       noteBox.appendChild(noteArea);
       var noteSave = el('button', 'crm-act', 'שמירת פתק');
       noteSave.type = 'button';
@@ -751,6 +784,29 @@
       wa.target = '_blank';
       wa.rel = 'noopener noreferrer';
       actions.appendChild(wa);
+
+      // Tapping either one IS working the lead — before this listener, the
+      // owner called, wrote the greeting, and then had to scroll back and
+      // pick "נוצר קשר" as a second, unrelated act. Nobody did, so the
+      // default shelf filled with leads that only LOOKED neglected while
+      // hiding the truly neglected ones. The whole handler is deferred a
+      // tick: setStatus re-renders synchronously, and tearing the anchor
+      // out mid-click cancels the tel:/wa.me navigation it sits on.
+      var touchVia = function (type, label) {
+        setTimeout(function () {
+          var logged = logEvent(lead.id, null, type, label);
+          if (state.pipelineReady && 'status' in lead && bucketOf(lead) === 'open') {
+            setStatus(lead, 'contacted', null);
+          } else if (logged && logged.then) {
+            logged.then(function () {
+              lastEventsSignature = null;
+              loadEvents(true);
+            });
+          }
+        }, 0);
+      };
+      call.addEventListener('click', function () { touchVia('call_opened', 'נפתח חיוג מהכרטיס'); });
+      wa.addEventListener('click', function () { touchVia('whatsapp_opened', 'נפתחה שיחת וואטסאפ מהכרטיס'); });
     }
 
     var copy = el('button', 'crm-act', 'העתקת פרטים');
@@ -776,6 +832,15 @@
     if (name.indexOf(query) !== -1) return true;
     var email = (lead.email || '').toLowerCase();
     if (email && email.indexOf(query) !== -1) return true;
+
+    // "רמת גן", "אולם", a phrase from a note — how a person actually
+    // remembers a lead six weeks later. Plain indexOf on lowercased text,
+    // never a regex, so stranger-typed content cannot become a pattern.
+    var extras = [lead.message, lead.notes, lead.area, lead.campaign,
+                  parseSource(lead.source).campaign];
+    for (var x = 0; x < extras.length; x++) {
+      if (extras[x] && String(extras[x]).toLowerCase().indexOf(query) !== -1) return true;
+    }
 
     var digits = query.replace(/\D/g, '');
     if (!digits) return false;
@@ -826,6 +891,24 @@
     return rows;
   }
 
+  /** Days of silence on a live lead, or null when there is nothing to flag.
+   *  Basis: the newest diary entry when one exists, else arrival. One guard
+   *  matters: state.events is a capped global window (1000 rows, 8/lead) —
+   *  a lead older than a FULL window has no events in memory and would read
+   *  as ancient silence when it may have been worked long ago, so such
+   *  leads are never flagged. */
+  function silenceDays(lead) {
+    if (bucketOf(lead) === 'closed') return null;
+    var evs = state.events[lead.id];
+    var created = new Date(lead.created_at).getTime();
+    if (!evs && eventsWindowFull && eventsOldest && created < eventsOldest) return null;
+    var basis = evs && evs.length ? evs[0].created_at : lead.created_at;
+    var ms = Date.now() - new Date(basis).getTime();
+    if (isNaN(ms)) return null;
+    var d = Math.floor(ms / 86400000);
+    return d >= STALE_DAYS ? d : null;
+  }
+
   /** Sort key for "לפי קרבת האירוע": the soonest upcoming event first, then
    *  leads with no date yet (still live, just undecided), and only then events
    *  that have already passed — most recent of those first. */
@@ -838,13 +921,14 @@
   }
 
   function renderStats() {
-    var open = 0, week = 0, soon = 0;
+    var open = 0, week = 0, soon = 0, stale = 0;
     var weekAgo = Date.now() - 7 * 86400000;
 
     state.leads.forEach(function (lead) {
       // Everything not yet closed is money in motion: a studio with six
       // live proposals and zero new enquiries used to see 0 here.
       if (bucketOf(lead) !== 'closed') open++;
+      if (silenceDays(lead) !== null) stale++;
       var created = new Date(lead.created_at).getTime();
       if (!isNaN(created) && created >= weekAgo) week++;
       var day = parseDay(lead.event_date);
@@ -859,6 +943,7 @@
     setStat('open', open);
     setStat('week', week);
     setStat('soon', soon);
+    setStat('stale', stale);
   }
 
   function setStat(name, value) {
@@ -901,8 +986,24 @@
 
     var rows = visibleLeads();
 
+    // If the owner is mid-keystroke in a note, the rebuild below replaces
+    // the textarea under the caret — dirtyNotes keeps the TEXT, this keeps
+    // the FOCUS and the caret position, keyed by lead id.
+    var focused = document.activeElement;
+    var focusLead = focused && focused.className === 'crm-note__area'
+      ? focused.dataset.lead : null;
+    var caret = focusLead ? focused.selectionStart : 0;
+
     while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
     rows.forEach(function (lead) { listEl.appendChild(buildCard(lead)); });
+
+    if (focusLead) {
+      var again = $('.crm-note__area[data-lead="' + focusLead + '"]');
+      if (again) {
+        again.focus();
+        try { again.setSelectionRange(caret, caret); } catch (e) { /* type quirks */ }
+      }
+    }
 
     if (!rows.length) {
       var message = state.leads.length
@@ -1072,8 +1173,11 @@
      enquiry ARRIVED. Same failure discipline as loadContracts: one bulk
      request, silent on error, the lead list never depends on it. */
   var EVENT_LABEL = { status_changed: 'סטטוס עודכן', contract_created: 'נוצר חוזה',
-                      contract_sent: 'חוזה נשלח' };
+                      contract_sent: 'חוזה נשלח', whatsapp_opened: 'נפתחה שיחת וואטסאפ',
+                      call_opened: 'נפתח חיוג' };
   var lastEventsSignature = null;
+  var eventsOldest = null;      // oldest created_at in the loaded window (ms)
+  var eventsWindowFull = false; // true when the 1000-row window is at capacity
   function loadEvents(silent) {
     // One global newest-first window, not a per-lead query — PostgREST has
     // no cheap top-N-per-group. At ~3 events per worked lead this covers the
@@ -1087,6 +1191,9 @@
         var signature = JSON.stringify(rows);
         if (signature === lastEventsSignature) return;
         lastEventsSignature = signature;
+        eventsWindowFull = rows.length >= 1000;
+        eventsOldest = rows.length
+          ? new Date(rows[rows.length - 1].created_at).getTime() : null;
         var map = {};
         rows.forEach(function (ev) {
           if (!ev.lead_id) return;
@@ -1099,9 +1206,11 @@
       .catch(function () { /* quiet — see above */ });
   }
 
-  /** Timeline entries are nice-to-have; never let one break an action. */
+  /** Timeline entries are nice-to-have; never let one break an action.
+   *  Returns the request promise (failure already swallowed) so a caller may
+   *  refresh the diary AFTER the row lands rather than racing it. */
   function logEvent(leadId, contractId, type, detail) {
-    api('/rest/v1/lead_events', {
+    return api('/rest/v1/lead_events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({ lead_id: leadId, contract_id: contractId || null,
@@ -1118,7 +1227,9 @@
     var handledNext = next !== 'new';
     var handledPrev = lead.handled;
     lead.handled = handledNext;
-    control.disabled = true;
+    // Null when the change was triggered by something that is not a control
+    // (the call/WhatsApp touch) — the render below repaints everything.
+    if (control) control.disabled = true;
     pendingWrites++;
     lastSignature = null;
     render();
@@ -1164,10 +1275,12 @@
     }).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       settle();
+      delete dirtyNotes[lead.id];   // the draft became the saved note
       toast('הפתק נשמר');
     }, function (err) {
       settle();
       lead.notes = previous;
+      dirtyNotes[lead.id] = value;  // the typed text is a draft again — keep it
       if (err && (err.expired || err.message === 'no-session')) {
         endSession('פג תוקף החיבור. אפשר להיכנס שוב.');
         return;
@@ -1205,7 +1318,12 @@
       contract.status = 'sent';
       lastContractsSignature = null;
       logEvent(lead.id, contract.id, 'contract_sent', 'החוזה סומן כנשלח');
-      if ((lead.status || 'new') !== 'signed') setStatus(lead, 'contract_sent', button);
+      // The extra !== 'contract_sent' guard matters: setStatus no-ops when
+      // next equals current — early return, no render — and the button this
+      // function disabled stayed disabled over a state line still reading
+      // "טיוטה". A dead button that reads as "the contract didn't send".
+      var cur = lead.status || 'new';
+      if (cur !== 'signed' && cur !== 'contract_sent') setStatus(lead, 'contract_sent', button);
       else render();
       toast('החוזה סומן כנשלח');
     }, function () {
@@ -1218,6 +1336,7 @@
   /** The create-contract dialog. Built once, filled per lead. Plain DOM, same
    *  rules as every card: values go in via textContent/value, never HTML. */
   var dialogEl = null;
+  var dialogOpener = null;   // focus goes back where it came from on close
 
   function fieldRow(labelText, inputEl) {
     var wrap = el('label', 'field');
@@ -1343,13 +1462,44 @@
     overlay.appendChild(box);
     document.body.appendChild(overlay);
     dialogEl = overlay;
+    dialogOpener = document.activeElement;
     fName.focus();
   }
 
   function closeContractDialog() {
     if (dialogEl && dialogEl.parentNode) dialogEl.parentNode.removeChild(dialogEl);
     dialogEl = null;
+    if (dialogOpener && dialogOpener.focus && document.contains(dialogOpener)) {
+      dialogOpener.focus();
+    }
+    dialogOpener = null;
   }
+
+  /* Keyboard: Escape closes the dialog (focus returns to its opener) and Tab
+     stays inside it — before this, Tab walked out behind the overlay and
+     Escape did nothing on the owner's own laptop. Outside a dialog, `/`
+     jumps to the search box: the shortcut that makes a 500-row list usable
+     without a mouse. */
+  document.addEventListener('keydown', function (e) {
+    if (dialogEl) {
+      if (e.key === 'Escape') { e.preventDefault(); closeContractDialog(); return; }
+      if (e.key === 'Tab') {
+        var items = $$('a[href], button:not([disabled]), input, select, textarea', dialogEl)
+          .filter(function (n) { return n.offsetParent !== null; });
+        if (!items.length) return;
+        var first = items[0];
+        var last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+      return;
+    }
+    if (e.key === '/' && searchEl) {
+      var t = e.target;
+      var typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
+      if (!typing) { e.preventDefault(); searchEl.focus(); }
+    }
+  });
 
   function setHandled(lead, next, button) {
     var previous = lead.handled;
@@ -1445,9 +1595,15 @@
   }
 
   if (searchEl) {
+    // Debounced: every keystroke rebuilds up to 500 cards synchronously,
+    // which is visible jank on the phone this page actually runs on.
+    var searchTimer = null;
     searchEl.addEventListener('input', function () {
-      state.query = searchEl.value;
-      render();
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () {
+        state.query = searchEl.value;
+        render();
+      }, 120);
     });
   }
   if (typeEl) {
@@ -1477,13 +1633,17 @@
   setInterval(function () {
     // pendingWrites: a poll landing while a PATCH is in flight would overwrite
     // the optimistic value with the server's pre-PATCH snapshot and flip the
-    // card back under the owner's finger.
+    // card back under the owner's finger. dirtyNotes: the same courtesy for a
+    // note mid-typing — the draft would survive the repaint (dirtyNotes), but
+    // there is no reason to repaint under the caret at all.
     if (document.hidden || !session || pendingWrites) return;
+    if (Object.keys(dirtyNotes).length) return;
     loadLeads(true);
   }, POLL_INTERVAL);
 
   document.addEventListener('visibilitychange', function () {
     if (document.hidden || !session || pendingWrites) return;
+    if (Object.keys(dirtyNotes).length) return;
     if (Date.now() - state.loadedAt > POLL_INTERVAL) loadLeads(true);
   });
 

@@ -304,12 +304,6 @@
           <span class="field__error" id="err-phone" data-error="phone"></span>
         </label>
 
-        <label class="field">
-          <span class="field__label">אימייל <span class="field__opt">(אופציונלי — כדי לשלוח הצעה וגלריות)</span></span>
-          <input class="field__control" name="email" type="email" inputmode="email" autocomplete="email" data-field="email" aria-describedby="err-email" />
-          <span class="field__error" id="err-email" data-error="email"></span>
-        </label>
-
         <div class="field-row">
           <div class="field">
             <label class="field__label" for="lead-date">תאריך האירוע <span class="field__req" aria-hidden="true">(חובה)</span></label>
@@ -334,6 +328,14 @@
           </label>
         </div>
 
+        <!-- After the required fields since 2026-08-09, same reasoning as the
+             homepage copy: one column at 390px, required-first. -->
+        <label class="field">
+          <span class="field__label">אימייל <span class="field__opt">(אופציונלי — כדי לשלוח הצעה וגלריות)</span></span>
+          <input class="field__control" name="email" type="email" inputmode="email" autocomplete="email" data-field="email" aria-describedby="err-email" />
+          <span class="field__error" id="err-email" data-error="email"></span>
+        </label>
+
         <div class="field-row">
           <label class="field">
             <span class="field__label">אזור / לוקיישן <span class="field__opt">(אם ידוע)</span></span>
@@ -343,7 +345,9 @@
           <label class="field">
             <span class="field__label">מה מצלמים</span>
             <select class="field__control" name="coverage" data-field="coverage">
-              <option value="">שניהם</option>
+              <!-- The placeholder must NOT be a real answer — see the
+                   homepage copy of this select. -->
+              <option value="">בחרו</option>
               <option value="both">סטילס + וידאו</option>
               <option value="stills">סטילס בלבד</option>
               <option value="video">וידאו בלבד</option>
@@ -368,8 +372,13 @@
       <div class="form__done" data-form-done hidden>
         <p class="form__done-kicker">Thank you</p>
         <h3 class="form__done-title">קיבלנו. נחזור אליכם היום.</h3>
-        <p class="form__done-text">בינתיים, אפשר לכתוב לנו ישירות בוואטסאפ.</p>
-        <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener">לוואטסאפ ←</a>
+        <!-- A paraphrase of FAQ answer 9, deliberately NOT a byte-copy —
+             same note as the homepage's done panel. -->
+        <p class="form__done-text">חוזרים אליכם עוד היום עם זמינות והצעה מותאמת, ואחרי זה שיחת היכרות קצרה — בלי מחויבות.</p>
+        <p class="form__done-text">רוצים להוסיף משהו בינתיים?</p>
+        <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener"
+           data-wa-text="היי, השארתי עכשיו פרטים באתר ורציתי להוסיף משהו.">לוואטסאפ ←</a>
+        <p class="form__done-text form__done-text--tel">או בטלפון — <a href="tel:+972503662699">050-3662699</a></p>
       </div>
     </form>
   </div>
@@ -406,7 +415,13 @@
   </div>
 </footer>
 
-<a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ">
+<!-- data-wa-text: the message names the page the visitor stood on, so a
+     WhatsApp lead from the money page is distinguishable from any other.
+     Page identity only — never utm_* tags, which must not ride into a
+     message the visitor forwards. Kept in Hebrew on purpose: it is sent TO
+     a Hebrew-speaking studio. -->
+<a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ"
+   data-wa-text="היי, קראתי אצלכם על מה משפיע על המחיר ואשמח להצעה מותאמת לתאריך שלנו.">
   <span>וואטסאפ</span>
 </a>
 
