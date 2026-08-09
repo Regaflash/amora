@@ -10,17 +10,31 @@ private CRM at `admin.html` reads it back.
 ```
 Before any change goes out:
 1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 43 runtime checks in a real browser
+   node tools/verify.mjs   # must exit 0 — 174 runtime checks in a real browser
+   # That second number said 43 while the suite ran 174. Both counts were
+   # suspect on 2026-08-09 and both were re-counted against real output: the
+   # check.sh number was right and untouched, the verify.mjs one had been
+   # wrong since the suite tripled. The count is not decoration — a session
+   # that reads 43, watches 174 scroll past and concludes it is running the
+   # wrong tool goes looking for a second verifier that does not exist. When
+   # you add an ok(), change this line in the same commit.
    # verify.mjs needs playwright-core and pngjs, which this repo deliberately
    # does not vendor and has no package.json for:
    #   npm install --no-save playwright-core pngjs
    # Install both in ONE command — with no package.json, a second --no-save
    # install removes the first package.
+   # And playwright-core ships NO browser. verify.mjs launches
+   # /opt/pw-browsers/chromium, overridable with CHROMIUM_PATH, and fails at
+   # launch if nothing is there. That failure is a missing binary, not a
+   # failing assertion: nothing about the site is broken and there is nothing
+   # in the repo to fix.
 2. Deploy this directory to Vercel. vercel.json and .vercelignore are already
    correct — do not add a build step, this is a static site with no
    dependencies.
 3. Fetch the live URL and look at it: images load, the hero plays, the gallery
-   filters, the form validates, the accessibility menu opens.
+   filters, a photograph opens full-screen and steps with the arrows, the
+   language buttons switch the page, the form validates, the accessibility
+   menu opens.
 ```
 
 Do not re-audit or re-verify the build. That work is done and documented below.
@@ -129,10 +143,70 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   had not said the quoted words. Do not re-add without written permission.
 - The hero streams the studio's real footage from YouTube — `2DHdORDXVmo`
   (showreel, landscape) and `3O13FGO_f08` (vertical Short), chosen by viewport
-  orientation. There is no local hero video and no `assets/video/`. This is the
-  only third-party request the site makes on load; it was the owner's call,
-  `privacy.html` states it, and `frame-src` in `vercel.json` names the two
-  origins. The film section further down still asks before it loads.
+  orientation. Orientation is only the first choice: a refused autoplay is
+  asked again, muted and bounded to three tries, and if the vertical cut never
+  plays the hero falls back once to the wide one. Both exist because an iPhone
+  in Low Power Mode refuses autoplay and leaves YouTube's poster sitting
+  there — a hero that quietly does not move is a design, a hero wearing
+  someone else's chrome is a bug. There is no local hero video and no
+  `assets/video/`. It was the owner's call, `privacy.html` states it, and
+  `frame-src` in `vercel.json` names the two origins. The film section further
+  down still asks before it loads.
+
+  This entry used to say "this is the only third-party request the site makes
+  on load". That was true when it was written and stopped being true when the
+  translator shipped: a returning visitor whose stored language is not Hebrew
+  reaches the Supabase `translate` function during mount, before anything is
+  clicked. YouTube is still the only load-time request to a party that is not
+  ours — which is the sentence that was meant, and is not the sentence that
+  was written.
+
+- **The site speaks four languages, and this file said nothing about it for
+  days.** `assets/js/i18n.js` injects a language group (עברית · العربية ·
+  English · Русский) into `.nav` before `.nav__cta` and into `#mobile-menu`,
+  and translates the page the visitor is standing on. A fresh session that
+  meets this by surprise, mid-change, is exactly the accident this file exists
+  to prevent — so:
+
+  - **Hebrew is the source of truth and is never fetched.** Every target keeps
+    its Hebrew string, so switching back is instant and works offline. Every
+    failure mode — no network, dead endpoint, a model that refuses — leaves
+    the page in Hebrew, silently and on purpose. There is no loading state
+    that can strand a visitor.
+  - **The client sends sha256 hashes of normalised strings**, not the page, to
+    `…supabase.co/functions/v1/translate`
+    (`supabase/functions/translate/index.ts`). Hits come from
+    `public.translations`, keyed by STRING and not by page
+    (`docs/supabase-translations.sql`), so nav and footer copy warms the whole
+    site on the first view; only misses reach a model. `connect-src` in
+    `vercel.json` already names that origin.
+  - **It ships on the three indexable pages only.** `index.html`, `cost.html`
+    and `camera-3d.html` — the same three that carry `assistant.js`. The legal
+    pages are excluded twice over: no `<script>`, and `NO_TRANSLATE_PAGE` in
+    `i18n.js` refuses `privacy|terms|accessibility` even if one is added.
+    They are drafts awaiting a lawyer, and a machine rendering of them is a
+    document the studio never wrote.
+  - **The DOM does not hold still, and the collector is incremental for that
+    reason.** The assistant builds its whole panel after load, live regions
+    announce filter counts, the lightbox writes captions. A `MutationObserver`
+    with a 120ms lull re-collects only what is new and re-runs it; repeats
+    come from an in-memory dict with no network. The earlier `if (targets)
+    return targets` left every one of those speaking Hebrew into a translated
+    page forever. `[data-no-translate]` opts a subtree out; the switcher
+    wears it.
+  - **EN and RU were held back on an untested belief.** The stylesheet was
+    counted for physical properties and judged unsafe to mirror; nobody had
+    rendered it. Rendered in LTR at 1280 and 390 it was correct — the grids
+    and flex rows already do the work. Three rules genuinely depended on
+    direction and are now logical; the floating controls stay physical on
+    purpose, so the right-hand side stays clear for the a11y toolbars.
+
+  **Open, and it is the same rule as the lead form's field list:
+  `privacy.html` does not mention this feature.** It enumerates the a11y
+  `localStorage` key and states that preference is sent nowhere; it names
+  neither `amora.lang` nor the page's own text reaching our Edge Function.
+  Verified absent 2026-08-09. The lead-form rule in this file exists because a
+  page that enumerates what it stores is wrong the moment it under-counts.
 - There are eight pages, not two: `index.html`, `cost.html`, `camera-3d.html`,
   `accessibility.html`, `privacy.html`, `terms.html`, `404.html` and
   `admin.html` (the private lead CRM — noindex, no-store, its own enforcing
@@ -185,6 +259,42 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   to zero at 320px. Below 360px a media query tightens the row to 40px
   controls — measured, because at 320px the launcher had been sitting at
   `[-38..6]`, entirely off-screen.
+
+- **The gallery is an address, not a wall — and the addresses have already
+  been sent to people.** Eighteen photographs, five chips
+  (`all`, `weddings`, `std`, `prep`, `events`). Four things depend on those
+  literal strings and none of them is next to the other: `#gallery-<cat>`
+  entry links, `cost.html`'s `.glimpse` frames
+  (`index.html#gallery-weddings` and siblings), `assistant.js`'s
+  `gallery:<cat>` actions, and the chips themselves. **Renaming a
+  `data-filter` value breaks links that are already in strangers' WhatsApp
+  threads**, and nothing fails loudly when it happens.
+
+  The URL contract, precisely: a chip press `replaceState`s
+  `#gallery-<cat>` (or clears it for `all`); opening a photograph writes
+  `#photo-<n>`, where **n numbers the FULL set, never the filtered one**;
+  closing restores the filter's hash. Both hashes are honoured on load —
+  the page lands filtered, scrolled, and with the floating WhatsApp control
+  already earned, because a visitor who was SENT here has been vouched for,
+  and measured at 390×844 they land fifteen pixels under the scroll
+  threshold that would reveal it.
+
+  **Two rules about campaign tags, and they point opposite ways on purpose.**
+  `carryCampaign()` rewrites same-origin cross-page links so `utm_*` survives
+  the hop — measured: `/cost.html?utm_source=instagram` → glimpse → submit
+  used to record `source: "/"`. But the lightbox's share button **strips the
+  query before the URL leaves the phone**, because a shared photograph goes to
+  a different person and the sender's tags must not become that person's
+  `source`: a word-of-mouth lead filed as an ad conversion is worse than an
+  unattributed one. Neither rule stores anything, and a visitor who does not
+  submit is still unmeasured — `privacy.html` still says exactly that.
+
+  Everything additive degrades to the markup. Below 560px the wall is a CSS
+  scroll-snap strip that works with `main.js` deleted; the hint, the strip
+  counter, the per-chip counts and the share button are all built in JS and
+  simply are not there when they cannot work, which is the same rule that
+  keeps a dead control off the page. Where the engine has View Transitions
+  the filter FLIPs the wall; where it does not, it swaps.
 
 - Three files are GENERATED. Do not hand-edit them; rerun the tool and let
   `check.sh` confirm: `sitemap.xml` (`tools/gen-sitemap.py`), the ImageGallery
