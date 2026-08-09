@@ -2288,6 +2288,59 @@ await page.waitForTimeout(200);
   await p.close();
 }
 
+// ----------------------------------------- the source badge learns to read --
+// After the campaign-tag work, `source` carries real attribution — and the
+// badge classified all of it as "האתר". Now it names the channel. Two safety
+// rules under test: the class comes from a FIXED key set (never lead data),
+// and host matching is suffix-anchored — instagram.com.evil.example must not
+// wear the Instagram badge.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await p.route('**/auth/v1/token**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ access_token: 'fake.jwt.token', refresh_token: 'r', expires_in: 3600,
+                           token_type: 'bearer', user: { id: 'u1', email: 't@example.com' } }),
+  }));
+  const mk = (i, source) => ({
+    id: `00000000-0000-0000-0000-00000000000${i}`,
+    created_at: '2026-08-02T10:00:00Z', name: 'בדיקה ' + i, phone: '0521234567',
+    event_type: 'wedding', status: 'new', source,
+  });
+  await p.route('**/rest/v1/leads**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify([
+      mk(1, 'source=instagram · medium=cpc · campaign=spring · /cost.html'),
+      mk(2, 'l.instagram.com · /'),
+      mk(3, '/index.html'),
+      mk(4, 'google-ads'),
+      mk(5, 'instagram.com.evil.example · /'),
+    ]),
+  }));
+  await p.goto(BASE + '/admin.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  await p.fill('input[type=email]', 't@example.com').catch(() => {});
+  await p.fill('input[type=password]', 'whatever').catch(() => {});
+  await p.locator('button[type=submit]').first().click().catch(() => {});
+  await p.waitForTimeout(1800);
+
+  const badges = await p.evaluate(() =>
+    [...document.querySelectorAll('.crm-card__badge--src')].map((n) => ({
+      label: n.textContent, cls: n.className,
+    })));
+  ok('each channel wears its own name',
+     badges.length === 5
+       && badges[0].label === 'Instagram' && badges[1].label === 'Instagram'
+       && badges[2].label === 'ישיר' && badges[3].label === 'Google Ads',
+     JSON.stringify(badges.map((b) => b.label)), 'Instagram, Instagram, ישיר, Google Ads, …');
+  ok('a lookalike host earns no Instagram badge and no unfixed class',
+     badges[4].label !== 'Instagram' && !badges[4].cls.includes('--src-instagram')
+       && /--src-(other|direct)\b/.test(badges[4].cls),
+     JSON.stringify(badges[4]), 'other/direct');
+  ok('the campaign row surfaces the parsed utm campaign',
+     await p.evaluate(() => document.body.textContent.includes('spring')), true, true);
+  await p.close();
+}
+
 // -------------------------------------------------- the CRM offline path --
 {
   const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
