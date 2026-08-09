@@ -46,12 +46,75 @@
   var CONTRACT_LABEL = { draft: 'חוזה — טיוטה', sent: 'חוזה נשלח, ממתין לחתימה',
                          signed: 'חוזה חתום ✓', cancelled: 'חוזה בוטל' };
   // source values written by the intake channels; anything else is the
-  // referrer host the site's own form recorded.
-  function sourceChannel(source) {
+  // site form's ' · '-joined attribution string: `source=instagram ·
+  // medium=cpc · campaign=spring · /cost.html`, or `l.instagram.com · /`,
+  // or a bare landing path. The badge used to classify ALL of that as
+  // "האתר" — a paid-Instagram lead and a direct visitor looked identical
+  // at a glance, with the difference buried in a key=value string the
+  // owner had to parse by eye on a phone.
+  //
+  // Two safety rules, because `source` is attacker-influenced free text:
+  // the badge class comes from a FIXED key set (never from lead data), and
+  // host matching is suffix-anchored — `instagram.com.evil.example` must
+  // not wear the Instagram badge.
+  var CHANNEL_LABEL = {
+    google_ads: 'Google Ads', meta_ads: 'Meta',
+    instagram: 'Instagram', facebook: 'Facebook', google: 'Google',
+    whatsapp: 'WhatsApp', tiktok: 'TikTok', direct: 'ישיר', other: 'אחר'
+  };
+  function hostChannel(host) {
+    var h = String(host).toLowerCase();
+    var test = function (domain) {
+      return h === domain || h.slice(-(domain.length + 1)) === '.' + domain;
+    };
+    if (test('instagram.com')) return 'instagram';
+    if (test('facebook.com') || test('fb.com')) return 'facebook';
+    if (test('whatsapp.com') || test('wa.me')) return 'whatsapp';
+    if (test('tiktok.com')) return 'tiktok';
+    if (/^google\./.test(h) || test('google.com')) return 'google';
+    return null;
+  }
+  function parseSource(source) {
     var s = String(source || '');
-    if (s.indexOf('google-ads') === 0) return { key: 'google', label: 'Google Ads' };
-    if (s.indexOf('meta-ads') === 0) return { key: 'meta', label: 'Meta' };
-    return { key: 'site', label: 'האתר' };
+    if (s.indexOf('google-ads') === 0) return { key: 'google_ads', label: 'Google Ads' };
+    if (s.indexOf('meta-ads') === 0) return { key: 'meta_ads', label: 'Meta' };
+    var out = { key: 'direct', label: CHANNEL_LABEL.direct, campaign: '', landing: '' };
+    var known = false;
+    s.split(' · ').forEach(function (part) {
+      var p = part.trim();
+      if (!p) return;
+      if (p.indexOf('source=') === 0) {
+        var v = p.slice(7).toLowerCase();
+        var key = (v === 'ig' || v === 'instagram') ? 'instagram'
+          : (v === 'fb' || v === 'facebook') ? 'facebook'
+          : (v === 'google') ? 'google'
+          : (v === 'whatsapp') ? 'whatsapp'
+          : (v === 'tiktok') ? 'tiktok' : 'other';
+        out.key = key;
+        out.label = key === 'other' ? p.slice(7) : CHANNEL_LABEL[key];
+        known = true;
+      } else if (p.indexOf('campaign=') === 0) {
+        out.campaign = p.slice(9);
+      } else if (p.indexOf('medium=') === 0 || p.indexOf('term=') === 0
+                 || p.indexOf('content=') === 0) {
+        // recorded in the raw string; not badge material
+      } else if (p.charAt(0) === '/') {
+        out.landing = p;
+      } else if (!known && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(p)) {
+        var ch = hostChannel(p);
+        if (ch) { out.key = ch; out.label = CHANNEL_LABEL[ch]; }
+        else { out.key = 'other'; out.label = p; }
+      }
+    });
+    return out;
+  }
+  // The two call sites that predate parseSource keep their contract.
+  function sourceChannel(source) {
+    var c = parseSource(source);
+    // greetingFor's question is "did they come through our own site" —
+    // anything that is not an ad-platform intake did.
+    c.site = c.key !== 'google_ads' && c.key !== 'meta_ads';
+    return c;
   }
   var WEEKDAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
@@ -404,7 +467,7 @@
     var day = parseDay(lead.event_date);
     var subject = typeLabel(lead.event_type);
     // An ad lead never saw the website; "מהאתר" would read as a mistake.
-    var line = sourceChannel(lead.source).key === 'site'
+    var line = sourceChannel(lead.source).site
       ? 'קיבלנו את הפנייה שלכם מהאתר'
       : 'קיבלנו את הפנייה שלכם';
     if (subject) line += ' לגבי ' + subject;
@@ -426,7 +489,7 @@
       lead.area ? 'אזור: ' + lead.area : '',
       lead.coverage ? 'מה מצלמים: ' + coverageLabel(lead.coverage) : '',
       lead.message ? 'הודעה: ' + lead.message : '',
-      lead.source ? 'הגיעו מ: ' + lead.source : '',
+      lead.source ? 'הגיעו מ: ' + parseSource(lead.source).label + ' (' + lead.source + ')' : '',
       'התקבלה: ' + formatDay(new Date(lead.created_at))
     ];
     return stripBidi(rows.filter(Boolean).join('\n'));
@@ -487,7 +550,7 @@
       else if (days < 0) badge.classList.add('crm-card__badge--past');
       badges.appendChild(badge);
     }
-    var channel = sourceChannel(lead.source);
+    var channel = parseSource(lead.source);
     badges.appendChild(el('span',
       'crm-card__badge crm-card__badge--src crm-card__badge--src-' + channel.key,
       channel.label));
@@ -528,8 +591,11 @@
     addRow(dl, 'סוג אירוע', typeLabel(lead.event_type));
     addRow(dl, 'אזור', lead.area);
     addRow(dl, 'מה מצלמים', coverageLabel(lead.coverage));
-    addRow(dl, 'הגיעו מ', lead.source);
-    addRow(dl, 'קמפיין', lead.campaign);
+    // Human first, raw second: the badge's label answers "from where" at a
+    // glance; the raw attribution string stays available in the copy text
+    // (detailsFor) so nothing the form recorded is lost.
+    addRow(dl, 'הגיעו מ', channel.label + (channel.landing ? ' · ' + channel.landing : ''));
+    addRow(dl, 'קמפיין', lead.campaign || channel.campaign);
     if (dl.childNodes.length) li.appendChild(dl);
 
     if (lead.message) {

@@ -2093,9 +2093,23 @@ html:not(.js) .quotes__controls { display: none; }
 .lang-mobile .lang { border-color: var(--rule); }
 .lang-mobile .lang__btn { min-height: 44px; min-width: 52px; font-size: 0.875rem; }
 
-/* While strings are in flight the page is still fully readable Hebrew, so the
-   only cue is a soft one. Nothing moves, nothing is hidden. */
-[data-translating] .lang__btn[aria-pressed="true"] { opacity: .55; }
+/* While strings are in flight the page is still fully readable Hebrew, so
+   the only cue is a soft one. The old cue dimmed the pressed button to .55 —
+   DIMMER than the three languages the visitor did not choose, so the
+   selection read as the least-selected item exactly when it needed to read
+   as "working". Now: full opacity plus a static underline bar. currentColor,
+   so it is charcoal-on-champagne normally and follows the inversion in
+   contrast mode; static, so it is identical with motion off. */
+.lang__btn { position: relative; }
+[data-translating] .lang__btn[aria-pressed="true"]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 8px;
+  inset-block-end: 3px;
+  block-size: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .lang__btn { transition: none; }

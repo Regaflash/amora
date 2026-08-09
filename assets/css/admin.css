@@ -297,9 +297,16 @@
 /* ------------------------------------------------- pipeline & contracts --- */
 
 .crm-card__badge--src { border-color: transparent; }
-.crm-card__badge--src-site { background: var(--cream); color: var(--mocha); }
+/* Fixed key set only — the class never comes from lead data. */
+.crm-card__badge--src-direct { background: var(--cream); color: var(--mocha); }
+.crm-card__badge--src-other { background: var(--cream); color: var(--mocha); }
+.crm-card__badge--src-google_ads,
 .crm-card__badge--src-google { background: #e8f0e7; color: #2e5a33; }
-.crm-card__badge--src-meta { background: #e7ecf4; color: #2c4a73; }
+.crm-card__badge--src-meta_ads,
+.crm-card__badge--src-facebook { background: #e7ecf4; color: #2c4a73; }
+.crm-card__badge--src-instagram { background: #f6e9f0; color: #8a3b64; }
+.crm-card__badge--src-whatsapp { background: #e6f2ea; color: #1f6b45; }
+.crm-card__badge--src-tiktok { background: #ececec; color: #333; }
 
 .crm-card__pipeline { display: flex; align-items: center; gap: 10px; }
 .crm-card__pipeline-label {

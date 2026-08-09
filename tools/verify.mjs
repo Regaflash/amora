@@ -515,6 +515,103 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ------------------------------------------- a failed switch is fully undone --
+// The click commits four statements before the network answers: lang, dir,
+// the pressed button, localStorage. On total failure the visitor was left on
+// lang="en" over Hebrew glyphs — a screen reader speaking Hebrew in an
+// English voice — with the failure PERSISTED for every next load. Now the
+// whole promise is withdrawn, still silently; and a LATE incremental failure
+// after a successful switch must never yank the page back.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.route('**/functions/v1/translate', (route) => route.abort('failed'));
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(1500);
+  ok('a dead endpoint withdraws the whole promise, silently',
+     await p.evaluate(() => document.documentElement.getAttribute('lang') === 'he'
+       && document.documentElement.dir === 'rtl'
+       && document.querySelector('.lang__btn[data-lang="en"]').getAttribute('aria-pressed') === 'false'
+       && document.querySelector('.lang__btn[data-lang="he"]').getAttribute('aria-pressed') === 'true'
+       && !document.documentElement.hasAttribute('data-translating')
+       && localStorage.getItem('amora.lang') === null), true, true);
+
+  // The failed attempt must leave no poisoned state: rerouted to a working
+  // stub, the SAME page switches successfully.
+  await p.unroute('**/functions/v1/translate');
+  await p.route('**/functions/v1/translate', async (route) => {
+    const body = route.request().postDataJSON();
+    const t = {};
+    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    await route.fulfill({ json: { t } });
+  });
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(1500);
+  ok('the retry succeeds — no poisoned state survived the failure',
+     await p.evaluate(() => document.querySelector('h1').textContent.includes('«')
+       && document.documentElement.dir === 'ltr'), true, true);
+
+  // The guard that matters: a LATE incremental failure never reverts.
+  await p.unroute('**/functions/v1/translate');
+  await p.route('**/functions/v1/translate', (route) => route.abort('failed'));
+  await p.locator('.chip[data-filter="prep"]').click();
+  await p.waitForTimeout(1400);
+  ok('a late incremental failure leaves the translated page alone',
+     await p.evaluate(() => document.querySelector('h1').textContent.includes('«')
+       && document.documentElement.dir === 'ltr'
+       && document.documentElement.getAttribute('lang') === 'en'), true, true);
+  await p.close();
+}
+
+// -------------------------------------- the switch indicator earns its keep --
+// The in-flight cue used to DIM the pressed button below its unpressed
+// siblings; now it stays at full opacity and wears a static underline bar.
+// And in contrast mode the pressed language inverts — the champagne ground
+// the sweep blanks was the only state indicator.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  await p.route('**/functions/v1/translate', async (route) => {
+    await gate;   // hold the request so the in-flight state is observable
+    const body = route.request().postDataJSON();
+    const t = {};
+    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    await route.fulfill({ json: { t } });
+  });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(700);
+  ok('while translating, the choice reads chosen — full opacity plus a bar',
+     await p.evaluate(() => {
+       const b = document.querySelector('.lang__btn[data-lang="en"]');
+       const after = getComputedStyle(b, '::after');
+       return document.documentElement.hasAttribute('data-translating')
+         && getComputedStyle(b).opacity === '1'
+         && after.content === '""' && parseFloat(after.height) >= 2;
+     }), true, true);
+  release();
+  await p.waitForTimeout(900);
+  // The button transitions `background 200ms`, so the class flip must be
+  // given time to settle before computed colors are judged — a synchronous
+  // read sees the champagne mid-transition and lies.
+  await p.evaluate(() => document.documentElement.classList.add('a11y-contrast'));
+  await p.waitForTimeout(400);
+  const inverted = await p.evaluate(() => {
+    const on = getComputedStyle(document.querySelector('.lang__btn[aria-pressed="true"]'));
+    const off = getComputedStyle(document.querySelector('.lang__btn[aria-pressed="false"]'));
+    return { onBg: on.backgroundColor, onInk: on.color, offBg: off.backgroundColor };
+  });
+  await p.evaluate(() => document.documentElement.classList.remove('a11y-contrast'));
+  ok('the pressed language survives contrast mode inverted',
+     inverted.onBg === 'rgb(255, 255, 255)' && inverted.onInk === 'rgb(0, 0, 0)'
+       && inverted.offBg === 'rgb(0, 0, 0)',
+     JSON.stringify(inverted), 'white-on-black inversion');
+  await p.close();
+}
+
 // ------------------------------------ the translator survives a moving DOM --
 // The collector used to memoize once, with no MutationObserver: every
 // JS-injected sentence — announceCount, the lightbox caption, the whole
@@ -2188,6 +2285,59 @@ await page.waitForTimeout(200);
      { payloadsFired: r.executed, dialogs: fired.length, elementsCreated: r.elements },
      'zero of each');
   ok('the CRM renders hostile data without throwing', errs.length === 0, errs, 'no JS errors');
+  await p.close();
+}
+
+// ----------------------------------------- the source badge learns to read --
+// After the campaign-tag work, `source` carries real attribution — and the
+// badge classified all of it as "האתר". Now it names the channel. Two safety
+// rules under test: the class comes from a FIXED key set (never lead data),
+// and host matching is suffix-anchored — instagram.com.evil.example must not
+// wear the Instagram badge.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await p.route('**/auth/v1/token**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ access_token: 'fake.jwt.token', refresh_token: 'r', expires_in: 3600,
+                           token_type: 'bearer', user: { id: 'u1', email: 't@example.com' } }),
+  }));
+  const mk = (i, source) => ({
+    id: `00000000-0000-0000-0000-00000000000${i}`,
+    created_at: '2026-08-02T10:00:00Z', name: 'בדיקה ' + i, phone: '0521234567',
+    event_type: 'wedding', status: 'new', source,
+  });
+  await p.route('**/rest/v1/leads**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify([
+      mk(1, 'source=instagram · medium=cpc · campaign=spring · /cost.html'),
+      mk(2, 'l.instagram.com · /'),
+      mk(3, '/index.html'),
+      mk(4, 'google-ads'),
+      mk(5, 'instagram.com.evil.example · /'),
+    ]),
+  }));
+  await p.goto(BASE + '/admin.html', { waitUntil: 'load' });
+  await p.waitForTimeout(700);
+  await p.fill('input[type=email]', 't@example.com').catch(() => {});
+  await p.fill('input[type=password]', 'whatever').catch(() => {});
+  await p.locator('button[type=submit]').first().click().catch(() => {});
+  await p.waitForTimeout(1800);
+
+  const badges = await p.evaluate(() =>
+    [...document.querySelectorAll('.crm-card__badge--src')].map((n) => ({
+      label: n.textContent, cls: n.className,
+    })));
+  ok('each channel wears its own name',
+     badges.length === 5
+       && badges[0].label === 'Instagram' && badges[1].label === 'Instagram'
+       && badges[2].label === 'ישיר' && badges[3].label === 'Google Ads',
+     JSON.stringify(badges.map((b) => b.label)), 'Instagram, Instagram, ישיר, Google Ads, …');
+  ok('a lookalike host earns no Instagram badge and no unfixed class',
+     badges[4].label !== 'Instagram' && !badges[4].cls.includes('--src-instagram')
+       && /--src-(other|direct)\b/.test(badges[4].cls),
+     JSON.stringify(badges[4]), 'other/direct');
+  ok('the campaign row surfaces the parsed utm campaign',
+     await p.evaluate(() => document.body.textContent.includes('spring')), true, true);
   await p.close();
 }
 

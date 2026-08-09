@@ -198,7 +198,11 @@
         misses.push({ h: t.hash, s: norm(t.he) });
       });
       if (cachedAny) applyTo(all, fromCache);
-      if (!misses.length) { if (done) done(); return; }
+      /* done(applied): whether at least one string in this batch was ever
+         written in the requested language. The full pass uses it to decide
+         a failed switch must be UNDONE, not merely un-announced. */
+      if (!misses.length) { if (done) done(true); return; }
+      var applied = cachedAny;
       fetch(ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -208,14 +212,15 @@
         return res.json();
       }).then(function (data) {
         var t = data && data.t ? data.t : {};
-        Object.keys(t).forEach(function (h) { cache[h] = t[h]; });
+        var keys = Object.keys(t);
+        keys.forEach(function (h) { cache[h] = t[h]; });
         /* A visitor can switch languages while a batch is in flight; only
            the CURRENT language may write, the rest just warmed the cache. */
-        if (current === code) applyTo(all, t);
+        if (current === code && keys.length) { applyTo(all, t); applied = true; }
       })['catch'](function () {
         /* Deliberately silent to the visitor. The page is still the Hebrew
            they could already read; an error banner would be noise. */
-      }).then(function () { if (done) done(); });
+      }).then(function () { if (done) done(applied); });
     });
   }
 
@@ -237,9 +242,30 @@
 
     inflight = true;
     document.documentElement.setAttribute('data-translating', '');
-    translateList(code, list, function () {
+    translateList(code, list, function (applied) {
       inflight = false;
       document.documentElement.removeAttribute('data-translating');
+      /* A switch that produced NOTHING is undone entirely, still silently.
+         The click committed four statements before the network answered —
+         lang, dir, the pressed button, and localStorage — and on failure
+         the visitor was left on a document claiming lang="en" over Hebrew
+         glyphs (a screen reader speaks Hebrew in an English voice), with
+         the failure PERSISTED so every next load repeated it. Guards, in
+         order: only the initiating full pass reverts (the observer's late
+         incremental flushes must never yank a translated page back);
+         only when no string of this language has ever applied (the dict
+         stays empty on total failure); and only if the visitor has not
+         switched again mid-flight. */
+      if (!applied
+          && Object.keys(dict[code] || {}).length === 0
+          && current === code) {
+        current = 'he';
+        document.documentElement.setAttribute('lang', 'he');
+        document.documentElement.setAttribute('dir', 'rtl');
+        paint('he');
+        toHebrew();
+        try { localStorage.removeItem(STORE); } catch (e) { /* private mode */ }
+      }
     });
     startObserver();
   }
