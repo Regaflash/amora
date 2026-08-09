@@ -515,6 +515,83 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ----------------------------------------------- the lead form, sharpened --
+// LF1: the "(חובה)" marker moves with the requirement — it used to stay on
+// the greyed, disabled date field. LF2: a filled field validates on leaving
+// it, an empty tabbed-through field is never blamed, and only the blurred
+// field lights up. LF3: a failed submit speaks once through the role=alert
+// panel — the per-field spans are silent to AT until visited.
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+
+  const reqSel = '[data-field="date"]';
+  const markOf = () => p.evaluate((sel) => {
+    const f = document.querySelector(sel).closest('.field').querySelector('.field__req');
+    return { hidden: f.hidden, required: document.querySelector(sel).getAttribute('aria-required') };
+  }, reqSel);
+  let m = await markOf();
+  ok('the date field starts required, marker showing',
+     !m.hidden && m.required === 'true', JSON.stringify(m), 'showing+true');
+  await p.locator('[data-date-tbd]').check();
+  await p.waitForTimeout(200);
+  m = await markOf();
+  ok('ticking the hatch retires the marker with the requirement',
+     m.hidden && m.required === 'false', JSON.stringify(m), 'hidden+false');
+  await p.locator('[data-date-tbd]').uncheck();
+  await p.waitForTimeout(200);
+  m = await markOf();
+  ok('unticking restores both', !m.hidden && m.required === 'true', JSON.stringify(m), 'showing+true');
+  ok('no visible requirement marker sits on a non-required control',
+     await p.evaluate(() => [...document.querySelectorAll('[data-form] .field')]
+       .every((f) => {
+         const req = f.querySelector('.field__req');
+         const ctl = f.querySelector('.field__control');
+         if (!req || !ctl) return true;
+         return req.hidden || ctl.getAttribute('aria-required') === 'true';
+       })), true, true);
+
+  await p.locator('[data-field="phone"]').fill('12');
+  await p.locator('[data-field="name"]').focus();   // blur the phone
+  await p.waitForTimeout(200);
+  ok('a bad filled phone is called out on leaving the field',
+     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent.length > 0
+       && document.querySelector('[data-field="phone"]').getAttribute('aria-invalid') === 'true'),
+     true, true);
+  await p.locator('[data-field="phone"]').fill('0521234567');
+  await p.locator('[data-field="name"]').focus();
+  await p.waitForTimeout(200);
+  ok('a corrected phone clears on the next blur',
+     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent === ''
+       && !document.querySelector('[data-field="phone"]').hasAttribute('aria-invalid')),
+     true, true);
+  await p.locator('[data-field="email"]').focus();   // blur empty name
+  await p.waitForTimeout(200);
+  ok('an empty tabbed-through field is never blamed',
+     await p.evaluate(() => document.querySelector('[data-error="name"]').textContent === ''
+       && !document.querySelector('[data-field="name"]').hasAttribute('aria-invalid')),
+     true, true);
+
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(500);
+  ok('a failed submit speaks once through the alert panel',
+     await p.evaluate(() => {
+       const f = document.querySelector('[data-form-failure]');
+       return !f.hidden && f.textContent.length > 0 && f.getAttribute('role') === 'alert';
+     }), true, true);
+  ok('and focus still lands on the first invalid field, not the panel',
+     await p.evaluate(() => document.activeElement === document.querySelector('[data-field="name"]')),
+     true, true);
+  await p.locator('[data-field="name"]').pressSequentially('א');
+  await p.waitForTimeout(200);
+  ok('one keystroke hides the headline again',
+     await p.evaluate(() => document.querySelector('[data-form-failure]').hidden), true, true);
+  await p.close();
+}
+
 // ------------------------------------------------- the phone's own traps --
 // Three WebKit behaviors a desktop harness never surfaces, fixed and pinned:
 // sub-16px inputs make Safari zoom the page on focus (and never zoom back);

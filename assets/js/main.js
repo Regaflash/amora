@@ -1553,6 +1553,15 @@
       var tbd = dateTbd.checked;
       dateInput.disabled = tbd;
       dateInput.setAttribute('aria-required', String(!tbd));
+      // The visible "(חובה)" moves with the requirement. It used to stay: the
+      // greyed, disabled field kept telling the eye "mandatory" while AT was
+      // told optional — the same two-audiences split the aria-required line
+      // above exists to prevent, running in the opposite direction. The
+      // marker is aria-hidden, so this is purely visual and cannot
+      // double-announce.
+      var reqMark = dateInput.closest('.field');
+      reqMark = reqMark && reqMark.querySelector('.field__req');
+      if (reqMark) reqMark.hidden = tbd;
       if (tbd) {
         dateInput.value = '';
         showError('date', '');
@@ -1629,22 +1638,20 @@
       return errors;
     }
 
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (sending) return;
-
-      // Read through a helper. Every one of these eight reads dereferenced a
-      // node with no null guard, after preventDefault() had already suppressed
-      // the native submit — so deleting any one question from the contact
-      // section turned שלחו into a silently dead button: no error text, no
-      // failure panel, no navigation, and the label never even reaching
-      // "שולחים…". Both tools/check.sh and tools/verify.mjs pass green on it.
+    // Read through a helper. Every one of these eight reads dereferenced a
+    // node with no null guard, after preventDefault() had already suppressed
+    // the native submit — so deleting any one question from the contact
+    // section turned שלחו into a silently dead button: no error text, no
+    // failure panel, no navigation, and the label never even reaching
+    // "שולחים…". Hoisted out of the submit handler so blur-time validation
+    // below reads through the SAME code — one source of truth, no second
+    // rule set to drift.
+    function readValues() {
       function val(name) {
         var el = $('[data-field="' + name + '"]', form);
         return el ? el.value : '';
       }
-
-      var values = {
+      return {
         name: val('name'),
         phone: val('phone'),
         email: val('email'),
@@ -1654,11 +1661,35 @@
         area: val('area'),
         coverage: val('coverage'),
         // Honeypot. If the field is ever removed this reads '' and the bot
-        // filter below simply stops filtering, which is the safe direction: it
+        // filter simply stops filtering, which is the safe direction: it
         // must never block a real submission.
         company: val('company'),
         dateTbd: Boolean(dateTbd && dateTbd.checked)
       };
+    }
+
+    // A malformed phone number used to be reported only after all six
+    // controls were filled and שלחו was pressed — and that regex has already
+    // bounced a real lead once. Validate on leaving a field, but ONLY a
+    // field the visitor actually filled: an empty field they merely tabbed
+    // through is never blamed, and only the blurred field lights up — a blur
+    // must not shame the questions ahead of it. focusout, because blur does
+    // not bubble. The select and the checkbox stay out: an unopened select
+    // has no typed state to judge.
+    var EAGER_FIELDS = ['name', 'phone', 'email', 'date'];
+    form.addEventListener('focusout', function (e) {
+      var name = e.target && e.target.dataset ? e.target.dataset.field : null;
+      if (!name || EAGER_FIELDS.indexOf(name) < 0) return;
+      if (!e.target.value || !e.target.value.trim()) return;
+      var errors = validate(readValues());
+      showError(name, errors[name] || '');
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (sending) return;
+
+      var values = readValues();
 
       // Honeypot: a filled hidden field means a bot — drop it silently.
       if (values.company) return;
@@ -1669,15 +1700,22 @@
       });
       var badKeys = Object.keys(errors);
       if (badKeys.length) {
-        // If the question that failed has been removed from the markup, its
-        // [data-error] span went with it (they share the .field label), so
-        // showError() had nowhere to write and there is no [aria-invalid] node
-        // to focus. Say it in the failure panel rather than dying quietly —
-        // without this, guarding the reads above only converts a loud crash
-        // into a silent one.
-        if (!$('[data-error="' + badKeys[0] + '"]', form) && failure) {
+        // Announce the failure once, through the panel that is already
+        // role="alert". The per-field spans are not live regions, so errors
+        // 2..N were silent until each field was visited — and focusing an
+        // ALREADY-focused control (Enter with the caret still sitting in the
+        // bad field) announced nothing at all. The spans keep the detail;
+        // this is the headline. textContent assignment also discards any
+        // WhatsApp anchor a previous network failure appended, and any
+        // keystroke hides the panel again via the clearing handlers above.
+        // This unconditional write also covers the older degenerate case —
+        // a failing field whose [data-error] span was removed from the
+        // markup — which used to be the only time this panel spoke here.
+        if (failure) {
           failure.hidden = false;
-          failure.textContent = errors[badKeys[0]];
+          failure.textContent = badKeys.length === 1
+            ? 'יש שדה אחד שצריך תיקון — ' + errors[badKeys[0]]
+            : 'יש ' + badKeys.length + ' שדות שצריכים תיקון לפני השליחה';
         }
         var firstBad = $('[aria-invalid="true"]', form);
         if (firstBad) firstBad.focus();
@@ -1696,7 +1734,7 @@
         values.message ? 'הודעה: ' + values.message : ''
       ].filter(Boolean).join('\n');
 
-      failure.hidden = true;
+      if (failure) failure.hidden = true;
       sending = true;
       submitBtn.classList.add('is-sending');
       submitBtn.textContent = 'שולחים…';
