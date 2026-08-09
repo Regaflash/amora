@@ -515,6 +515,103 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ------------------------------------------- a failed switch is fully undone --
+// The click commits four statements before the network answers: lang, dir,
+// the pressed button, localStorage. On total failure the visitor was left on
+// lang="en" over Hebrew glyphs — a screen reader speaking Hebrew in an
+// English voice — with the failure PERSISTED for every next load. Now the
+// whole promise is withdrawn, still silently; and a LATE incremental failure
+// after a successful switch must never yank the page back.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.route('**/functions/v1/translate', (route) => route.abort('failed'));
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(1500);
+  ok('a dead endpoint withdraws the whole promise, silently',
+     await p.evaluate(() => document.documentElement.getAttribute('lang') === 'he'
+       && document.documentElement.dir === 'rtl'
+       && document.querySelector('.lang__btn[data-lang="en"]').getAttribute('aria-pressed') === 'false'
+       && document.querySelector('.lang__btn[data-lang="he"]').getAttribute('aria-pressed') === 'true'
+       && !document.documentElement.hasAttribute('data-translating')
+       && localStorage.getItem('amora.lang') === null), true, true);
+
+  // The failed attempt must leave no poisoned state: rerouted to a working
+  // stub, the SAME page switches successfully.
+  await p.unroute('**/functions/v1/translate');
+  await p.route('**/functions/v1/translate', async (route) => {
+    const body = route.request().postDataJSON();
+    const t = {};
+    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    await route.fulfill({ json: { t } });
+  });
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(1500);
+  ok('the retry succeeds — no poisoned state survived the failure',
+     await p.evaluate(() => document.querySelector('h1').textContent.includes('«')
+       && document.documentElement.dir === 'ltr'), true, true);
+
+  // The guard that matters: a LATE incremental failure never reverts.
+  await p.unroute('**/functions/v1/translate');
+  await p.route('**/functions/v1/translate', (route) => route.abort('failed'));
+  await p.locator('.chip[data-filter="prep"]').click();
+  await p.waitForTimeout(1400);
+  ok('a late incremental failure leaves the translated page alone',
+     await p.evaluate(() => document.querySelector('h1').textContent.includes('«')
+       && document.documentElement.dir === 'ltr'
+       && document.documentElement.getAttribute('lang') === 'en'), true, true);
+  await p.close();
+}
+
+// -------------------------------------- the switch indicator earns its keep --
+// The in-flight cue used to DIM the pressed button below its unpressed
+// siblings; now it stays at full opacity and wears a static underline bar.
+// And in contrast mode the pressed language inverts — the champagne ground
+// the sweep blanks was the only state indicator.
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  await p.route('**/functions/v1/translate', async (route) => {
+    await gate;   // hold the request so the in-flight state is observable
+    const body = route.request().postDataJSON();
+    const t = {};
+    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    await route.fulfill({ json: { t } });
+  });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('.nav .lang__btn[data-lang="en"]').click();
+  await p.waitForTimeout(700);
+  ok('while translating, the choice reads chosen — full opacity plus a bar',
+     await p.evaluate(() => {
+       const b = document.querySelector('.lang__btn[data-lang="en"]');
+       const after = getComputedStyle(b, '::after');
+       return document.documentElement.hasAttribute('data-translating')
+         && getComputedStyle(b).opacity === '1'
+         && after.content === '""' && parseFloat(after.height) >= 2;
+     }), true, true);
+  release();
+  await p.waitForTimeout(900);
+  // The button transitions `background 200ms`, so the class flip must be
+  // given time to settle before computed colors are judged — a synchronous
+  // read sees the champagne mid-transition and lies.
+  await p.evaluate(() => document.documentElement.classList.add('a11y-contrast'));
+  await p.waitForTimeout(400);
+  const inverted = await p.evaluate(() => {
+    const on = getComputedStyle(document.querySelector('.lang__btn[aria-pressed="true"]'));
+    const off = getComputedStyle(document.querySelector('.lang__btn[aria-pressed="false"]'));
+    return { onBg: on.backgroundColor, onInk: on.color, offBg: off.backgroundColor };
+  });
+  await p.evaluate(() => document.documentElement.classList.remove('a11y-contrast'));
+  ok('the pressed language survives contrast mode inverted',
+     inverted.onBg === 'rgb(255, 255, 255)' && inverted.onInk === 'rgb(0, 0, 0)'
+       && inverted.offBg === 'rgb(0, 0, 0)',
+     JSON.stringify(inverted), 'white-on-black inversion');
+  await p.close();
+}
+
 // ------------------------------------ the translator survives a moving DOM --
 // The collector used to memoize once, with no MutationObserver: every
 // JS-injected sentence — announceCount, the lightbox caption, the whole

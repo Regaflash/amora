@@ -547,6 +547,15 @@ html.a11y-contrast .a11y-ui .a11y-item[aria-pressed="true"] {
   color: var(--a11y-on-accent) !important;
   border-color: var(--a11y-accent) !important;
 }
+/* Site chrome, not widget UI, but the same defect this block fixes for the
+   widget's own toggles: the body * sweep blanks the language switcher's
+   champagne pressed ground, leaving opacity alone (~1.6:1) to mark which
+   language is active — under the 3:1 non-text floor. Same repair, inverted
+   ink. */
+html.a11y-contrast .lang__btn[aria-pressed="true"] {
+  background-color: #FFF !important;
+  color: #000 !important;
+}
 html.a11y-contrast .a11y-ui .a11y-item__state { border-color: currentColor !important; }
 html.a11y-contrast .a11y-ui .a11y-link { color: var(--a11y-accent) !important; }
 html.a11y-contrast .a11y-ui .a11y-step { border-color: var(--a11y-accent) !important; }
