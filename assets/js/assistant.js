@@ -19,10 +19,12 @@
 
     // --- Tier 2 (optional) -------------------------------------------------
     // The anon key is public by design — the Edge Function holds the Anthropic
-    // key server-side and the browser never sees it. Leave remoteEnabled false
-    // until supabase/functions/assistant is actually deployed; tier 1 is a
-    // complete feature on its own.
-    remoteEnabled: false,
+    // key server-side and the browser never sees it. Tier 2 stays off until a
+    // page opts in by setting window.AMORA_ASSISTANT_REMOTE = true BEFORE this
+    // script runs (an inline flag, no markup change here) — remoteReady()
+    // reads the flag live. It is a window global rather than a CONFIG boolean
+    // so verify.mjs can drive the whole tier-2 path against a stubbed
+    // endpoint; tier 1 is a complete feature on its own.
     supabaseUrl: 'https://dkejuaildigikufrdiru.supabase.co',
     supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrZWp1YWlsZGlnaWt1ZnJkaXJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0ODkxODgsImV4cCI6MjEwMTA2NTE4OH0.rN244HfLzw7iI2J9uF9lmRoW96aMAN117fVWvlCDWLE',
     assistantPath: '/functions/v1/assistant',
@@ -304,11 +306,48 @@
   }
 
   // Pre-normalise the keyword lists once, so matching is a plain substring test.
-  var i, j;
+  //
+  // Substring matching already absorbs most Hebrew morphology for free: a
+  // prefixed occurrence (והמחיר, לחבילה) and a ־ים plural (אלבומים ⊃ אלבומ)
+  // both CONTAIN the key. The one inflection it cannot absorb is a key ending
+  // in ה whose surface form swaps that ה away — חבילה never appears inside
+  // חבילת or חבילות. So every key ending in ה (and long enough that the stem
+  // is ≥4 chars) also contributes its stem, scored one below the full key so
+  // an exact match always outranks its own stem.
+  //
+  // Build-time conflict guard: a stem that lives inside ANOTHER entry's key
+  // would steal that entry's questions — 'מצלמ' (from 'מצלמה') sits inside
+  // both 'מי מצלם' and 'מצלמים אירועים', and would have sent every
+  // "אתם מצלמים…" question to the gear answer. Such stems are dropped here,
+  // once, rather than argued with at match time.
+  //
+  // One stem the guard cannot see: 'אמור', from the studio's own name אמורה,
+  // is also the everyday אמורים/אמורה ("supposed to") — a visitor asking
+  // "מתי אמורים לקבל תמונות" must not be answered with who we are. Vetoed by
+  // name; simulated, not guessed.
+  var STEM_VETO = { 'אמור': true };
+  var i, j, m, n2;
   for (i = 0; i < KB.length; i++) {
     KB[i].nkeys = [];
+    KB[i].nstems = [];
     for (j = 0; j < KB[i].keys.length; j++) {
       KB[i].nkeys.push(normalise(KB[i].keys[j]).slice(1, -1));
+    }
+  }
+  for (i = 0; i < KB.length; i++) {
+    for (j = 0; j < KB[i].nkeys.length; j++) {
+      var nk = KB[i].nkeys[j];
+      if (nk.length < 5 || nk.charAt(nk.length - 1) !== 'ה') continue;
+      var stem = nk.slice(0, -1);
+      if (STEM_VETO[stem]) continue;
+      var stolen = false;
+      for (m = 0; m < KB.length && !stolen; m++) {
+        if (m === i) continue;
+        for (n2 = 0; n2 < KB[m].nkeys.length; n2++) {
+          if (KB[m].nkeys[n2].indexOf(stem) !== -1) { stolen = true; break; }
+        }
+      }
+      if (!stolen) KB[i].nstems.push(stem);
     }
   }
 
@@ -331,6 +370,12 @@
         var key = KB[k].nkeys[n];
         if (key && text.indexOf(key) !== -1 && key.length > score) score = key.length;
       }
+      // The stem's score IS its length — one under the full key, so the
+      // penalty for an inflected match is built into the arithmetic.
+      for (n = 0; n < KB[k].nstems.length; n++) {
+        var st = KB[k].nstems[n];
+        if (text.indexOf(st) !== -1 && st.length > score) score = st.length;
+      }
       if (score > bestScore) { bestScore = score; best = KB[k]; }
     }
     return { entry: best, score: bestScore };
@@ -341,7 +386,7 @@
   var remoteDown = false;   // one hard failure and we stop trying this visit
 
   function remoteReady() {
-    return CONFIG.remoteEnabled && !remoteDown &&
+    return window.AMORA_ASSISTANT_REMOTE === true && !remoteDown &&
            Boolean(CONFIG.supabaseUrl) && Boolean(CONFIG.supabaseKey) &&
            typeof window.fetch === 'function' && typeof AbortController === 'function';
   }
@@ -799,10 +844,19 @@
     return out;
   }
 
-  /** Only the full-screen sheet locks the page behind it, and it hands the lock
-   *  back only if neither of main.js's own dialogs is holding it — otherwise
-   *  closing the assistant would unlock the page under an open menu. */
+  /** Only the full-screen sheet locks the page behind it. The lock itself
+   *  lives in main.js (window.AMORA_LOCK): one owner set shared by the menu,
+   *  the lightbox and this sheet, position:fixed because iOS Safari scrolls
+   *  straight through overflow:hidden. Naming an owner means closing the
+   *  assistant under another open dialog releases nothing — the coordination
+   *  the old three-way DOM peeking approximated, now done by counting.
+   *  The fallback keeps the sheet usable on a page that carries this file
+   *  without main.js — none ships today, but that is the house guard. */
   function lockScroll(on) {
+    if (typeof window.AMORA_LOCK === 'function') {
+      window.AMORA_LOCK('assistant', on);
+      return;
+    }
     var menu = document.getElementById('mobile-menu');
     var lightbox = document.querySelector('[data-lightbox]');
     if (on) {

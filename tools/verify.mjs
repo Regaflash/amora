@@ -1684,6 +1684,13 @@ await page.waitForTimeout(200);
     ['"יש ווטסאפ" reaches the contact card', 'יש ווטסאפ?', '050-3662699', null],
     ['a couple with no date meets the hatch, not the fallback', 'עוד לא קבענו תאריך, אפשר לדבר?', 'גם בלי תאריך', 'אין לי תשובה'],
     ['"כמה שעות" is about our day, not the delivery clock', 'כמה שעות אתם איתנו ביום החתונה?', 'מספר השעות', 'תוך 7 ימים'],
+    // The stem pass: a key ending in ה also answers its ־ת and ־ות forms.
+    ['a construct form (פגישת) still reaches the process', 'אפשר לקבוע פגישת היכרות?', 'שיחת היכרות', null],
+    ['a feminine plural (משפחתיות) still finds the people answer', 'אפשר גם תמונות משפחתיות?', 'הפורטרטים', null],
+    // And its two guards: the dropped stem ('מצלמ' from מצלמה) and the vetoed
+    // one ('אמור' from אמורה) must keep NOT matching.
+    ['a question no entry owns still falls to a human', 'אתם מצלמים בשבת?', 'אין לי תשובה', null],
+    ['the vetoed stem stays vetoed: אמורים is not about us', 'מתי אמורים לקבל את התמונות?', 'אין לי תשובה', null],
   ];
   for (const [name, q, want, refuse] of table) {
     const last = await askLast(q);
@@ -1733,6 +1740,160 @@ await page.waitForTimeout(200);
      (await np.locator('.am-action', { hasText: 'מה משפיע על המחיר' }).count()) === 0
        && (await np.locator('.am-msg--bot .am-bubble').count()) > 0,
      'present', 'absent');
+  await ctx.close();
+}
+
+// ---------------------------------------------------- tier 2, behind its seam --
+// remoteReady() reads window.AMORA_ASSISTANT_REMOTE live — a page-set flag,
+// default off — precisely so this suite can drive the whole tier-2 path
+// against a stub. Four sides to hold: off means no network at all; on means
+// an unanswerable question reaches the stub and its reply renders (control
+// characters stripped); a confident local answer never consults the network
+// even with the flag up; and one 5xx marks the backend down for the visit.
+{
+  const OFF_KB = 'איזה יין אתם ממליצים להגיש?';
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  let calls = 0;
+  await np.route('**/functions/v1/assistant', (route) => {
+    calls++;
+    route.fulfill({ status: 200, contentType: 'application/json',
+                    body: JSON.stringify({ reply: 'תשובה מהענן' }) });
+  });
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(900);
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(400);
+  const askLast = async (q) => {
+    await np.locator('.am-form__input').fill(q);
+    await np.locator('.am-form__send').click();
+    await np.waitForTimeout(800);
+    const all = await np.locator('.am-msg--bot .am-bubble').allTextContents();
+    return all[all.length - 1] || '';
+  };
+  const offAnswer = await askLast(OFF_KB);
+  ok('without the flag, tier 2 does not exist: fallback, zero requests',
+     offAnswer.includes('אין לי תשובה') && calls === 0,
+     JSON.stringify({ calls, head: offAnswer.slice(0, 25) }), '{calls:0, the fallback}');
+  await ctx.close();
+
+  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const p2 = await ctx2.newPage();
+  await p2.addInitScript(() => { window.AMORA_ASSISTANT_REMOTE = true; });
+  let calls2 = 0;
+  let status = 200;
+  await p2.route('**/functions/v1/assistant', (route) => {
+    calls2++;
+    if (status !== 200) { route.fulfill({ status, body: '' }); return; }
+    route.fulfill({ status: 200, contentType: 'application/json',
+                    body: JSON.stringify({ reply: 'תשובה מהענן' }) });
+  });
+  await p2.goto(BASE + '/', { waitUntil: 'load' });
+  await p2.waitForTimeout(900);
+  await p2.locator('.am-launcher').click();
+  await p2.waitForTimeout(400);
+  const ask2 = async (q) => {
+    await p2.locator('.am-form__input').fill(q);
+    await p2.locator('.am-form__send').click();
+    await p2.waitForTimeout(800);
+    const all = await p2.locator('.am-msg--bot .am-bubble').allTextContents();
+    return all[all.length - 1] || '';
+  };
+  const remote = await ask2(OFF_KB);
+  ok('with the flag, the stubbed reply renders — control characters stripped',
+     remote === 'תשובה מהענן' && calls2 === 1,
+     JSON.stringify({ calls: calls2, remote }), '{calls:1, "תשובה מהענן"}');
+  const strong = await ask2('מה המחיר?');
+  ok('a confident local answer never consults the network, flag or no flag',
+     strong.includes('אין לנו מחירון') && calls2 === 1,
+     JSON.stringify({ calls: calls2 }), '{calls:1}');
+  status = 500;
+  const failed = await ask2(OFF_KB);
+  await ask2(OFF_KB);
+  ok('one 5xx marks the backend down for the visit — no second try',
+     failed.includes('אין לי תשובה') && calls2 === 2,
+     JSON.stringify({ calls: calls2 }), '{calls:2 — the 500, then silence}');
+  await ctx2.close();
+}
+
+// ------------------------------------------------------- the scroll lock, iOS --
+// overflow:hidden was the old lock and iOS Safari scrolls straight through
+// it. The new one (main.js holdScroll) pins the body position:fixed at minus
+// the scroll position, counts its owners by name, and hands the exact
+// position back on the last release — with scroll-behavior forced to auto
+// for the restore, so html's smooth scrolling cannot paint it as a glide.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  await np.waitForTimeout(600);
+  await np.evaluate(() => document.querySelector('#gallery').scrollIntoView());
+  await np.waitForTimeout(300);
+  const yBefore = await np.evaluate(() => window.scrollY);
+  await np.locator('.masonry__btn').first().click();
+  await np.waitForTimeout(500);
+  const held = await np.evaluate(() => ({
+    cls: document.body.classList.contains('is-locked'),
+    top: parseFloat(document.body.style.top || '0'),
+  }));
+  ok('an open photo pins the body at the visitor\'s scroll position',
+     held.cls && Math.abs(held.top + yBefore) <= 1,
+     JSON.stringify({ held, yBefore: Math.round(yBefore) }), 'is-locked, top = -scrollY');
+  await np.keyboard.press('Escape');
+  await np.waitForTimeout(400);
+  const freed = await np.evaluate(() => ({
+    cls: document.body.classList.contains('is-locked'), y: window.scrollY,
+  }));
+  ok('closing hands the exact scroll position back, instantly',
+     !freed.cls && Math.abs(freed.y - yBefore) <= 1,
+     JSON.stringify({ freed, yBefore: Math.round(yBefore) }), 'unlocked at the same y');
+
+  await np.locator('[data-menu-toggle]').click();
+  await np.waitForTimeout(400);
+  const menuHeld = await np.evaluate(() => document.body.classList.contains('is-locked'));
+  await np.locator('[data-menu-close]').click();
+  await np.waitForTimeout(400);
+  const menuFreed = await np.evaluate(() => !document.body.classList.contains('is-locked'));
+  ok('the menu holds and releases the same lock', menuHeld && menuFreed, { menuHeld, menuFreed }, 'both true');
+
+  await np.locator('.am-launcher').click();
+  await np.waitForTimeout(500);
+  const sheetHeld = await np.evaluate(() => document.body.classList.contains('is-locked'));
+  await np.keyboard.press('Escape');
+  await np.waitForTimeout(400);
+  const sheetFreed = await np.evaluate(() => !document.body.classList.contains('is-locked'));
+  ok('the assistant\'s phone sheet is the third holder', sheetHeld && sheetFreed, { sheetHeld, sheetFreed }, 'both true');
+
+  const coord = await np.evaluate(() => {
+    window.AMORA_LOCK('a', true);
+    window.AMORA_LOCK('b', true);
+    window.AMORA_LOCK('a', false);
+    const still = document.body.classList.contains('is-locked');
+    window.AMORA_LOCK('b', false);
+    return { still, freed: !document.body.classList.contains('is-locked') };
+  });
+  ok('the lock counts owners: first release frees nothing, last frees all',
+     coord.still && coord.freed, coord, '{still:true, freed:true}');
+  await ctx.close();
+}
+// A deep-linked photo scrolls the gallery into view BEFORE the lock pins the
+// page — instantly, because a lock taken mid-glide would pin the page
+// wherever the smooth scroll happened to be. Closing must land the visitor
+// at the gallery, not back at the top of a page they never saw.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/#photo-9', { waitUntil: 'load' });
+  await np.waitForTimeout(800);
+  await np.keyboard.press('Escape');
+  await np.waitForTimeout(400);
+  const landed = await np.evaluate(() => {
+    const g = document.querySelector('#gallery').getBoundingClientRect();
+    return { y: Math.round(window.scrollY),
+             inView: g.top < window.innerHeight && g.bottom > 0 };
+  });
+  ok('closing a deep-linked photo leaves the visitor at the gallery',
+     landed.y > 0 && landed.inView, landed, '{y>0, inView:true}');
   await ctx.close();
 }
 
