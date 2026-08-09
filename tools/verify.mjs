@@ -515,6 +515,64 @@ await page.waitForTimeout(200);
      }), true, true);
 }
 
+// ----------------------------------------- the direction boots before paint --
+// A returning visitor with a stored LTR language used to get a full Hebrew
+// RTL paint and then a WHOLE-PAGE mirror once deferred i18n.js mounted. A
+// hash-pinned inline head script now pre-sets dir (never lang), with a 4s
+// watchdog restoring RTL if i18n.js never executes.
+{
+  // Normal load with a stored LTR language: dir holds LTR end to end (the
+  // mirror-after-paint is gone), i18n takes ownership, the boot marker goes.
+  // The endpoint must SUCCEED here — an unreachable endpoint now triggers
+  // the full-revert path (by design), which is its own test further down.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.route('**/functions/v1/translate', async (route) => {
+    const body = route.request().postDataJSON();
+    const t = {};
+    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    await route.fulfill({ json: { t } });
+  });
+  await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await p.evaluate(() => localStorage.setItem('amora.lang', 'en'));
+  await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  ok('a stored LTR language holds dir from the first paint',
+     await p.evaluate(() => document.documentElement.dir === 'ltr'), true, true);
+  await p.waitForTimeout(1200);
+  ok('once i18n mounts it takes ownership and disarms the watchdog',
+     await p.evaluate(() => document.documentElement.hasAttribute('data-i18n-ready')
+       && !document.documentElement.hasAttribute('data-lang-boot')
+       && document.documentElement.dir === 'ltr'), true, true);
+  await p.close();
+}
+{
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  ok('no stored choice: the boot script stays silent',
+     await p.evaluate(() => document.documentElement.dir === 'rtl'
+       && !document.documentElement.hasAttribute('data-lang-boot')), true, true);
+  await p.evaluate(() => localStorage.setItem('amora.lang', 'ar'));
+  await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  ok('a stored RTL language needs no pre-set and gets none',
+     await p.evaluate(() => document.documentElement.dir === 'rtl'
+       && !document.documentElement.hasAttribute('data-lang-boot')), true, true);
+  await p.close();
+}
+{
+  // The watchdog: i18n.js never arrives → RTL restored, boot marker gone.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await p.evaluate(() => localStorage.setItem('amora.lang', 'en'));
+  await p.route('**/assets/js/i18n.js', (route) => route.abort('failed'));
+  await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  ok('with i18n dead, the page starts LTR on the stored promise',
+     await p.evaluate(() => document.documentElement.dir === 'ltr'), true, true);
+  await p.waitForTimeout(4800);
+  ok('…and the watchdog hands it back to Hebrew RTL',
+     await p.evaluate(() => document.documentElement.dir === 'rtl'
+       && !document.documentElement.hasAttribute('data-lang-boot')), true, true);
+  await p.close();
+}
+
 // ------------------------------------------- a failed switch is fully undone --
 // The click commits four statements before the network answers: lang, dir,
 // the pressed button, localStorage. On total failure the visitor was left on

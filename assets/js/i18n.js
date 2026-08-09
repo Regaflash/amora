@@ -230,6 +230,7 @@
 
     document.documentElement.setAttribute('lang', code);
     document.documentElement.setAttribute('dir', lang.dir);
+    document.documentElement.removeAttribute('data-lang-boot');
     try { localStorage.setItem(STORE, code); } catch (e) { /* private mode */ }
     paint(code);
     current = code;
@@ -340,6 +341,10 @@
   }
 
   function mount() {
+    // Disarms the head boot script's 4s watchdog: i18n is alive and now owns
+    // dir/lang. The boot pre-set dir for a stored LTR language so the page
+    // did not paint RTL and then mirror; from here translate() decides.
+    document.documentElement.setAttribute('data-i18n-ready', '');
     var nav = document.querySelector('.nav');
     var cta = nav && nav.querySelector('.nav__cta');
     if (cta) nav.insertBefore(build(), cta);
