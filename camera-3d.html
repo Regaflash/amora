@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- The direction boot: a returning visitor with a stored LTR language
+     used to get a full Hebrew-RTL paint and then a WHOLE-PAGE mirror once
+     deferred i18n.js mounted. This pre-sets dir only - never lang, which
+     would hand a screen reader an English voice for Hebrew glyphs - and a
+     4s watchdog restores RTL if i18n.js never executes. Byte-identical on
+     the three i18n pages so one CSP hash covers all; check.sh fails the
+     build if this block and vercel.json ever drift. -->
+<script>try{var l=localStorage.getItem('amora.lang');if(l==='en'||l==='ru'){var d=document.documentElement;d.setAttribute('dir','ltr');d.setAttribute('data-lang-boot',l);setTimeout(function(){if(!d.hasAttribute('data-i18n-ready')){d.setAttribute('dir','rtl');d.removeAttribute('data-lang-boot');}},4000);}}catch(e){}</script>
 <title>Amora Studio | המצלמה שלנו — תלת מימד</title>
 <meta name="description" content="דגם תלת־ממדי של המצלמה שמלווה את Amora Studio — גררו לסיבוב, גלגלו לזום, והורידו ב-OBJ או GLB." />
 <link rel="manifest" href="/site.webmanifest" />

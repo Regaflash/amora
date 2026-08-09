@@ -189,23 +189,35 @@
     return 'בעוד כ־' + Math.round(days / 30) + ' חודשים';
   }
 
-  function relativeArrival(iso) {
+  /* One clock, two sentences: the singular/dual forms live HERE and only
+     here — hand-rolling a second copy is how a "לפני 2 ימים" bug ships. */
+  function relativeCore(iso) {
     var when = new Date(iso);
-    if (isNaN(when.getTime())) return '';
+    if (isNaN(when.getTime())) return null;
     var mins = Math.round((Date.now() - when.getTime()) / 60000);
-    if (mins < 1) return 'התקבלה עכשיו';
-    if (mins === 1) return 'התקבלה לפני דקה';
-    if (mins === 2) return 'התקבלה לפני שתי דקות';
-    if (mins < 60) return 'התקבלה לפני ' + mins + ' דקות';
+    if (mins < 1) return { now: true };
+    if (mins === 1) return { t: 'לפני דקה' };
+    if (mins === 2) return { t: 'לפני שתי דקות' };
+    if (mins < 60) return { t: 'לפני ' + mins + ' דקות' };
     var hours = Math.round(mins / 60);
-    if (hours === 1) return 'התקבלה לפני שעה';
-    if (hours === 2) return 'התקבלה לפני שעתיים';
-    if (hours < 24) return 'התקבלה לפני ' + hours + ' שעות';
+    if (hours === 1) return { t: 'לפני שעה' };
+    if (hours === 2) return { t: 'לפני שעתיים' };
+    if (hours < 24) return { t: 'לפני ' + hours + ' שעות' };
     var days = Math.round(hours / 24);
-    if (days === 1) return 'התקבלה אתמול';
-    if (days === 2) return 'התקבלה לפני יומיים';
-    if (days < 30) return 'התקבלה לפני ' + days + ' ימים';
-    return 'התקבלה ב־' + formatDay(when);
+    if (days === 1) return { t: 'אתמול' };
+    if (days === 2) return { t: 'לפני יומיים' };
+    if (days < 30) return { t: 'לפני ' + days + ' ימים' };
+    return { t: 'ב־' + formatDay(when) };
+  }
+  function relativeArrival(iso) {
+    var r = relativeCore(iso);
+    if (!r) return '';
+    return r.now ? 'התקבלה עכשיו' : 'התקבלה ' + r.t;
+  }
+  function relativeUpdated(iso) {
+    var r = relativeCore(iso);
+    if (!r) return '';
+    return r.now ? 'עודכן עכשיו' : 'עודכן ' + r.t;
   }
 
   /** Digits only, in international form, for tel: and wa.me. Never pass the
@@ -260,6 +272,7 @@
     leads: [],
     total: null,      // exact count from Content-Range, when the header is exposed
     contracts: {},    // lead_id → its newest contract row
+    events: {},       // lead_id → its newest lead_events rows, newest first
     pipelineReady: true,  // false while the DB migration has not run yet
     handled: 'open',
     type: 'all',
@@ -603,6 +616,31 @@
       li.appendChild(quote);
     }
 
+    /* Last touch + history, from lead_events. Leads with no events show
+       nothing extra — no empty timeline shell. detail is admin-written free
+       text and still goes through el()/textContent like every other field. */
+    var evs = state.events[lead.id];
+    if (evs && evs.length) {
+      li.appendChild(el('p', 'crm-card__stamp crm-card__stamp--touch',
+        relativeUpdated(evs[0].created_at)
+          + ' · ' + (EVENT_LABEL[evs[0].type] || evs[0].type)));
+      if (evs.length > 1) {
+        var hist = document.createElement('details');
+        hist.className = 'crm-note crm-history';
+        var histSum = el('summary', 'crm-note__summary', 'היסטוריה (' + evs.length + ')');
+        hist.appendChild(histSum);
+        var histList = el('ul', 'crm-history__list');
+        evs.forEach(function (ev) {
+          histList.appendChild(el('li', 'crm-history__item',
+            (EVENT_LABEL[ev.type] || ev.type)
+              + (ev.detail ? ' — ' + ev.detail : '')
+              + ' · ' + relativeUpdated(ev.created_at)));
+        });
+        hist.appendChild(histList);
+        li.appendChild(hist);
+      }
+    }
+
     // Pipeline: the status select, when the migration has added the column.
     if (state.pipelineReady && 'status' in lead) {
       var statusWrap = el('div', 'crm-card__pipeline');
@@ -746,11 +784,28 @@
     return stored.indexOf(phoneDigits(digits)) !== -1;
   }
 
+  /* Which shelf a lead sits on. The old two-shelf split (handled yes/no)
+     hid the entire LIVE pipeline: choosing "נוצר קשר" — the correct action
+     after the first phone call — set handled and dropped the lead from the
+     default view into the same drawer as the dead deals. Pre-migration rows
+     carry no status at all and keep the old behavior exactly, so the CRM
+     works on both sides of the deploy. */
+  function bucketOf(lead) {
+    var s = lead.status;
+    if (s === 'contacted' || s === 'proposal' || s === 'contract_sent') return 'active';
+    if (s === 'signed' || s === 'lost') return 'closed';
+    if (s === 'new') return 'open';
+    return lead.handled ? 'closed' : 'open';
+  }
+
   function visibleLeads() {
     var query = state.query.trim().toLowerCase();
     var rows = state.leads.filter(function (lead) {
-      if (state.handled === 'open' && lead.handled) return false;
-      if (state.handled === 'done' && !lead.handled) return false;
+      var bucket = bucketOf(lead);
+      if (state.handled === 'open' && bucket !== 'open') return false;
+      if (state.handled === 'active' && bucket !== 'active') return false;
+      /* 'done' is the closed shelf; the value survives as an alias. */
+      if (state.handled === 'done' && bucket !== 'closed') return false;
       if (state.type !== 'all' && (lead.event_type || '') !== state.type) return false;
       return matchesQuery(lead, query);
     });
@@ -784,7 +839,9 @@
     var weekAgo = Date.now() - 7 * 86400000;
 
     state.leads.forEach(function (lead) {
-      if (!lead.handled) open++;
+      // Everything not yet closed is money in motion: a studio with six
+      // live proposals and zero new enquiries used to see 0 here.
+      if (bucketOf(lead) !== 'closed') open++;
       var created = new Date(lead.created_at).getTime();
       if (!isNaN(created) && created >= weekAgo) week++;
       var day = parseDay(lead.event_date);
@@ -890,7 +947,11 @@
     clearSession();
     state.leads = [];
     state.total = null;
+    state.contracts = {};
+    state.events = {};
     lastSignature = null;
+    lastContractsSignature = null;
+    lastEventsSignature = null;
     render();
     showGate(message);
   }
@@ -949,7 +1010,7 @@
         // that would throw away keyboard focus and any text the owner had
         // selected in a lead's message.
         if (!silent || changed) render();
-        return loadContracts(silent);
+        return loadContracts(silent).then(function () { return loadEvents(silent); });
       })
       .catch(function (err) {
         loading = false;
@@ -999,6 +1060,36 @@
         render();
       })
       .catch(function () { /* quiet: see above */ });
+  }
+
+  /* The CRM has been WRITING lead_events since the pipeline shipped —
+     status_changed, contract_created, contract_sent — and never read one
+     back. leads has no updated_at, so this table is the only record of
+     last contact that exists; without it a card can only say when the
+     enquiry ARRIVED. Same failure discipline as loadContracts: one bulk
+     request, silent on error, the lead list never depends on it. */
+  var EVENT_LABEL = { status_changed: 'סטטוס עודכן', contract_created: 'נוצר חוזה',
+                      contract_sent: 'חוזה נשלח' };
+  var lastEventsSignature = null;
+  function loadEvents(silent) {
+    return api('/rest/v1/lead_events' +
+      '?select=lead_id,type,detail,created_at&order=created_at.desc&limit=' + PAGE_LIMIT, {})
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (rows) {
+        if (!Array.isArray(rows)) return;
+        var signature = JSON.stringify(rows);
+        if (signature === lastEventsSignature) return;
+        lastEventsSignature = signature;
+        var map = {};
+        rows.forEach(function (ev) {
+          if (!ev.lead_id) return;
+          var list = map[ev.lead_id] || (map[ev.lead_id] = []);
+          if (list.length < 8) list.push(ev);   // newest first, capped per lead
+        });
+        state.events = map;
+        render();
+      })
+      .catch(function () { /* quiet — see above */ });
   }
 
   /** Timeline entries are nice-to-have; never let one break an action. */

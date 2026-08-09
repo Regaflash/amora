@@ -330,6 +330,10 @@
 .crm-card__status[disabled] { opacity: .55; cursor: wait; }
 
 .crm-note { border: 1px dashed var(--line); border-radius: 2px; padding: 8px 12px; }
+/* The last-touch stamp and its history list (lead_events). */
+.crm-card__stamp--touch { color: var(--mocha); font-size: 13px; }
+.crm-history__list { list-style: none; margin: 8px 0 0; padding: 0; }
+.crm-history__item { font-size: 13px; color: var(--mocha); padding-block: 3px; border-top: 1px solid var(--cream); }
 .crm-note__summary { font-size: 12px; letter-spacing: .08em; color: var(--mocha); cursor: pointer; }
 .crm-note__area {
   display: block;

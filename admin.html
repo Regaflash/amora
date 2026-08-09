@@ -74,7 +74,7 @@
       </li>
       <li class="crm-stat crm-stat--alert">
         <span class="crm-stat__num" data-stat="open">—</span>
-        <span class="crm-stat__label">ממתינות לטיפול</span>
+        <span class="crm-stat__label">פתוחות — חדשות ובטיפול</span>
       </li>
       <li class="crm-stat">
         <span class="crm-stat__num" data-stat="week">—</span>
@@ -109,8 +109,14 @@
       </label>
 
       <div class="crm__chips" role="group" aria-label="סינון לפי סטטוס טיפול">
-        <button class="chip" type="button" data-filter-handled="open" aria-pressed="true">ממתינות</button>
-        <button class="chip" type="button" data-filter-handled="done" aria-pressed="false">טופלו</button>
+        <!-- Four shelves, not two: "נוצר קשר" used to move a lead straight
+             from the default view into the same drawer as the dead deals —
+             the whole LIVE pipeline (contacted/proposal/contract_sent) was
+             invisible unless the owner went digging. "done" keeps its value
+             as an alias for the closed shelf so nothing external breaks. -->
+        <button class="chip" type="button" data-filter-handled="open" aria-pressed="true">חדשות</button>
+        <button class="chip" type="button" data-filter-handled="active" aria-pressed="false">בטיפול</button>
+        <button class="chip" type="button" data-filter-handled="done" aria-pressed="false">נסגרו</button>
         <button class="chip" type="button" data-filter-handled="all" aria-pressed="false">הכול</button>
       </div>
     </div>
