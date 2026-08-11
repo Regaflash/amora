@@ -119,9 +119,24 @@ for (const s of SLOTS) {
         width: cw, height: ch,
       };
     };
-    const cut = () => (s.focusX == null && s.focusY == null)
+    // Output sharpening, and it is not optional at these ratios. The 2026-08-11
+    // sources are 2400px on the long edge and the wall serves them at 500 —
+    // a ~5x downscale, which is a low-pass filter: the resampler averages away
+    // exactly the eyelash and lace detail that reads as "shot on a real
+    // camera". Every stock photo pipeline re-sharpens after resize for this
+    // reason, and the site had no such step, so the new frames were landing
+    // softer than the Instagram-era exports they replaced (those were already
+    // sharpened by Instagram before export).
+    //
+    // m1 is deliberately below sharp's 1.0 default: it governs FLAT areas, and
+    // on wedding portraits the flat areas are skin. Lifting it there sharpens
+    // grain and pores into something that looks like a bad phone HDR. m2 —
+    // jagged areas, i.e. real edges — is left at the default to do the work.
+    const SHARPEN = { sigma: 0.8, m1: 0.4, m2: 2.0 };
+    const cut = () => ((s.focusX == null && s.focusY == null)
       ? sharp(src).resize(w, h, { fit: 'cover', position: sharp.strategy.attention })
-      : sharp(src).extract(win()).resize(w, h, { fit: 'cover' });
+      : sharp(src).extract(win()).resize(w, h, { fit: 'cover' })
+    ).sharpen(SHARPEN);
 
     // JPEG first: it is the fallback every browser can read, and it sets the
     // budget the WebP has to beat. Shipping a WebP that is larger than the
