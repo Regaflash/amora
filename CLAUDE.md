@@ -515,9 +515,51 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the whole team instead of eight blueprint fetches.
 
   **Make's own alerting is not in the API.** `organizations_update` accepts
-  name, country and timezone only. The account-level "Scenario deactivated"
-  and "Incomplete executions" emails are UI-only, under the avatar →
-  Notifications, and they are what would have caught both incidents.
+  name, country and timezone only — verified against the tool schema, and
+  there is no `users_update` tool at all. `keys_list` is empty, so there is no
+  stored API token to give an in-Make watchdog either. The account-level
+  "Scenario deactivated" and "Incomplete executions" emails are UI-only, under
+  the avatar → Notifications, and they are what would have caught both
+  incidents. A registry-wide search for a DLQ/replay/retry tool returns only
+  read tools (`executions_get`, `executions_list`, `executions_get-detail`) —
+  **an incomplete execution cannot be replayed from the API.**
+
+- **The 25.7 lead was recovered without the UI, and the root cause is an
+  invisible character.** Make will not hand back a failed execution's payload,
+  but **Facebook still has the lead** — `facebook-lead-ads:listLeads` reads a
+  form's history directly. The recipe, which took one throwaway scenario and
+  about ten minutes:
+
+  1. `data-structures_create` a flat text spec, then `data-stores_create`
+     against it — the data store is the only sink in Make whose contents an
+     API caller can read back.
+  2. `scenarios_create` with `facebook-lead-ads:listLeads` →
+     `datastore:AddRecord`, scheduling `{"type":"on-demand"}`, then
+     `scenarios_activate` + `scenarios_run`.
+  3. `data-store-records_list` to read it.
+
+  Two traps cost a round trip each. **`AddRecord`'s record fields are nested
+  under `data`** — a flat mapper is silently dropped and writes empty records,
+  which is what a first attempt will look like. And **the lead output field is
+  `leadgenId`, not `id`** (`rpc_execute` on `LeadInterface` gives the real
+  shape; `rpc_execute` on the datastore's `expect` gives the real mapper).
+  `data-store-records_list` caps at 100 with no offset, so clear the store
+  between runs or the first page hides everything new.
+
+  The lead itself: **אליאב כמיסה, +972 54-351-9996, 25.7.2026 09:53:39Z** —
+  four seconds before the execution that failed. Its phone carries a
+  **bidirectional control character between `+972` and the digits**, invisible
+  in every UI, which is exactly why `TransformerParseNumber` rejected it.
+
+  **This matters for the `Resume` guards added the same day.** They strip
+  `+`, `-`, space and parentheses — not invisible control characters. A lead
+  like this one is therefore no longer *lost* (it reaches Origami, which was
+  the point), but its stored number would carry the junk character and the
+  ManyChat branch keyed on it would likely still fail. The guards should be
+  upgraded to strip everything that is not a digit — Make's `replace()` takes
+  a regex, so `replace(...; /[^0-9]/g; "")` collapses the whole chain into one
+  robust expression. **Not yet done: it is one more wholesale blueprint
+  resend per scenario, across all eight.**
 
 - **Meta CAPI: connected and accepted, 5.8.2026.** Origami status changes flow
   through Make `3756300` → `supabase/functions/meta-capi` → Graph API. Four
