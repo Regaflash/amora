@@ -413,6 +413,58 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the visible copy and the copy Google is served could have parted in either
   direction and every check would still have passed. Same lesson as the lead
   alerts below: **a guarantee written here is not a guarantee that runs.**
+- **Facebook lead intake: five of eight pipelines were silently destroying any
+  lead that errored. Found and partly fixed 11.8.2026.** Make team `466598`
+  carries eight ACTIVE `facebook-lead-ads` intake scenarios. The audit that
+  matters is not "is it active" — all eight were — but two settings that no
+  dashboard surfaces:
+
+  - **`blueprint.metadata.scenario.dlq`** ("allow storing of incomplete
+    executions"). With it **false**, a scenario that errors does not queue the
+    lead, does not create an incomplete execution, and leaves `dlqCount` at
+    **0**. The lead is gone, and the scenario looks perfectly healthy. It was
+    `false` on `3838948`, `3707841`, `3838911`, `3838921` and `4294792`.
+  - **an `onerror` guard on `phonenumber:TransformerParseNumber`.** A Facebook
+    lead whose phone field does not parse throws, and in the older pipeline
+    shape the Origami search *and* create both consume `{{4.phone}}`, so the
+    throw takes the whole lead with it. `3707841` carries `builtin:Ignore`
+    there, which is worse than nothing: the bundle is dropped with no error at
+    all.
+
+  **The lead stuck since 25.7 on `4784873` survived only by accident** — that
+  one scenario happened to have `dlq: true`, so its failure was preserved
+  instead of erased. Same bug, opposite outcome, and the difference was a
+  checkbox nobody had looked at.
+
+  **Fixed this session:** `6821619` (Amora) — its phone module's `Ignore`
+  became a `Resume` that normalises the number by hand, so a malformed phone
+  no longer costs the WhatsApp auto-reply. Amora's lead was never at risk:
+  its router runs Origami and HubSpot on branches that do their own inline
+  `replace()` and never touch the phone module. `3838948` (Regaflash, the live
+  08.26 campaign) — `dlq` turned on **and** the `Resume` guard added.
+
+  **Still open, and it is four checkboxes:** `3707841`, `3838911`, `3838921`,
+  `4294792` all remain `dlq: false` with an unguarded phone module. In the UI
+  it is right-click the scenario → Settings → *Allow storing of incomplete
+  executions*. Doing it from here means resending the entire blueprint —
+  `scenarios_update` replaces wholesale, there is no partial patch — and each
+  one is ~23k characters after stripping, so it is a real cost, not a
+  formality.
+
+  Two traps for whoever picks this up. **`scenarios_get` on these returns
+  ~86k characters**, nearly all of it the country enum under
+  `metadata.expect` plus `metadata.designer.samples`; both are UI scaffolding
+  Make regenerates, and stripping them cuts the payload by ~73% without
+  touching behaviour. And **`usedModules` in `scenarios_list` is the cheap
+  audit**: a lead scenario listing `TransformerParseNumber` with no
+  `builtin:Resume` beside it is unguarded, and that check costs one call for
+  the whole team instead of eight blueprint fetches.
+
+  **Make's own alerting is not in the API.** `organizations_update` accepts
+  name, country and timezone only. The account-level "Scenario deactivated"
+  and "Incomplete executions" emails are UI-only, under the avatar →
+  Notifications, and they are what would have caught both incidents.
+
 - **Meta CAPI: connected and accepted, 5.8.2026.** Origami status changes flow
   through Make `3756300` → `supabase/functions/meta-capi` → Graph API. Four
   events were sent against Meta's own CRM verification lead
