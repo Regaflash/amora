@@ -539,6 +539,32 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   would create a second Make scenario feeding the same dataset — double
   counting against a path that already works.
 
+  **That warning is about the PARTNER step, and it must not be read as
+  covering the funnel step.** Events Manager shows the CRM setup card as two
+  lines, and on 11.8.2026 the first one — "חיבור ה-CRM" — was already green,
+  badged "האירועים מופעלים כראוי". That is Meta's own UI confirming the
+  Origami → Make → `meta-capi` → Graph API path is received and healthy,
+  which is stronger evidence than the API replies this file previously rested
+  on. The second line, **"הגדרת משפך המכירות" / Configure your sales funnel,
+  is a mapping made on Meta's side only — it creates no second data path**,
+  and it is precisely what the empty "Used by" column is waiting for: it turns
+  stored events into events a campaign can optimise against. The four stages
+  `meta-capi` already sends — `LeadContacted`, `LeadQualified`,
+  `LeadConverted`, `LeadDisqualified` — are the standard funnel stages, so the
+  mapping is one-to-one.
+
+  The line to hold while clicking through it: **a screen that asks you to map
+  lead stages is the right one; a screen that asks you to pick a CRM partner
+  or connect Zapier/Make is the one to back out of.** The card carries Zapier
+  branding even though our connection is direct, so the branding is not the
+  signal — what the screen asks for is. Doing the mapping changes nothing
+  until an ad set is set to optimise for Conversion Leads, and the campaign is
+  off, so there is no urgency either way.
+
+  `developers.facebook.com` is blocked by this environment's egress proxy, so
+  the integration guide itself cannot be read from here — the distinction
+  above comes from the Events Manager screen, not from the doc.
+
   **Confirmed in the UI the same evening:** all four appear in the dataset,
   active, source "Conversions API", one each, with an activity point at 19:00
   on 5.8 and **zero errors or warnings**. The chain is verified end to end,
