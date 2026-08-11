@@ -443,13 +443,35 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `replace()` and never touch the phone module. `3838948` (Regaflash, the live
   08.26 campaign) — `dlq` turned on **and** the `Resume` guard added.
 
-  **Still open, and it is four checkboxes:** `3707841`, `3838911`, `3838921`,
-  `4294792` all remain `dlq: false` with an unguarded phone module. In the UI
-  it is right-click the scenario → Settings → *Allow storing of incomplete
-  executions*. Doing it from here means resending the entire blueprint —
-  `scenarios_update` replaces wholesale, there is no partial patch — and each
-  one is ~23k characters after stripping, so it is a real cost, not a
-  formality.
+  **All eight are now done.** `3707841`, `3838911`, `3838921` and `4294792`
+  were finished in the same session: `dlq` on and the `Resume` guard added to
+  each. Verified afterwards against a fresh `scenarios_list` — all eight
+  active `facebook-lead-ads` scenarios report `isinvalid: false` with a
+  `Resume` module present — and by re-reading the blueprints of the ones that
+  were edited, which show `dlq: true` and the guard on module 4.
+
+  `scenarios_update` replaces the blueprint wholesale, so each fix meant
+  resending the whole thing. Two things made that affordable and are the
+  reason to write them down. **Strip `metadata.expect` and
+  `metadata.designer.samples` first** — both are UI scaffolding Make
+  regenerates, and they are ~73% of the payload; 86k characters becomes 23k.
+  **Then diff against a blueprint already sent successfully.** These five
+  scenarios are near-clones: `4294792` differed from `3838921` in only the
+  hook id, four TASKEY comment strings and the name, and `3707841` differed
+  by those plus four module ids, two designer coordinates and a missing
+  `email` key. Rebuilding from a verified sibling plus a diff is both cheaper
+  and safer than transcribing a fresh blueprint.
+
+  **One pre-existing bug was found and deliberately NOT touched.** In
+  `3838911` the Origami search looks for `0{{4.phone}}` while its create
+  writes `fld_1509` as `{{4.phone}}`, without the leading zero — so its own
+  dedupe lookup can never match a record it created, and every repeat lead
+  from that form becomes a second contact. Every other pipeline stores the
+  leading zero, so `3838911` is the outlier and its stored numbers do not
+  match the rest of the CRM. Fixing it is a one-token edit, but it changes
+  what lands in Origami and would leave the rows it already wrote
+  inconsistent with the corrected ones, so it needs the owner's call on which
+  convention wins and whether the existing rows get migrated.
 
   Two traps for whoever picks this up. **`scenarios_get` on these returns
   ~86k characters**, nearly all of it the country enum under
