@@ -530,13 +530,48 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   scenario run*, *Scenario deactivation*, *Credit limit reached* — were all
   enabled already. Nothing needed changing.
 
-  **So the alerting gap is not configuration, it is delivery or attention, and
-  that is a different repair.** The proof is `3772899`: Make **auto-deactivated
-  it on 9.8.2026 12:11:23** — with *Scenario deactivation* switched on — and
-  nobody acted for two days. Either the mail is not arriving, is going to an
-  address nobody reads, or is arriving and being missed. Check that before
-  building anything: an alert that fires into a void is indistinguishable from
-  no alert, which is exactly the failure this whole entry is about.
+  **So the alerting gap is not configuration and not delivery — it is
+  attention, and that is the hardest of the three to fix.** `3772899` was
+  auto-deactivated on 9.8.2026 12:11:23; Make's mail
+  (`noreply@eu1.make.com`, subject "🔴 The scenario … has been stopped")
+  **arrived in the inbox the same minute** and was still sitting there
+  unopened two days later, among 1,828 unread. The setting was on, the mail
+  was delivered, and six customer call-reminders still went nowhere. **More
+  email is therefore not the fix.** What would work is a rule that lifts these
+  out of the pile — a Gmail filter on `from:noreply@eu1.make.com` that stars
+  and labels, or routing them to a channel that is not the inbox. Note there
+  is no Gmail *filter*-creation tool in this environment (labels can be
+  created and applied, rules cannot), so that one is the owner's to make.
+
+- **`3772899` — diagnosed and repaired 11.8.2026, deliberately left OFF.**
+  Module 7 (`manychat:PerformAction`) died on
+  `Missing value of required parameter 'value'`. Not a missing mapping: all
+  four actions map a `value`, but the first is
+  `formatDate(parseDate(1.'תאריך ושעת שיחה'; …))`, which returns **empty**
+  when the webhook payload carries no call time or carries it in another
+  format — and ManyChat rejects an empty required value. Three of those in a
+  row tripped `maxErrors: 3` and Make switched the scenario off.
+
+  Fixed three ways: a `Resume` guard on the phone module, `builtin:Ignore` on
+  both `PerformAction` modules and on `CreateSubscriber` so one malformed
+  payload can no longer kill the run, an `exist` filter on the formatted date
+  so an empty one never reaches ManyChat, and `dlq: true`.
+
+  **It is still deactivated on purpose, and this is the interesting part.**
+  Its webhook holds **6 items queued since 9.8**, and the scenario's whole job
+  is to say "your call is in half an hour". Those calls were half an hour
+  after the items queued — i.e. two days ago. Activating drains the queue
+  immediately and sends six people a reminder for a meeting that already
+  happened. **Clear the queue in the UI first, then activate** — there is no
+  API tool to flush a webhook queue (`hooks_*` has create/delete/update/get/
+  list/ping/learn and nothing else).
+
+  This scenario also carries the **first deployment of the digits-only phone
+  normalisation** — `replace(…; /[^0-9]/g; "")` in place of the five nested
+  `replace()` calls. It strips invisible control characters, which the older
+  chain does not. **It has not been exercised yet**, because the scenario has
+  not been allowed to run; treat it as written-but-unproven until it has, and
+  only then roll the same expression into the eight lead pipelines.
 
 - **The 25.7 lead was recovered without the UI, and the root cause is an
   invisible character.** Make will not hand back a failed execution's payload,
