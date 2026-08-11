@@ -113,6 +113,35 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   so it can be pulled from here immediately. Direct download from a CDN does
   not work — `d8j0ntlcm91z4.cloudfront.net` returns 403 through the proxy,
   retested the same day.
+- **The Google Drive connector reads text and CANNOT deliver photographs, and
+  the second half of that sentence is the one that costs a session.** Measured
+  2026-08-11 against the studio's own library. Text works and is genuinely
+  useful: `read_file_content` returned the full landing-page brief and the
+  Regaflash quote, and that is where the `#process` magnets explainer came
+  from. Images do not, in **both** directions at once:
+
+  - `read_file_content` on a JPEG returns `{"fileContent":""}` — empty, twice,
+    on two different photographs. There is no description and no pixels, so a
+    session cannot even *look* at a Drive photo to judge it. Any instruction
+    to "pick the good ones from Drive" is unexecutable from here.
+  - `download_file_content` DOES return the bytes — as base64 **inline in the
+    tool result**, which lands in the context window. The studio's photographs
+    are 1–9 MB, so one 5 MB frame is ~6.7 MB of base64, on the order of a
+    million-plus tokens. The smallest file in the library is 950 KB. This is
+    not a slow path to be endured; it is not a path.
+  - Every host that could serve the bytes to `curl` is refused by the egress
+    policy at CONNECT: `drive.google.com`, `drive.usercontent.google.com`,
+    `docs.google.com`, `lh3.googleusercontent.com` all fail 403.
+    `www.googleapis.com` IS reachable and answers `403 missing a valid API
+    key` — the Drive REST API is open to us but the credentials live inside
+    the MCP server, not in this environment, so it cannot be called. Do not
+    burn a session trying to bridge that gap; `/root/.ccr/README.md` says to
+    report a policy denial rather than route around it.
+
+  So the route for photographs is the same one the entry above describes for
+  any binary: the owner uploads them to the repo through GitHub's web UI, and
+  a session builds derivatives from there. Sending them through chat does not
+  work either — see the attachment entry above.
 
 ## Product decisions already made
 
@@ -126,13 +155,28 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   scanner: point a phone at the magnet and the photograph plays as video.
   Owner-confirmed 2026-08-05 as included in *every* deal, not an upsell.
 
-  It appears in five places and they must stay consistent: the trust bar, the
+  It appears in six places and they must stay consistent: the trust bar, the
   package FAQ answer (**both copies** — the visible one and the FAQPage
   JSON-LD, which `check.sh` compares byte-for-byte), the `cost.html`
-  inclusions list, and `assistant.js` (a `magnets` entry plus the `package`
-  answer). The link to `regaflash.com` lives in `.faq__more`, **not** in the
-  FAQ answer — a tag inside `.faq__a` breaks the byte-lock, which is the same
-  trap that put the `cost.html` link there.
+  inclusions list, `assistant.js` (a `magnets` entry plus the `package`
+  answer), and — since 2026-08-11 — the **"מגנטים וידאו" explainer at the foot
+  of `#process`**, which is the only place on the site that says what the
+  product actually *is*. Until then it had one line in the deliverables ledger
+  and one inside a collapsed FAQ answer: the studio's sharpest differentiator,
+  described nowhere. Its copy is the owner's own, from the landing-page brief
+  in Google Drive (`אמורה | באנר + דף נחיתה`, מקטע 3). The link to
+  `regaflash.com` lives in `.faq__more`, **not** in the FAQ answer — a tag
+  inside `.faq__a` breaks the byte-lock, which is the same trap that put the
+  `cost.html` link there. The explainer deliberately adds no second outbound
+  link, so that stays one link in one place.
+
+  It sits INSIDE `#process` for the same reason the deliverables ledger above
+  it does: the eyebrows are a hand-numbered 01→09 sequence, and a new
+  top-level section renumbers four of them and both nav copies. It reuses
+  `.process__grid` and `.step`, so it needed no new CSS — and note that
+  `verify.mjs` reads the **first** `.process__grid` and counts
+  `.deliver__item`, so a block appended here must add neither a ledger row nor
+  a grid ahead of the original.
 
   `regaflash.com` is a different legal entity, so it does **not** belong in
   the Organization block's `sameAs` — that property is for other profiles of
@@ -592,6 +636,31 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
+- **How many photographers, and is it two or three?** Two owner-supplied
+  documents in Google Drive disagree, and the site currently follows neither
+  by accident: the landing-page brief (`אמורה | באנר + דף נחיתה`, Nov 2025,
+  written by a marketing contractor) lists **"3 צלמים מקצועיים - וידאו
+  וסטילס"**, while the newer quote (`הצעת מחיר Amora+Regaflash חתונה מעודכן
+  V2`, Jun 2026, the studio's own) specifies **"צוות של 2 צלמי סטילס
+  מקצועיים"**. Both can be true at once — two stills plus one video is three
+  bodies — but the site says **"שני צלמים בחתונה מלאה"** in the trust bar,
+  where it replaced the unsupportable `+500 זוגות`, and that is a headline
+  differentiator. Nothing was changed on the strength of the newer document:
+  picking a number from whichever file is more recent is exactly how the
+  album and film-length contradictions got in. If the honest claim is
+  "שלושה צלמים — שניים סטילס ואחד וידאו", it is a better one than what is
+  there now and it is one line in the trust bar, the FAQ pair and
+  `assistant.js`. It needs the owner's word first.
+- **The photographs themselves.** The Drive library is large and looks right
+  from its metadata — roughly 150 frames under `support@amora-studios.com` in
+  sequential `R61_*/R62_*` DSLR filenames, which is camera output rather than
+  phone snaps. None of it could be brought into the site: see the Drive entry
+  under "Known access limits" above for why, in detail. The gallery still
+  serves the eighteen frames built from the Instagram-era library, and
+  replacing them with the full-resolution originals is a real upgrade waiting
+  on one manual step — the owner dropping the chosen files into the repo
+  through GitHub's web UI, after which `tools/build-assets.mjs` and
+  `tools/gen-image-schema.py` do the rest.
 
 ### The three contradictions — resolved, and one needs the owner's word
 
