@@ -2119,6 +2119,35 @@ await page.waitForTimeout(200);
      small.length === 0, small.length ? small : 'all at or above 24px', 'none under 24px');
 }
 
+// ------------------------------- the header stays one row at every width --
+// The nav used to hand over to the burger at 760px, and between 761 and 845 it
+// had nowhere left to go: it wrapped, and the header grew from 76px to 124px
+// over the hero. That shipped at launch and survived every run of both suites,
+// because neither one renders a viewport between 390 and 1280 — the hole was a
+// missing DIMENSION, not a missing assertion, which is the only reason it is
+// worth a check of its own rather than a wider one.
+//
+// Three widths, chosen for what each proves: 861 is the narrowest desktop nav,
+// 800 sits in the middle of the band that used to break, and 761 is the old
+// breakpoint's first pixel. The height is pinned to a literal — the point is
+// that the bar is ONE row, and a `<= 124` would pass on the bug it was
+// written for.
+{
+  const p = await browser.newPage({ viewport: { width: 1000, height: 800 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  const rows = [];
+  for (const w of [861, 800, 761]) {
+    await p.setViewportSize({ width: w, height: 800 });
+    await p.waitForTimeout(220);
+    rows.push([w, await p.evaluate(() => Math.round(document.querySelector('.site-header').getBoundingClientRect().height))]);
+  }
+  const tall = rows.filter(([, h]) => h !== 76);
+  ok('the header is one row at 861, 800 and 761 — no wrap band over the hero',
+     tall.length === 0, tall.length ? JSON.stringify(tall) : 'all 76px', 'all 76px');
+  await p.close();
+}
+
 // --------------------------- camera-3d: chrome standalone, no chrome embedded --
 // This page is index,follow and one of three entries in sitemap.xml, and its
 // body used to be a title, a canvas and one text link — no header, no nav, no

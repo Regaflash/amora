@@ -10,7 +10,7 @@ private CRM at `admin.html` reads it back.
 ```
 Before any change goes out:
 1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 247 runtime checks in a real browser
+   node tools/verify.mjs   # must exit 0 — 248 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
    # check.sh number was right and untouched, the verify.mjs one had been
@@ -418,6 +418,14 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   has nothing to attach to here, and the equivalents already exist: generated
   sitemap and robots, hand-written head tags, `loading="lazy"`,
   `decoding="async"`.
+- **The suites test two viewports, and the gap between them hid a bug for
+  months.** `verify.mjs` renders 390 and 1280/1440 and almost nothing between.
+  The desktop nav handed over to the burger at 760px while it actually stopped
+  fitting at 846, so from 761 to 845 the header wrapped to two rows and stood
+  124px tall over the hero — every small laptop and landscape tablet — and both
+  suites reported green the whole time. Fixed 2026-08-11 (breakpoint → 859) and
+  pinned by a check at 861/800/761. **When a layout bug is invisible to the
+  suite, suspect a missing dimension before a missing assertion.**
 - **Do not start a performance project.** Measured, not assumed: LCP 148ms
   mobile / 160ms desktop with the `<h1>` as the LCP element, CLS 0.001, 570 DOM
   nodes, one `<h1>`, zero skipped heading levels, and 602 words plus every

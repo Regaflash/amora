@@ -514,7 +514,7 @@ summary::-webkit-details-marker { display: none; }
    space-between pinned one to each end and left a 600px hole down the middle
    of a 1320px shell. Growing the nav to fill the remaining track and centring
    inside it puts the links under the middle of the page, with the logo still
-   anchored to its own edge. Below 760px .nav is display:none and .nav-mobile
+   anchored to its own edge. Below 860px .nav is display:none and .nav-mobile
    takes over, so none of this touches the phone layout. */
 .nav {
   display: flex;
@@ -2830,7 +2830,22 @@ three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
 
 /* --------------------------------------------------------- responsive --- */
 
-@media (max-width: 760px) {
+/* The desktop nav hands over to the mobile bar here, and the number is
+   measured rather than round. It was 760px, and between 761 and 845 the nav
+   had nowhere left to go: it wrapped to a second row and the header grew from
+   76px to 124px — a 63% taller header, pinned over the hero, on every small
+   laptop and landscape tablet in that band. It has been that way since launch
+   and both suites reported green throughout, because neither one renders a
+   viewport between 390 and 1280: the gap was a missing DIMENSION, not a
+   missing assertion. 859 hands the band to the burger with ~14px of headroom
+   over the measured wrap point, and keeps the horizontal nav at 860+ where it
+   still fits on one row.
+
+   Measured in Hebrew, the canonical language and the only one that renders
+   without a network round-trip. The translated nav labels (ar/en/ru) could
+   wrap at a different width; if one is ever reported, measure that language
+   rather than nudging this number by feel. */
+@media (max-width: 859px) {
   .nav { display: none; }
   .nav-mobile { display: flex; }
 }
