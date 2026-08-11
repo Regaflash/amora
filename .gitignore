@@ -29,6 +29,17 @@ Thumbs.db
 # Local Claude Code permission grants — machine-scoped, never a repo-wide standing grant
 .claude/settings.local.json
 
+# The drop zone. `incoming/` is how full-resolution originals reach a session
+# that cannot fetch them itself: the owner uploads them through GitHub's web UI
+# on a throwaway branch, a session builds assets/img from them, and the branch
+# is deleted without ever merging. Ignoring it here is the third layer, not the
+# first — a web upload commits regardless of this file, which is exactly why the
+# drop still works. What this prevents is a session running `git add -A` after a
+# build and quietly writing 24 full-resolution frames into the branch that DOES
+# merge. Note the guard in tools/check.sh only sees the repo root, so it would
+# not have caught that one.
+/incoming/
+
 # Images dropped at the repo root. check.sh already fails on them — "אין
 # תמונות גולמיות ב-HEAD" — but it runs here, and GitHub's web uploader does
 # not: a master dropped through `Add file` → `Upload files` went straight to

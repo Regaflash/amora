@@ -143,6 +143,47 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   a session builds derivatives from there. Sending them through chat does not
   work either — see the attachment entry above.
 
+### The drop zone — how photographs actually get in
+
+Used successfully 2026-08-11 for 24 frames. The shape matters more than the
+run, because every part of it exists to work around something that failed:
+
+- **The owner drives a browser agent, because it can see what this session
+  cannot.** Claude for Chrome runs in the owner's logged-in browser: it opened
+  Drive, *looked* at 270 photographs, judged them, and moved the chosen ones
+  straight into GitHub's upload form. Nothing touched a local disk. The
+  curation — "no phone snaps, no crew in frame, no near-duplicates" — has to
+  happen there, since a session here cannot open a Drive JPEG at all.
+- **Files are named by SLOT ID, not by their camera name.** `g08.jpg` *is* the
+  g08 slot. That single convention is what lets a session wire up photographs
+  it has no way to look at first, and it is why the instructions must ship the
+  slot table (id, aspect ratio, subject) rather than a vague "send good ones".
+- **They land in `incoming/` on a throwaway branch that never merges.** Not the
+  repo root: `check.sh`'s raw-image guard is `git ls-files ':(top,glob)*.jpg'`
+  and sees the root ONLY — verified by experiment, not by reading it — so a
+  subfolder passes the build while still being 100MB of unpublished work. The
+  originals are read, built from, and left behind; `.gitignore` and
+  `.vercelignore` now name `incoming/` so a stray `git add -A` cannot drag them
+  into the branch that does merge.
+- **`build-assets.mjs` prefers `incoming/<id>.jpg` and KEEPS a slot it cannot
+  rebuild.** This is the load-bearing part. The numbered Instagram-era library
+  is untracked, so on a fresh clone it is absent entirely — a builder that
+  rebuilt "everything" would have deleted every slot the drop did not cover.
+  Named-but-absent and never-named both fall through to carrying the previous
+  manifest entry verbatim.
+- **`focusX` / `focusY` override sharp's `attention` crop, and exist because it
+  failed loudly once.** `svc-event` is a landscape frame of the bride lifted on
+  a chair, dead centre, with a guest's face at the right edge; attention
+  cropped to the guest and cut the bride in half. The fractions are measured
+  off the source, not guessed. Every other slot still uses `attention`, which
+  is right nearly always.
+
+Afterwards: `gen-image-schema.py`, `gen-sitemap.py`, then both suites. Two
+follow-ons that only surface at that point — a slot whose new source is finally
+big enough gains a candidate width the markup does not reference yet (`g17`
+went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
+`verify.mjs` moves if a photograph changes category (`prep` 3 → 4).
+
 ## Product decisions already made
 
 - Zero build step, zero runtime dependencies. Fonts and three.js are vendored.
@@ -636,16 +677,19 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
-- **The photographs themselves.** The Drive library is large and looks right
-  from its metadata — roughly 150 frames under `support@amora-studios.com` in
-  sequential `R61_*/R62_*` DSLR filenames, which is camera output rather than
-  phone snaps. None of it could be brought into the site: see the Drive entry
-  under "Known access limits" above for why, in detail. The gallery still
-  serves the eighteen frames built from the Instagram-era library, and
-  replacing them with the full-resolution originals is a real upgrade waiting
-  on one manual step — the owner dropping the chosen files into the repo
-  through GitHub's web UI, after which `tools/build-assets.mjs` and
-  `tools/gen-image-schema.py` do the rest.
+- ~~**The photographs themselves.**~~ — **done, 2026-08-11, and the route is
+  the reusable part.** Twenty-two of the twenty-four image slots now serve the
+  studio's own 2400px frames. See "The drop zone" below for how they got here
+  and how to do it again.
+- **Two slots the drop could not fill, and the reason is the studio's diary,
+  not an oversight.** `g08` (חופה בשקיעה, 21:9) — both weddings in the library
+  had night ceremonies, and the only wide frames from the טקס carry an MC with
+  a microphone and a crew member in shot. `g10` (עיצוב שיער) — the prep
+  coverage has makeup, jewellery and mirrors but no hair stylist working.
+  Both still serve their Instagram-era derivatives, which is why
+  `build-assets.mjs` had to learn to keep a slot rather than drop it. Fixing
+  them needs a sunset ceremony and a hair frame from a future wedding, not
+  another pass over what exists.
 
 ### The four contradictions — all resolved
 

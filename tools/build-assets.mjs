@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { readFileSync, mkdirSync, writeFileSync } from 'fs';
+import { readFileSync, mkdirSync, writeFileSync, existsSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -15,6 +15,25 @@ const SRC = ROOT;
 const OUT = resolve(ROOT, 'assets/img');
 mkdirSync(OUT, { recursive: true });
 
+// Two source libraries now, and the newer one wins per slot.
+//
+// The original library is the untracked Instagram-era export at the repo root,
+// addressed by NUMBER through index.json. The second is `incoming/`, the
+// studio's own full-resolution frames, addressed by SLOT ID: a file named
+// g08.jpg is the g08 slot, which is what lets a session wire up photographs it
+// has no way to look at first.
+//
+// A slot with no file in incoming/ is not rebuilt and not dropped — its
+// derivatives in assets/img are already committed and its manifest entry is
+// carried over verbatim. That is the case that matters: on a fresh clone the
+// root library is absent entirely, so rebuilding "everything" would otherwise
+// mean deleting every slot the new drop happens not to cover.
+const DROP = resolve(ROOT, 'incoming');
+const prevManifest = existsSync(resolve(HERE, 'manifest.json'))
+  ? JSON.parse(readFileSync(resolve(HERE, 'manifest.json'), 'utf8'))
+  : [];
+const prevById = new Map(prevManifest.map(o => [o.id, o]));
+
 // slot → source image number. Wide slots get scenes that survive a horizontal crop.
 const SLOTS = [
   // about
@@ -23,7 +42,9 @@ const SLOTS = [
   { id: 'svc-couples',  n: 9,  ratio: [4,5],  w: [600, 900] },
   { id: 'svc-std',      n: 57, ratio: [4,5],  w: [600, 900] },
   { id: 'svc-prep',     n: 1,  ratio: [4,5],  w: [600, 900] },
-  { id: 'svc-event',    n: 58, ratio: [4,5],  w: [600, 900] },
+  // focusX: the bride sits left of centre in the 2400px frame; attention
+  // preferred the guest's face at the right edge. Measured, not guessed.
+  { id: 'svc-event',    n: 58, ratio: [4,5],  w: [600, 900], focusX: 0.42 },
   { id: 'svc-people',   n: 84, ratio: [4,5],  w: [600, 900] },
   // gallery (order matches the design's PHOTOS array)
   { id: 'g01', n: 11, ratio: [4,5],  w: [500, 900], cat: 'weddings', alt: 'רגע החופה' },
@@ -39,7 +60,7 @@ const SLOTS = [
   { id: 'g11', n: 82, ratio: [16,9], w: [600, 1100], cat: 'prep',    alt: 'פרטי השמלה' },
   { id: 'g12', n: 66, ratio: [4,5],  w: [500, 900], cat: 'events',   alt: 'עיצוב שולחנות באירוע' },
   { id: 'g13', n: 80, ratio: [16,9], w: [600, 1100], cat: 'events',  alt: 'חגיגה עם האורחים' },
-  { id: 'g14', n: 86, ratio: [4,5],  w: [500, 900], cat: 'events',   alt: 'שושבינות' },
+  { id: 'g14', n: 86, ratio: [4,5],  w: [500, 900], cat: 'prep',     alt: 'שושבינות' },
   { id: 'g15', n: 50, ratio: [4,5],  w: [500, 900], cat: 'std',      alt: 'זוג בעיר' },
   { id: 'g16', n: 10, ratio: [4,5],  w: [500, 900], cat: 'weddings', alt: 'רגע שקט בין השניים' },
   { id: 'g17', n: 39, ratio: [16,9], w: [600, 1100], cat: 'weddings', alt: 'ההליכה אל החופה' },
@@ -55,17 +76,52 @@ const SLOTS = [
 
 const manifest = [];
 for (const s of SLOTS) {
-  const file = byNum.get(s.n);
-  if (!file) { console.log('!! missing #' + s.n); continue; }
+  const dropped = resolve(DROP, `${s.id}.jpg`);
+  const fromDrop = existsSync(dropped);
+  const file = fromDrop ? `incoming/${s.id}.jpg` : byNum.get(s.n);
+  // Named is not the same as present: index.json still lists every numbered
+  // original, but on a fresh clone none of them is on disk — the library is
+  // untracked by design. Both misses land here.
+  const src = fromDrop ? dropped : (file ? `${SRC}/${file}` : null);
+  if (!src || !existsSync(src)) {
+    // Keep whatever this slot already ships rather than dropping it out of the
+    // manifest and off the page.
+    const kept = prevById.get(s.id);
+    if (kept) { manifest.push(kept); console.log(`${s.id.padEnd(14)} kept — no source on disk`); }
+    else console.log(`!! ${s.id}: no source and nothing to keep`);
+    continue;
+  }
   const [rw, rh] = s.ratio;
-  const src = `${SRC}/${file}`;
   const meta = await sharp(src).metadata();
   const out = [];
   for (const w of s.w) {
     const h = Math.round(w * rh / rw);
     if (w > meta.width * 1.15) continue;           // never upscale meaningfully
     const base = s.w.length > 1 ? `${s.id}-${w}` : s.id;
-    const cut = () => sharp(src).resize(w, h, { fit: 'cover', position: sharp.strategy.attention });
+
+    // `attention` is right nearly always, and catastrophically wrong when the
+    // most salient thing in the frame is not the subject. svc-event is the
+    // case that forced this: a landscape frame of the bride lifted on a chair,
+    // centred, with a guest's face at the right edge — attention cropped to the
+    // guest and cut the bride in half. focusX is the escape hatch, a fraction
+    // of the source width to centre the window on; focusY does the same
+    // vertically for the rarer wide-crop-of-a-tall-frame case. Both are only
+    // consulted when set, so every other slot keeps the automatic behaviour.
+    const win = () => {
+      const sw = meta.width, sh = meta.height, want = rw / rh;
+      let cw, ch;
+      if (sw / sh > want) { ch = sh; cw = Math.round(sh * want); }
+      else { cw = sw; ch = Math.round(sw / want); }
+      const cx = (s.focusX ?? 0.5) * sw, cy = (s.focusY ?? 0.5) * sh;
+      return {
+        left: Math.max(0, Math.min(sw - cw, Math.round(cx - cw / 2))),
+        top: Math.max(0, Math.min(sh - ch, Math.round(cy - ch / 2))),
+        width: cw, height: ch,
+      };
+    };
+    const cut = () => (s.focusX == null && s.focusY == null)
+      ? sharp(src).resize(w, h, { fit: 'cover', position: sharp.strategy.attention })
+      : sharp(src).extract(win()).resize(w, h, { fit: 'cover' });
 
     // JPEG first: it is the fallback every browser can read, and it sets the
     // budget the WebP has to beat. Shipping a WebP that is larger than the

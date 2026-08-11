@@ -40,7 +40,7 @@
     <image:image><image:loc>https://www.amora-studios.com/assets/img/g14-900.jpg</image:loc></image:image>
     <image:image><image:loc>https://www.amora-studios.com/assets/img/g15-900.jpg</image:loc></image:image>
     <image:image><image:loc>https://www.amora-studios.com/assets/img/g16-900.jpg</image:loc></image:image>
-    <image:image><image:loc>https://www.amora-studios.com/assets/img/g17-600.jpg</image:loc></image:image>
+    <image:image><image:loc>https://www.amora-studios.com/assets/img/g17-1100.jpg</image:loc></image:image>
     <image:image><image:loc>https://www.amora-studios.com/assets/img/g18-900.jpg</image:loc></image:image>
   </url>
   <url>
@@ -49,6 +49,6 @@
   </url>
   <url>
     <loc>https://www.amora-studios.com/cost.html</loc>
-    <lastmod>2026-08-09</lastmod>
+    <lastmod>2026-08-11</lastmod>
   </url>
 </urlset>

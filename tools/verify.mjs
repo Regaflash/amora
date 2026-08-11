@@ -2933,9 +2933,14 @@ await page.waitForTimeout(200);
   await p.waitForTimeout(500);
   await p.locator('[data-submit]').click();
   await p.waitForTimeout(500);
+  // prep held three items until 2026-08-11, when g14 — the bridesmaid in a
+  // robe, before the dress — moved out of "events", where the filter a visitor
+  // would look for it in was the one hiding it. Four now. The literal is the
+  // point of the check: it proves the chip actually filtered rather than
+  // leaving the whole wall up, so it is re-pinned, never loosened to > 0.
   ok('the old MediaQueryList dialect still gets a working page, form included',
      errs.length === 0 && await p.evaluate(() =>
-       document.querySelectorAll('.masonry__item:not([hidden])').length === 3
+       document.querySelectorAll('.masonry__item:not([hidden])').length === 4
          && !document.querySelector('[data-form-failure]').hidden),
      JSON.stringify(errs).slice(0, 80) || 'ok', 'no errors, chip filters, form validates');
   await p.close();

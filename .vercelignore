@@ -9,6 +9,12 @@ supabase/
 node_modules/
 *.md
 
+# The drop zone for full-resolution originals — see .gitignore. It should never
+# reach a branch that deploys, but if one ever does, this keeps 100MB of the
+# studio's unpublished frames off the CDN rather than serving them at a
+# guessable path.
+incoming/
+
 # The studio's raw photo library, uploaded straight to the repo root.
 # A leading slash anchors these to the root, so the processed derivatives in
 # assets/img/ are untouched. Prefix patterns were tried first and silently
