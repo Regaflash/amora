@@ -113,6 +113,76 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   so it can be pulled from here immediately. Direct download from a CDN does
   not work — `d8j0ntlcm91z4.cloudfront.net` returns 403 through the proxy,
   retested the same day.
+- **The Google Drive connector reads text and CANNOT deliver photographs, and
+  the second half of that sentence is the one that costs a session.** Measured
+  2026-08-11 against the studio's own library. Text works and is genuinely
+  useful: `read_file_content` returned the full landing-page brief and the
+  Regaflash quote, and that is where the `#process` magnets explainer came
+  from. Images do not, in **both** directions at once:
+
+  - `read_file_content` on a JPEG returns `{"fileContent":""}` — empty, twice,
+    on two different photographs. There is no description and no pixels, so a
+    session cannot even *look* at a Drive photo to judge it. Any instruction
+    to "pick the good ones from Drive" is unexecutable from here.
+  - `download_file_content` DOES return the bytes — as base64 **inline in the
+    tool result**, which lands in the context window. The studio's photographs
+    are 1–9 MB, so one 5 MB frame is ~6.7 MB of base64, on the order of a
+    million-plus tokens. The smallest file in the library is 950 KB. This is
+    not a slow path to be endured; it is not a path.
+  - Every host that could serve the bytes to `curl` is refused by the egress
+    policy at CONNECT: `drive.google.com`, `drive.usercontent.google.com`,
+    `docs.google.com`, `lh3.googleusercontent.com` all fail 403.
+    `www.googleapis.com` IS reachable and answers `403 missing a valid API
+    key` — the Drive REST API is open to us but the credentials live inside
+    the MCP server, not in this environment, so it cannot be called. Do not
+    burn a session trying to bridge that gap; `/root/.ccr/README.md` says to
+    report a policy denial rather than route around it.
+
+  So the route for photographs is the same one the entry above describes for
+  any binary: the owner uploads them to the repo through GitHub's web UI, and
+  a session builds derivatives from there. Sending them through chat does not
+  work either — see the attachment entry above.
+
+### The drop zone — how photographs actually get in
+
+Used successfully 2026-08-11 for 24 frames. The shape matters more than the
+run, because every part of it exists to work around something that failed:
+
+- **The owner drives a browser agent, because it can see what this session
+  cannot.** Claude for Chrome runs in the owner's logged-in browser: it opened
+  Drive, *looked* at 270 photographs, judged them, and moved the chosen ones
+  straight into GitHub's upload form. Nothing touched a local disk. The
+  curation — "no phone snaps, no crew in frame, no near-duplicates" — has to
+  happen there, since a session here cannot open a Drive JPEG at all.
+- **Files are named by SLOT ID, not by their camera name.** `g08.jpg` *is* the
+  g08 slot. That single convention is what lets a session wire up photographs
+  it has no way to look at first, and it is why the instructions must ship the
+  slot table (id, aspect ratio, subject) rather than a vague "send good ones".
+- **They land in `incoming/` on a throwaway branch that never merges.** Not the
+  repo root: `check.sh`'s raw-image guard is `git ls-files ':(top,glob)*.jpg'`
+  and sees the root ONLY — verified by experiment, not by reading it — so a
+  subfolder passes the build while still being 100MB of unpublished work. The
+  originals are read, built from, and left behind; `.gitignore` and
+  `.vercelignore` now name `incoming/` so a stray `git add -A` cannot drag them
+  into the branch that does merge.
+- **`build-assets.mjs` prefers `incoming/<id>.jpg` and KEEPS a slot it cannot
+  rebuild.** This is the load-bearing part. The numbered Instagram-era library
+  is untracked, so on a fresh clone it is absent entirely — a builder that
+  rebuilt "everything" would have deleted every slot the drop did not cover.
+  Named-but-absent and never-named both fall through to carrying the previous
+  manifest entry verbatim.
+- **`focusX` / `focusY` override sharp's `attention` crop, and exist because it
+  failed loudly once.** `svc-event` is a landscape frame of the bride lifted on
+  a chair, dead centre, with a guest's face at the right edge; attention
+  cropped to the guest and cut the bride in half. The fractions are measured
+  off the source, not guessed. Every other slot still uses `attention`, which
+  is right nearly always.
+
+Afterwards: `gen-image-schema.py`, `gen-sitemap.py`, then both suites. Two
+follow-ons that only surface at that point — a slot whose new source is finally
+big enough gains a candidate width the markup does not reference yet (`g17`
+went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
+`verify.mjs` moves if a photograph changes category (`prep` 3 → 4).
 
 ## Product decisions already made
 
@@ -126,13 +196,28 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   scanner: point a phone at the magnet and the photograph plays as video.
   Owner-confirmed 2026-08-05 as included in *every* deal, not an upsell.
 
-  It appears in five places and they must stay consistent: the trust bar, the
+  It appears in six places and they must stay consistent: the trust bar, the
   package FAQ answer (**both copies** — the visible one and the FAQPage
   JSON-LD, which `check.sh` compares byte-for-byte), the `cost.html`
-  inclusions list, and `assistant.js` (a `magnets` entry plus the `package`
-  answer). The link to `regaflash.com` lives in `.faq__more`, **not** in the
-  FAQ answer — a tag inside `.faq__a` breaks the byte-lock, which is the same
-  trap that put the `cost.html` link there.
+  inclusions list, `assistant.js` (a `magnets` entry plus the `package`
+  answer), and — since 2026-08-11 — the **"מגנטים וידאו" explainer at the foot
+  of `#process`**, which is the only place on the site that says what the
+  product actually *is*. Until then it had one line in the deliverables ledger
+  and one inside a collapsed FAQ answer: the studio's sharpest differentiator,
+  described nowhere. Its copy is the owner's own, from the landing-page brief
+  in Google Drive (`אמורה | באנר + דף נחיתה`, מקטע 3). The link to
+  `regaflash.com` lives in `.faq__more`, **not** in the FAQ answer — a tag
+  inside `.faq__a` breaks the byte-lock, which is the same trap that put the
+  `cost.html` link there. The explainer deliberately adds no second outbound
+  link, so that stays one link in one place.
+
+  It sits INSIDE `#process` for the same reason the deliverables ledger above
+  it does: the eyebrows are a hand-numbered 01→09 sequence, and a new
+  top-level section renumbers four of them and both nav copies. It reuses
+  `.process__grid` and `.step`, so it needed no new CSS — and note that
+  `verify.mjs` reads the **first** `.process__grid` and counts
+  `.deliver__item`, so a block appended here must add neither a ledger row nor
+  a grid ahead of the original.
 
   `regaflash.com` is a different legal entity, so it does **not** belong in
   the Organization block's `sameAs` — that property is for other profiles of
@@ -592,12 +677,28 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
+- ~~**The photographs themselves.**~~ — **done, 2026-08-11, and the route is
+  the reusable part.** Twenty-two of the twenty-four image slots now serve the
+  studio's own 2400px frames. See "The drop zone" below for how they got here
+  and how to do it again.
+- **Two slots the drop could not fill, and the reason is the studio's diary,
+  not an oversight.** `g08` (חופה בשקיעה, 21:9) — both weddings in the library
+  had night ceremonies, and the only wide frames from the טקס carry an MC with
+  a microphone and a crew member in shot. `g10` (עיצוב שיער) — the prep
+  coverage has makeup, jewellery and mirrors but no hair stylist working.
+  Both still serve their Instagram-era derivatives, which is why
+  `build-assets.mjs` had to learn to keep a slot rather than drop it. Fixing
+  them needs a sunset ceremony and a hair frame from a future wedding, not
+  another pass over what exists.
 
-### The three contradictions — resolved, and one needs the owner's word
+### The four contradictions — all resolved
 
-All three were aligned to what the site already said elsewhere, rather than to
-a new promise. Each carries an HTML/JS comment at the site of the change saying
-what it used to say and why it moved.
+The first three were aligned to what the site already said elsewhere, rather
+than to a new promise. The fourth — the photographer count, below — is the one
+exception and the more dangerous shape: it could not be settled from inside the
+repo, because the repo was self-consistent and *wrong*. It took the owner's
+word. Each carries an HTML/JS comment at the site of the change saying what it
+used to say and why it moved.
 
 - **The album.** Process step 04 and `assistant.js` both put the printed album
   inside 30 days, while the FAQ, the FAQPage JSON-LD and `cost.html` put it two
@@ -608,13 +709,50 @@ what it used to say and why it moved.
   four other places say 3–5 דקות. Retitled "חתונה אחת, סרט אחד". `assistant.js`
   names the section in its answer and changed with it; "שלוש דקות" stays in its
   keyword list, because that is still what a visitor might type.
-- **`+500 זוגות מאושרים`** → **`שני צלמים בחתונה מלאה`**, in the trust bar.
+- **`+500 זוגות מאושרים`** → **`שלושה צלמים בחתונה מלאה`**, in the trust bar.
   Nothing in the repo supported the count, and `assistant.js` carries a
   no-counts policy that contradicted it — the same objection that removed the
   testimonial portraits. The replacement is backed by the FAQ and `cost.html`
   and is a sharper differentiator anyway, since most studios sell the second
   shooter as an upgrade. **If the studio can stand behind the number, putting
   it back is one line** — the old text is in the comment above it.
+
+### The crew is three, and it took a fourth contradiction to settle it
+
+**Owner-confirmed 2026-08-11: three photographers at a full wedding — two on
+stills, one on video.** The site had said **two** (one stills, one video)
+everywhere since launch. Two owner documents in Google Drive disagreed with
+that and with each other: the landing-page brief (`אמורה | באנר + דף נחיתה`,
+Nov 2025, a marketing contractor's) lists "3 צלמים מקצועיים - וידאו וסטילס",
+while the newer quote (`הצעת מחיר Amora+Regaflash חתונה מעודכן V2`, Jun 2026,
+the studio's own) specifies "צוות של 2 צלמי סטילס מקצועיים". Both are true at
+once — two stills plus one video is three bodies — and that reconciliation is
+what the owner confirmed.
+
+**This was NOT a one-line change, and the reason is worth keeping.** The count
+was never only a number: the site told a *two-person* story in the grammar
+itself. `שנינו מצלמים ביחד` — the dual — ran in the about section, the
+`about` assistant answer and the video FAQ; `אחד על הסטילס ואחד על הווידאו`
+and `שניהם על הזוג משתי זוויות` ran in four more. Changing `2`→`3` and
+stopping would have left the page contradicting itself in the same screen.
+Nine places moved together, and they are the places to move again if it ever
+changes: the trust bar, the meta description, the services card, the about
+paragraph, **both** copies of **two** different FAQ answers (the visible
+`.faq__a` and its byte-locked FAQPage twin — `check.sh` compares them), the
+`cost.html` prose and its inclusions list, `llms.txt` (Hebrew **and** the
+English summary, which said "A two-person … studio"), `assistant.js`
+(`photographers` and `about`), and `admin.js`'s default contract line.
+
+Two follow-ons that are easy to miss. `tools/verify.mjs` pinned the string
+`אחד על הסטילס` in two assistant rows — the only runtime assertion that the
+assistant quotes the same headcount as the page — and now pins
+`שניים על הסטילס`; it was re-pinned rather than loosened, on purpose. And
+`assistant.js` **keeps `שני צלמים` as a matcher key** alongside the new
+`שלושה צלמים`: the answer changed, the question a visitor types did not, and
+someone who read the old copy still asks for a "צלם שני".
+
+`sitemap.xml` needed regenerating afterwards (`tools/gen-sitemap.py`) —
+`check.sh` catches this, and it is the reminder that the file is generated.
 
 ## Before any deploy
 

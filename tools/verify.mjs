@@ -1679,8 +1679,13 @@ await page.waitForTimeout(200);
     return all[all.length - 1] || '';
   };
   const table = [
-    ['"מי הצלמים" belongs to the photographers', 'מי הצלמים אצלכם?', 'אחד על הסטילס', null],
-    ['"מספר הצלמים" no longer buys an album', 'מה מספר הצלמים בחתונה?', 'אחד על הסטילס', 'אלבום מודפס'],
+    // Both needles said 'אחד על הסטילס' until 2026-08-11, when the crew went
+    // from two to three and the phrase became 'שניים על הסטילס'. Pinning the
+    // new wording rather than loosening to 'הסטילס' keeps these rows doing
+    // their real job: they are the only runtime assertion that the assistant
+    // quotes the same headcount the page does.
+    ['"מי הצלמים" belongs to the photographers', 'מי הצלמים אצלכם?', 'שניים על הסטילס', null],
+    ['"מספר הצלמים" no longer buys an album', 'מה מספר הצלמים בחתונה?', 'שניים על הסטילס', 'אלבום מודפס'],
     ['"יש ווטסאפ" reaches the contact card', 'יש ווטסאפ?', '050-3662699', null],
     ['a couple with no date meets the hatch, not the fallback', 'עוד לא קבענו תאריך, אפשר לדבר?', 'גם בלי תאריך', 'אין לי תשובה'],
     ['"כמה שעות" is about our day, not the delivery clock', 'כמה שעות אתם איתנו ביום החתונה?', 'מספר השעות', 'תוך 7 ימים'],
@@ -2928,9 +2933,14 @@ await page.waitForTimeout(200);
   await p.waitForTimeout(500);
   await p.locator('[data-submit]').click();
   await p.waitForTimeout(500);
+  // prep held three items until 2026-08-11, when g14 — the bridesmaid in a
+  // robe, before the dress — moved out of "events", where the filter a visitor
+  // would look for it in was the one hiding it. Four now. The literal is the
+  // point of the check: it proves the chip actually filtered rather than
+  // leaving the whole wall up, so it is re-pinned, never loosened to > 0.
   ok('the old MediaQueryList dialect still gets a working page, form included',
      errs.length === 0 && await p.evaluate(() =>
-       document.querySelectorAll('.masonry__item:not([hidden])').length === 3
+       document.querySelectorAll('.masonry__item:not([hidden])').length === 4
          && !document.querySelector('[data-form-failure]').hidden),
      JSON.stringify(errs).slice(0, 80) || 'ok', 'no errors, chip filters, form validates');
   await p.close();
