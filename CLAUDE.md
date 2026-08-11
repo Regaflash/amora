@@ -557,14 +557,37 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   payload can no longer kill the run, an `exist` filter on the formatted date
   so an empty one never reaches ManyChat, and `dlq: true`.
 
-  **It is still deactivated on purpose, and this is the interesting part.**
-  Its webhook holds **6 items queued since 9.8**, and the scenario's whole job
-  is to say "your call is in half an hour". Those calls were half an hour
-  after the items queued — i.e. two days ago. Activating drains the queue
-  immediately and sends six people a reminder for a meeting that already
-  happened. **Clear the queue in the UI first, then activate** — there is no
-  API tool to flush a webhook queue (`hooks_*` has create/delete/update/get/
-  list/ping/learn and nothing else).
+  **The repair is written but NOT working, and it is off. Do not read the
+  paragraph above as "fixed".** Activating it on 11.8 produced six immediate
+  `BlueprintValidationError — Scenario validation failed, 5 problem(s) found`
+  runs at **0 operations each**, Make auto-deactivated it again, and the
+  webhook queue stayed at **6, untouched**. Nothing was sent, nothing was
+  consumed, no customer was contacted — but the stored blueprint now fails at
+  init rather than at module 7, which is a different kind of broken, not a
+  fixed one.
+
+  The cause is near-certain and is the trap for the next attempt: **this
+  scenario's modules carry `metadata.parameters`** — the parameter schema for
+  the webhook and for each `account:manychat` connection — and the strip step
+  that is safe on the lead pipelines removed them here. Five modules had it
+  (1, 3, 5, 6, 7) and the error reported exactly five problems. They were put
+  back in a second update, **which has not been verified**: `isinvalid` only
+  clears on a successful activation, and activating is the one thing that also
+  drains the queue. So: **strip `expect`, `restore` and `samples`; never strip
+  `metadata.parameters`.**
+
+  Sequence for whoever finishes it: clear the 6 queued items in the UI first
+  (there is no API tool to flush a webhook queue — `hooks_*` has
+  create/delete/update/get/list/ping/learn and nothing else), *then* activate,
+  *then* confirm `isinvalid` went false. Clearing first means a validation
+  failure costs nothing and a success does not message six people about a call
+  that happened two days ago.
+
+  Worth knowing while judging that risk: this scenario **has no `SendFlow`
+  module**. It only writes ManyChat custom fields. Whether a field write
+  triggers an outbound WhatsApp message depends on ManyChat automations and on
+  the sibling scenario `3778980` ("חלק 2"), neither of which is visible from
+  here — so the blast radius is smaller than a send, but not provably zero.
 
   This scenario also carries the **first deployment of the digits-only phone
   normalisation** — `replace(…; /[^0-9]/g; "")` in place of the five nested
