@@ -583,17 +583,24 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   all of that by hand, against a live customer-facing scenario, is a worse bet
   than the alternative below.
 
-  **The way out is the UI, and it is one action: open `3772899` in the Make
-  editor and press Save.** The editor regenerates `metadata.expect` from the
-  app definitions on save, which is exactly what is missing, and it preserves
-  the behavioural fixes already stored in the blueprint — the `Resume` guard,
-  the three `Ignore` handlers, the future-only filter and `dlq: true`. Then
-  activate and confirm `isinvalid` goes false.
+  **The way out was the UI, and it worked: opening `3772899` in the editor and
+  pressing Save fixed it.** The editor regenerates `metadata.expect` from the
+  app definitions on save — exactly what the API-written blueprint was missing
+  — and it preserved every behavioural fix stored underneath. Confirmed by API
+  afterwards: **`isActive: true`, `isinvalid: false`, `dlqCount: 0`, webhook
+  queue drained to 0.** So the rule stands and is now proven in both
+  directions: an API blueprint write can produce a scenario Make will not
+  initialise, and a UI save repairs it without undoing the write.
 
-  **Net position after all of it: unchanged for the owner and safe.** Before:
-  off, queue 6, failing at module 7. After: off, queue 6, failing at init.
-  Every activation attempt produced 0-operation runs — nothing sent, nothing
-  consumed, no customer contacted, and the six queued items are still intact.
+  The six stale items drained on that activation and **the future-only filter
+  did its job**: five of the six were blocked before `PerformAction`, so no
+  ManyChat field was written and nobody was messaged about a call two days
+  past. The sixth passed the filter and ran. That is very probably correct
+  rather than a leak — a filter that blocks five of six is working, and the
+  sixth almost certainly carried a call time still in the future, i.e. a lead
+  who booked on 9.8 for a later date. **Not verified**: the API returns only
+  `{"status":"SUCCESS"}` for that execution and never the bundle, so
+  confirming it means reading the module's input in the UI.
 
   The queue could not be flushed from here either: `hooks_*` has
   create/delete/update/get/list/ping/learn and nothing that clears a queue.
@@ -677,11 +684,31 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `executions_list` showed a bare `{"type":"stop"}` by the account at
   02:26:02Z, six minutes after a UI-driven retry elsewhere, and the session
   that did it reported touching nothing else. It was reactivated the same
-  hour and its webhook queue was still 0, so no lead was lost in the ~75
-  minutes it was down. **`type: "stop"` / `type: "start"` entries in
-  `executions_list` are the audit trail for this**, and a guard sweep that
-  filters on `isActive` will silently drop a stopped scenario from its own
-  results rather than flagging it — count the rows, not just their contents.
+  hour — **and was found stopped again seven hours later**, by a
+  `type: "stop"` at 02:37:32Z that no session in progress had asked for. Its
+  queue was 0 both times, so no lead was lost, but a live intake spent most of
+  a night switched off with nobody aware.
+
+  **The mechanism is almost certainly the scenario page itself.** A browser
+  session working on `3772899` saw the same thing in the opposite direction:
+  it switched that scenario OFF and the log recorded it switching back ON
+  seven seconds later without anyone touching the toggle — twice. Only
+  toggling from the **scenarios list** stuck. The reading that fits both: the
+  scenario/editor page writes its cached activation state back on navigation,
+  so a stale tab can silently flip a live pipeline either way. **Toggle from
+  the list, never from the scenario page, and close Make tabs when done.**
+
+  **And this is the failure mode no alert covers.** Make's *Scenario
+  deactivation* mail fires for auto-deactivation caused by errors — not for a
+  stop, deliberate or accidental. The exact incident that happened twice here
+  is silent by design, and the Gmail filter recommended above would not have
+  caught it either. What catches it is periodically counting how many
+  pipelines *should* be active and comparing: one `scenarios_list` call
+  filtered on `facebook-lead-ads`, expecting eight active, each with
+  `resume=1` and `isinvalid=false`. `type: "stop"` / `type: "start"` in
+  `executions_list` is the audit trail once you know to look, and a sweep that
+  filters on `isActive` drops a stopped scenario from its own results instead
+  of flagging it — count the rows, not just their contents.
 
 - **Meta CAPI: connected and accepted, 5.8.2026.** Origami status changes flow
   through Make `3756300` → `supabase/functions/meta-capi` → Graph API. Four
