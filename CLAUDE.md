@@ -391,6 +391,28 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   a smoke test run as `postgres` ignores column grants entirely, which is how
   this shipped. Test with `set local role anon`, or submit the real form. The
   reconciliation query is at the bottom of `docs/supabase-crm.sql`.
+
+  **Re-verified end to end 11.8.2026, and the method is the point.** The grant
+  currently covers exactly ten columns — `name`, `phone`, `email`,
+  `event_date`, `date_tbd`, `event_type`, `area`, `coverage`, `message`,
+  `source` — which is exactly what `main.js` posts, so the two are in sync.
+  Reading the ACL is not the test, though. The test was to run the real
+  payload inside `begin; set local role anon; … rollback;`, **and then run a
+  deliberate control that had to fail**: an INSERT naming `external_id`, a
+  column `anon` does not hold. It returned `42501 permission denied`, which is
+  what proves the role was actually in effect — without that control, a green
+  first result is indistinguishable from the `postgres` false pass that let
+  this bug ship in the first place.
+
+  Then a committed row proved the rest of the chain live:
+  `200 {"sent":true,"to_source":"private.settings","recipients":2}` in
+  `net._http_response`, trigger `on_lead_insert_alert` enabled, both inboxes
+  reached. The test row was deleted afterwards.
+
+  **`public.leads` holds zero rows and always has.** The path is mechanically
+  proven; it has never carried a real website lead. Every lead the studio has
+  had came through Facebook and Make. Do not read an empty table as a broken
+  form — but do not read this verification as production evidence either.
 - **The lead form's fields are enumerated in `privacy.html`.** Adding or
   removing one means editing that list in the same change — the page states in
   as many words what is collected and what is not. `email` (optional) and
@@ -462,16 +484,26 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   `email` key. Rebuilding from a verified sibling plus a diff is both cheaper
   and safer than transcribing a fresh blueprint.
 
-  **One pre-existing bug was found and deliberately NOT touched.** In
-  `3838911` the Origami search looks for `0{{4.phone}}` while its create
-  writes `fld_1509` as `{{4.phone}}`, without the leading zero — so its own
-  dedupe lookup can never match a record it created, and every repeat lead
-  from that form becomes a second contact. Every other pipeline stores the
-  leading zero, so `3838911` is the outlier and its stored numbers do not
-  match the rest of the CRM. Fixing it is a one-token edit, but it changes
-  what lands in Origami and would leave the rows it already wrote
-  inconsistent with the corrected ones, so it needs the owner's call on which
-  convention wins and whether the existing rows get migrated.
+  **`3838911` carried two further faults and both are now fixed.** Its Origami
+  search looked for `0{{4.phone}}` while its create wrote `fld_1509` as
+  `{{4.phone}}`, without the leading zero — so its own dedupe lookup could
+  never match a record it had created, and every repeat lead from that form
+  opened a second contact. It was the only pipeline storing numbers without
+  the zero, so it was aligned to the majority rather than the other way round.
+  **Old rows were deliberately NOT migrated:** a contact written before the
+  fix is created once more in the correct format and from then on dedupes
+  normally, which is a bounded, self-healing cost — cheaper and safer than a
+  bulk rewrite of live CRM rows.
+
+  It also carried `builtin:Ignore` on both `origami:search` and
+  `origami:updateFieldsId`, the last silent-deletion path left in any lead
+  pipeline. Both were removed. That reasoning only became correct once `dlq`
+  was on: with the safety net off, `Ignore` and a hard error both lost the
+  lead, so removing it bought nothing. With the net on, the error is preserved
+  and retryable instead. **Order mattered — the same edit made a day earlier
+  would have been pointless.** `3838911` now reports the same two `Ignore`
+  modules as its siblings, both on ManyChat, where a failure costs the
+  WhatsApp greeting and not the lead.
 
   Two traps for whoever picks this up. **`scenarios_get` on these returns
   ~86k characters**, nearly all of it the country enum under
