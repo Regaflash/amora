@@ -566,22 +566,41 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   init rather than at module 7, which is a different kind of broken, not a
   fixed one.
 
-  The cause is near-certain and is the trap for the next attempt: **this
-  scenario's modules carry `metadata.parameters`** — the parameter schema for
-  the webhook and for each `account:manychat` connection — and the strip step
-  that is safe on the lead pipelines removed them here. Five modules had it
-  (1, 3, 5, 6, 7) and the error reported exactly five problems. They were put
-  back in a second update, **which has not been verified**: `isinvalid` only
-  clears on a successful activation, and activating is the one thing that also
-  drains the queue. So: **strip `expect`, `restore` and `samples`; never strip
-  `metadata.parameters`.**
+  **Two repair attempts failed, both with the identical error, and the second
+  disproved the first diagnosis.** Attempt 1 restored nothing; attempt 2
+  restored `metadata.parameters` to modules 1, 3, 5, 6, 7 on the theory that
+  five stripped blocks explained "5 problems" — and the count stayed at five.
+  The remaining candidate is **`metadata.expect`**, which in this blueprint
+  sits on exactly five modules too: **2, 3, 5, 6, 7**. That is almost
+  certainly it, and it is why `expect` cannot be stripped here even though
+  stripping it is safe on the eight lead pipelines. The difference worth
+  noting: those scenarios report `islinked: true`, this one `islinked: false`.
+  **Do not strip `expect` from an unlinked scenario.**
 
-  Sequence for whoever finishes it: clear the 6 queued items in the UI first
-  (there is no API tool to flush a webhook queue — `hooks_*` has
-  create/delete/update/get/list/ping/learn and nothing else), *then* activate,
-  *then* confirm `isinvalid` went false. Clearing first means a validation
-  failure costs nothing and a success does not message six people about a call
-  that happened two days ago.
+  It was not attempted a third time on purpose. Module 2's `expect` carries the
+  ~250-entry country enum that made this blueprint 86k in the first place, and
+  modules 6 and 7 carry the full nested `actions` option spec; reconstructing
+  all of that by hand, against a live customer-facing scenario, is a worse bet
+  than the alternative below.
+
+  **The way out is the UI, and it is one action: open `3772899` in the Make
+  editor and press Save.** The editor regenerates `metadata.expect` from the
+  app definitions on save, which is exactly what is missing, and it preserves
+  the behavioural fixes already stored in the blueprint — the `Resume` guard,
+  the three `Ignore` handlers, the future-only filter and `dlq: true`. Then
+  activate and confirm `isinvalid` goes false.
+
+  **Net position after all of it: unchanged for the owner and safe.** Before:
+  off, queue 6, failing at module 7. After: off, queue 6, failing at init.
+  Every activation attempt produced 0-operation runs — nothing sent, nothing
+  consumed, no customer contacted, and the six queued items are still intact.
+
+  The queue could not be flushed from here either: `hooks_*` has
+  create/delete/update/get/list/ping/learn and nothing that clears a queue.
+  That is why the future-only filter was added — it lets the six stale items
+  drain harmlessly on the next successful activation instead of messaging six
+  people about a call that already happened, and it is the correct rule
+  permanently, not just for this cleanup.
 
   Worth knowing while judging that risk: this scenario **has no `SendFlow`
   module**. It only writes ManyChat custom fields. Whether a field write
