@@ -1210,7 +1210,13 @@
 
   <!-- ===== 10 · CTA + טופס לידים ===== -->
   <section class="contact section" id="contact">
-    <picture class="contact__bg-wrap"><source type="image/webp" srcset="assets/img/cta-1200.webp" /><img class="contact__bg" src="assets/img/cta-1200.jpg" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
+    <!-- Full-bleed at 100vw, so a lone 1200w candidate was being upscaled on
+         every desktop and every retina laptop — softest exactly where the lead
+         form sits. The 2000w file has existed since the 2026-08-11 drop (the
+         new source is 2400px; the old one was 1440 and could not produce it)
+         and simply was not referenced. sizes is 100vw because the picture is
+         the section's background, not a column. -->
+    <picture class="contact__bg-wrap"><source type="image/webp" srcset="assets/img/cta-1200.webp 1200w, assets/img/cta-2000.webp 2000w" sizes="100vw" /><img class="contact__bg" src="assets/img/cta-1200.jpg" srcset="assets/img/cta-1200.jpg 1200w, assets/img/cta-2000.jpg 2000w" sizes="100vw" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
     <div class="contact__scrim" aria-hidden="true"></div>
 
     <div class="contact__grid">
