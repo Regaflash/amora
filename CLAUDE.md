@@ -517,12 +517,26 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   **Make's own alerting is not in the API.** `organizations_update` accepts
   name, country and timezone only — verified against the tool schema, and
   there is no `users_update` tool at all. `keys_list` is empty, so there is no
-  stored API token to give an in-Make watchdog either. The account-level
-  "Scenario deactivated" and "Incomplete executions" emails are UI-only, under
-  the avatar → Notifications, and they are what would have caught both
-  incidents. A registry-wide search for a DLQ/replay/retry tool returns only
-  read tools (`executions_get`, `executions_list`, `executions_get-detail`) —
-  **an incomplete execution cannot be replayed from the API.**
+  stored API token to give an in-Make watchdog either. A registry-wide search
+  for a DLQ/replay/retry tool returns only read tools (`executions_get`,
+  `executions_list`, `executions_get-detail`) — **an incomplete execution
+  cannot be replayed from the API.**
+
+  **But the notification settings were ALREADY ON, and this file spent a whole
+  session telling the owner to switch them on.** Checked in the UI 11.8.2026:
+  they live under Profile → **Email preferences** (with an org-level copy under
+  Organization → Notification options), there is no option called "Incomplete
+  executions", and the four that exist — *Errors in scenario run*, *Warning in
+  scenario run*, *Scenario deactivation*, *Credit limit reached* — were all
+  enabled already. Nothing needed changing.
+
+  **So the alerting gap is not configuration, it is delivery or attention, and
+  that is a different repair.** The proof is `3772899`: Make **auto-deactivated
+  it on 9.8.2026 12:11:23** — with *Scenario deactivation* switched on — and
+  nobody acted for two days. Either the mail is not arriving, is going to an
+  address nobody reads, or is arriving and being missed. Check that before
+  building anything: an alert that fires into a void is indistinguishable from
+  no alert, which is exactly the failure this whole entry is about.
 
 - **The 25.7 lead was recovered without the UI, and the root cause is an
   invisible character.** Make will not hand back a failed execution's payload,
@@ -560,6 +574,37 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   a regex, so `replace(...; /[^0-9]/g; "")` collapses the whole chain into one
   robust expression. **Not yet done: it is one more wholesale blueprint
   resend per scenario, across all eight.**
+
+  **Retrying the queued item from the UI does NOT pick up the guard.** Tried
+  11.8.2026 on `4784873`, whose module 4 demonstrably carries the `Resume`
+  handler: the retry failed with the identical
+  `The string supplied did not seem to be a phone number`, the item returned
+  to Unresolved and its attempt counter went 0 → 1. The most likely reading is
+  that a replay re-runs the stored bundle against the blueprint as it was when
+  the run failed, so a handler added afterwards is invisible to it — **this is
+  inferred from one observation, not proven.** The practical consequence is
+  firm either way: **do not keep pressing Retry on a pre-fix item.** Recover
+  the lead from Facebook with the recipe above, act on it by hand, and clear
+  the queue entry.
+
+  One reconciliation worth keeping, because the two dates look like two
+  incidents and are one: the queued item is stamped **26.7 12:44:56**, not
+  25.7. The lead reached Facebook on 25.7 at 09:53:39Z and sat in the webhook
+  queue; on 26.7 at 09:44:53Z the scenario was started by hand, the queue
+  drained, and the failure was recorded then. Same lead, one incident.
+
+- **A browser session can silently stop a live scenario, and the API is how
+  you find out.** On 11.8.2026 `3838911` — a Facebook lead intake on form
+  `772620469095975` — was found inactive. Its blueprint was intact and there
+  were **zero failed executions**, so nothing had auto-deactivated it;
+  `executions_list` showed a bare `{"type":"stop"}` by the account at
+  02:26:02Z, six minutes after a UI-driven retry elsewhere, and the session
+  that did it reported touching nothing else. It was reactivated the same
+  hour and its webhook queue was still 0, so no lead was lost in the ~75
+  minutes it was down. **`type: "stop"` / `type: "start"` entries in
+  `executions_list` are the audit trail for this**, and a guard sweep that
+  filters on `isActive` will silently drop a stopped scenario from its own
+  results rather than flagging it — count the rows, not just their contents.
 
 - **Meta CAPI: connected and accepted, 5.8.2026.** Origami status changes flow
   through Make `3756300` → `supabase/functions/meta-capi` → Graph API. Four
