@@ -1370,7 +1370,7 @@
     var fEmail = input('email', 'email', lead.email || '');
     var fDate = input('date', 'event_date', lead.event_date || '');
     var fVenue = input('text', 'venue', '');
-    var fPackage = input('text', 'package', 'צילום סטילס + וידאו · שני צלמים · אירוע מלא');
+    var fPackage = input('text', 'package', 'צילום סטילס + וידאו · שלושה צלמים · אירוע מלא');
     var fHours = input('text', 'hours', '');
     var fPrice = input('number', 'price_total', '');
     fPrice.min = '0'; fPrice.step = '50';

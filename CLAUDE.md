@@ -636,21 +636,6 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.
-- **How many photographers, and is it two or three?** Two owner-supplied
-  documents in Google Drive disagree, and the site currently follows neither
-  by accident: the landing-page brief (`אמורה | באנר + דף נחיתה`, Nov 2025,
-  written by a marketing contractor) lists **"3 צלמים מקצועיים - וידאו
-  וסטילס"**, while the newer quote (`הצעת מחיר Amora+Regaflash חתונה מעודכן
-  V2`, Jun 2026, the studio's own) specifies **"צוות של 2 צלמי סטילס
-  מקצועיים"**. Both can be true at once — two stills plus one video is three
-  bodies — but the site says **"שני צלמים בחתונה מלאה"** in the trust bar,
-  where it replaced the unsupportable `+500 זוגות`, and that is a headline
-  differentiator. Nothing was changed on the strength of the newer document:
-  picking a number from whichever file is more recent is exactly how the
-  album and film-length contradictions got in. If the honest claim is
-  "שלושה צלמים — שניים סטילס ואחד וידאו", it is a better one than what is
-  there now and it is one line in the trust bar, the FAQ pair and
-  `assistant.js`. It needs the owner's word first.
 - **The photographs themselves.** The Drive library is large and looks right
   from its metadata — roughly 150 frames under `support@amora-studios.com` in
   sequential `R61_*/R62_*` DSLR filenames, which is camera output rather than
@@ -662,11 +647,14 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   through GitHub's web UI, after which `tools/build-assets.mjs` and
   `tools/gen-image-schema.py` do the rest.
 
-### The three contradictions — resolved, and one needs the owner's word
+### The four contradictions — all resolved
 
-All three were aligned to what the site already said elsewhere, rather than to
-a new promise. Each carries an HTML/JS comment at the site of the change saying
-what it used to say and why it moved.
+The first three were aligned to what the site already said elsewhere, rather
+than to a new promise. The fourth — the photographer count, below — is the one
+exception and the more dangerous shape: it could not be settled from inside the
+repo, because the repo was self-consistent and *wrong*. It took the owner's
+word. Each carries an HTML/JS comment at the site of the change saying what it
+used to say and why it moved.
 
 - **The album.** Process step 04 and `assistant.js` both put the printed album
   inside 30 days, while the FAQ, the FAQPage JSON-LD and `cost.html` put it two
@@ -677,13 +665,50 @@ what it used to say and why it moved.
   four other places say 3–5 דקות. Retitled "חתונה אחת, סרט אחד". `assistant.js`
   names the section in its answer and changed with it; "שלוש דקות" stays in its
   keyword list, because that is still what a visitor might type.
-- **`+500 זוגות מאושרים`** → **`שני צלמים בחתונה מלאה`**, in the trust bar.
+- **`+500 זוגות מאושרים`** → **`שלושה צלמים בחתונה מלאה`**, in the trust bar.
   Nothing in the repo supported the count, and `assistant.js` carries a
   no-counts policy that contradicted it — the same objection that removed the
   testimonial portraits. The replacement is backed by the FAQ and `cost.html`
   and is a sharper differentiator anyway, since most studios sell the second
   shooter as an upgrade. **If the studio can stand behind the number, putting
   it back is one line** — the old text is in the comment above it.
+
+### The crew is three, and it took a fourth contradiction to settle it
+
+**Owner-confirmed 2026-08-11: three photographers at a full wedding — two on
+stills, one on video.** The site had said **two** (one stills, one video)
+everywhere since launch. Two owner documents in Google Drive disagreed with
+that and with each other: the landing-page brief (`אמורה | באנר + דף נחיתה`,
+Nov 2025, a marketing contractor's) lists "3 צלמים מקצועיים - וידאו וסטילס",
+while the newer quote (`הצעת מחיר Amora+Regaflash חתונה מעודכן V2`, Jun 2026,
+the studio's own) specifies "צוות של 2 צלמי סטילס מקצועיים". Both are true at
+once — two stills plus one video is three bodies — and that reconciliation is
+what the owner confirmed.
+
+**This was NOT a one-line change, and the reason is worth keeping.** The count
+was never only a number: the site told a *two-person* story in the grammar
+itself. `שנינו מצלמים ביחד` — the dual — ran in the about section, the
+`about` assistant answer and the video FAQ; `אחד על הסטילס ואחד על הווידאו`
+and `שניהם על הזוג משתי זוויות` ran in four more. Changing `2`→`3` and
+stopping would have left the page contradicting itself in the same screen.
+Nine places moved together, and they are the places to move again if it ever
+changes: the trust bar, the meta description, the services card, the about
+paragraph, **both** copies of **two** different FAQ answers (the visible
+`.faq__a` and its byte-locked FAQPage twin — `check.sh` compares them), the
+`cost.html` prose and its inclusions list, `llms.txt` (Hebrew **and** the
+English summary, which said "A two-person … studio"), `assistant.js`
+(`photographers` and `about`), and `admin.js`'s default contract line.
+
+Two follow-ons that are easy to miss. `tools/verify.mjs` pinned the string
+`אחד על הסטילס` in two assistant rows — the only runtime assertion that the
+assistant quotes the same headcount as the page — and now pins
+`שניים על הסטילס`; it was re-pinned rather than loosened, on purpose. And
+`assistant.js` **keeps `שני צלמים` as a matcher key** alongside the new
+`שלושה צלמים`: the answer changed, the question a visitor types did not, and
+someone who read the old copy still asks for a "צלם שני".
+
+`sitemap.xml` needed regenerating afterwards (`tools/gen-sitemap.py`) —
+`check.sh` catches this, and it is the reminder that the file is generated.
 
 ## Before any deploy
 

@@ -1679,8 +1679,13 @@ await page.waitForTimeout(200);
     return all[all.length - 1] || '';
   };
   const table = [
-    ['"מי הצלמים" belongs to the photographers', 'מי הצלמים אצלכם?', 'אחד על הסטילס', null],
-    ['"מספר הצלמים" no longer buys an album', 'מה מספר הצלמים בחתונה?', 'אחד על הסטילס', 'אלבום מודפס'],
+    // Both needles said 'אחד על הסטילס' until 2026-08-11, when the crew went
+    // from two to three and the phrase became 'שניים על הסטילס'. Pinning the
+    // new wording rather than loosening to 'הסטילס' keeps these rows doing
+    // their real job: they are the only runtime assertion that the assistant
+    // quotes the same headcount the page does.
+    ['"מי הצלמים" belongs to the photographers', 'מי הצלמים אצלכם?', 'שניים על הסטילס', null],
+    ['"מספר הצלמים" no longer buys an album', 'מה מספר הצלמים בחתונה?', 'שניים על הסטילס', 'אלבום מודפס'],
     ['"יש ווטסאפ" reaches the contact card', 'יש ווטסאפ?', '050-3662699', null],
     ['a couple with no date meets the hatch, not the fallback', 'עוד לא קבענו תאריך, אפשר לדבר?', 'גם בלי תאריך', 'אין לי תשובה'],
     ['"כמה שעות" is about our day, not the delivery clock', 'כמה שעות אתם איתנו ביום החתונה?', 'מספר השעות', 'תוך 7 ימים'],

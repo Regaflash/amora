@@ -1,9 +1,10 @@
 # Amora Studio
 
-> סטודיו של שני צלמים לצילום חתונות ואירועים, סטילס ווידאו תחת קורת גג אחת.
-> הבסיס בתל אביב והעבודה בכל הארץ. האתר בעברית.
+> סטודיו לצילום חתונות ואירועים, סטילס ווידאו תחת קורת גג אחת — שלושה צלמים
+> בחתונה מלאה. הבסיס בתל אביב והעבודה בכל הארץ. האתר בעברית.
 >
-> A two-person wedding photography and videography studio. Based in Tel Aviv,
+> A wedding photography and videography studio; three shooters at a full
+> wedding, two on stills and one on film. Based in Tel Aviv,
 > Israel; shoots across the country. Stills and film are produced by the same
 > studio rather than subcontracted. The site is authored in Hebrew — the
 > single canonical document per URL — with optional in-place machine
