@@ -10,7 +10,7 @@ private CRM at `admin.html` reads it back.
 ```
 Before any change goes out:
 1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 248 runtime checks in a real browser
+   node tools/verify.mjs   # must exit 0 — 250 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
    # check.sh number was right and untouched, the verify.mjs one had been
@@ -258,13 +258,35 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
     failure mode — no network, dead endpoint, a model that refuses — leaves
     the page in Hebrew, silently and on purpose. There is no loading state
     that can strand a visitor.
-  - **The client sends sha256 hashes of normalised strings**, not the page, to
-    `…supabase.co/functions/v1/translate`
-    (`supabase/functions/translate/index.ts`). Hits come from
+  - **The client sends the PAGE'S OWN TEXT to
+    `…supabase.co/functions/v1/translate`, in plaintext.** This entry used to
+    say it sends "sha256 hashes of normalised strings, **not the page**", and
+    that was wrong in the way that matters: `i18n.js:204/227` POSTs
+    `{lang, items:[{h, s}]}` where `s` **is** the normalised Hebrew string. The
+    hash is a cache key travelling *alongside* the text, not a substitute for
+    it — a hash cannot be translated. The sentence mattered because
+    `privacy.html` was written from it; do not restore it.
+    (`supabase/functions/translate/index.ts`.) Hits come from
     `public.translations`, keyed by STRING and not by page
     (`docs/supabase-translations.sql`), so nav and footer copy warms the whole
     site on the first view; only misses reach a model. `connect-src` in
     `vercel.json` already names that origin.
+  - **The misses reach a THIRD PARTY, and the first draft of the privacy
+    section forgot it.** `translate/index.ts` calls Google Gemini
+    (`generativelanguage.googleapis.com`), falling back to Cerebras
+    (`api.cerebras.ai`). Both are server-side, so `connect-src` never sees them
+    and nothing in the browser reveals them — which is exactly why a session
+    writing disclosure from the client alone will under-count again. What they
+    receive is the site's published marketing copy and nothing about a visitor;
+    `public.translations` stores `hash/lang/source/target/model/created_at` with
+    no visitor column. `privacy.html`'s `#lang` section names both by name.
+  - **The visitor's own typed question is NOT sent.** The collector takes every
+    Hebrew text node in `<body>` outside `[data-no-translate]`, and the
+    assistant panel is deliberately inside that net — so a question typed into
+    `assistant.js` used to be hashed, bundled and POSTed with the page's
+    published copy. `addMessage()` now marks the `user` role's wrapper
+    `data-no-translate`; the bot's replies and all the chrome keep translating,
+    which is what `verify.mjs` pins. Two assertions guard it.
   - **It ships on the three indexable pages only.** `index.html`, `cost.html`
     and `camera-3d.html` — the same three that carry `assistant.js`. The legal
     pages are excluded twice over: no `<script>`, and `NO_TRANSLATE_PAGE` in
@@ -286,12 +308,23 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
     direction and are now logical; the floating controls stay physical on
     purpose, so the right-hand side stays clear for the a11y toolbars.
 
-  **Open, and it is the same rule as the lead form's field list:
-  `privacy.html` does not mention this feature.** It enumerates the a11y
-  `localStorage` key and states that preference is sent nowhere; it names
-  neither `amora.lang` nor the page's own text reaching our Edge Function.
-  Verified absent 2026-08-09. The lead-form rule in this file exists because a
-  page that enumerates what it stores is wrong the moment it under-counts.
+  **CLOSED 2026-08-11, and the shape of the gap is the part to remember.**
+  `privacy.html` is an *enumerating* page — it lists the ten form fields one by
+  one and names the a11y `localStorage` key — which is the strongest kind of
+  privacy statement to publish and the most brittle: it is wrong the moment it
+  under-counts. The translator shipped after it was written and falsified
+  **three** sentences that were true when written, not merely leaving one out:
+  "דבר אחד באתר כן פונה לחברה אחרת ברגע שנכנסים אליו" (a returning visitor
+  whose stored language is not Hebrew reaches our Edge Function during mount),
+  "המידע היחיד שמגיע אלינו נשלח ברגע אחד" (→ "המידע היחיד **עליכם**"), and
+  "שום דבר אינו נשמר בדפדפן שלכם" — which the page's own a11y bullet had
+  already contradicted eight sections later. All three now read correctly, a
+  `#lang` section states what leaves the browser, and the storage list names
+  `amora.lang`.
+
+  **The rule that produced the bug: shipping a feature that talks to the
+  network means editing `privacy.html` in the same change.** That is the same
+  rule as the lead form's field list, and it has now been broken once.
 - There are eight pages, not two: `index.html`, `cost.html`, `camera-3d.html`,
   `accessibility.html`, `privacy.html`, `terms.html`, `404.html` and
   `admin.html` (the private lead CRM — noindex, no-store, its own enforcing
@@ -673,15 +706,21 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
 - ~~Google Search Console~~ — **done, 2026-08-04.** See the Search Console
   entry under Infrastructure above. It is already earning: the image-schema
   finding below arrived as a Search Console email.
-- **A business email on the site.** No longer blocking `LEAD_ALERT_TO` — alerts
-  arrive, and since 5.8 they arrive at `support@amora-studios.com`, a live
-  Google account on the domain. Still absent from the pages themselves: there
-  is no `mailto:` anywhere in the eight HTML files, and `privacy.html` and
-  `accessibility.html` both carry `[להשלים]` where an address belongs. Those
-  two are legal statements that name a contact route by law, so the gap is
-  theirs to close, not the homepage's. **Confirm the mailbox is actually read**
-  — an alert delivered to an unopened inbox is the same failure as no alert,
-  wearing a green tick.
+- ~~**A business email on the site.**~~ — **done 2026-08-11, in the five slots
+  that legally need one and nowhere else.** `support@amora-studios.com` now
+  fills `privacy.html`'s three (`מי אחראי למידע`, rights requests, image
+  takedown), `accessibility.html`'s accessibility-enquiries line and
+  `terms.html`'s operator line — the first `mailto:` anywhere in the eight HTML
+  files. It was deliberately NOT added to the homepage or `cost.html`: those
+  convert through the form and WhatsApp, and the legal pages are the only
+  places an address is a statutory obligation rather than a design choice.
+
+  **The obligation this creates is the owner's, and no code can discharge it:
+  publishing an address on a legal page promises that someone reads it.**
+  `privacy.html` further undertakes a reply within 30 days, as the regulations
+  require. Alerts land in that mailbox; nobody has confirmed it is opened. An
+  alert delivered to an unread inbox is the same failure as no alert, wearing
+  a green tick.
 - Venue names, dated real weddings, and written confirmation that the three
   testimonials may be attributed. This is what unblocks service-area and
   case-study pages, and nothing else does.

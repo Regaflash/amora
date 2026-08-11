@@ -682,6 +682,14 @@
   function addMessage(role, text, actions) {
     if (!logEl) return null;
     var wrap = el('div', 'am-msg am-msg--' + role);
+    // The visitor's own words never leave the browser. i18n.js collects every
+    // Hebrew text node in <body> that is not inside [data-no-translate] and
+    // POSTs the plaintext to our translate function; the assistant's panel is
+    // deliberately translated, so without this attribute a question typed here
+    // would be sent along with the page's published copy. Only the 'user' role
+    // opts out — the bot's replies and all the chrome keep translating, which
+    // is the behaviour verify.mjs pins.
+    if (role === 'user') wrap.setAttribute('data-no-translate', '');
     var bubble = el('div', 'am-bubble');
     var lines = String(text).split('\n');
     for (var k = 0; k < lines.length; k++) {

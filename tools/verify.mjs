@@ -747,11 +747,12 @@ await page.waitForTimeout(200);
 // strings travel. The endpoint is stubbed: each string comes back wrapped
 // in «guillemets», so a translated surface is recognizable on sight.
 {
+  const sentStrings = [];      // every plaintext string that left the browser
   const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
   await p.route('**/functions/v1/translate', async (route) => {
     const body = route.request().postDataJSON();
     const t = {};
-    for (const it of body.items || []) t[it.h] = '«' + it.s + '»';
+    for (const it of body.items || []) { sentStrings.push(it.s); t[it.h] = '«' + it.s + '»'; }
     await route.fulfill({ json: { t } });
   });
   await p.goto(BASE + '/', { waitUntil: 'load' });
@@ -788,6 +789,26 @@ await page.waitForTimeout(200);
        const b = document.querySelector('.am-msg--bot .am-bubble');
        return b && b.textContent.includes('«');
      }), true, true);
+
+  // ...but the visitor's OWN words are not. The panel is translated on
+  // purpose, and the collector takes every Hebrew text node not inside
+  // [data-no-translate] — so before the opt-out, a question typed here was
+  // hashed, bundled and POSTed to our endpoint along with the page's
+  // published copy. The string below is nonsense on purpose: it appears
+  // nowhere in the repo, so if it shows up in a request body it can only
+  // have come from the input.
+  const TYPED = 'שאלה פרטית מאוד ידיעבל';
+  await p.locator('.am-form__input').fill(TYPED);
+  await p.locator('.am-form__send').click();
+  await p.waitForTimeout(1500);
+  ok('the visitor’s typed question never reaches the translate endpoint',
+     !sentStrings.some((s) => s.includes(TYPED)),
+     sentStrings.filter((s) => s.includes(TYPED)).length, 0);
+  ok('and it is still on screen, in the words the visitor typed',
+     await p.evaluate((typed) => {
+       const b = document.querySelector('.am-msg--user .am-bubble');
+       return !!b && b.textContent.trim() === typed;
+     }, TYPED), true, true);
 
   ok('the byte-locked JSON-LD never felt a thing',
      await p.evaluate((before) =>

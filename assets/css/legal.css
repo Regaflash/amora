@@ -33,6 +33,13 @@
 .legal ul { padding-inline-start: 22px; }
 .legal li { margin-bottom: 8px; }
 .legal a { color: var(--mocha); border-bottom: 1px solid var(--line); }
+/* The contact address is one token and must not be split. Measured at 390px:
+   the default break put "support@amora-" on one line and ".studios.com" on
+   the next, and in RTL the sentence's own full stop then landed at the START
+   of the second line — so the address appeared to end in a dot and to begin
+   with one. nowrap moves the whole address to its own line instead; at 25
+   characters it still fits inside the 320px column. */
+.legal a[href^="mailto:"] { white-space: nowrap; }
 .legal__draft {
   border: 1px solid var(--terracotta);
   border-radius: 2px;
