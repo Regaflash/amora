@@ -565,6 +565,30 @@ Because the host is Vercel, header rules live in **`vercel.json`**, not in
   the integration guide itself cannot be read from here — the distinction
   above comes from the Events Manager screen, not from the doc.
 
+  **Meta's `channel=website` recommendations belong to regaflash.com and must
+  never be applied to this site.** Events Manager raises them against dataset
+  `2851332215058775` because the Amora campaign runs inside the Regaflash ad
+  account, so both businesses share it. Two seen on 11.8.2026: a missing
+  `custom_data.value`, and a **high-priority** nudge to install the
+  parameter-builder SDK to raise `fbc` coverage. Neither can be about this
+  site — it carries no Meta pixel and no measurement script of any kind
+  (`fbq`, `connect.facebook.net`: zero matches), and `vercel.json` sets
+  `script-src 'self'`, so a third-party tag could not execute even if someone
+  pasted one in. **The "high priority" badge is Meta's judgement about an ad
+  account, not about this repo**, and acting on it here would break
+  `privacy.html`'s promise that nothing measures a visitor who does not
+  submit.
+
+  Both are also irrelevant to the lead path on their own terms. `value` serves
+  ROAS-optimised campaigns; these are lead-gen campaigns, and inventing a
+  number to clear the warning would only pollute the data. `fbc` is a click id
+  derived from `fbclid` when someone lands on a website from an ad — and the
+  lead path has no landing at all: the form is filled inside Facebook, and
+  Meta matches these events on `lead_id`, which `meta-capi` already sends from
+  `fld_1519`. That is a stronger key than `fbc`, not a weaker one. The blank
+  Event Match Quality on the four test events is a volume problem — the score
+  is built from 24–48 hours of traffic — not an `fbc` problem.
+
   **Confirmed in the UI the same evening:** all four appear in the dataset,
   active, source "Conversions API", one each, with an activity point at 19:00
   on 5.8 and **zero errors or warnings**. The chain is verified end to end,
