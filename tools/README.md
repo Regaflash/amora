@@ -28,6 +28,14 @@ one of which (`פורמטי טלפון בשימוש`) reports a number without e
 `fail` — a count, not an assertion, hence 22. **When you add one, change the
 number in the same commit** — here and in `CLAUDE.md`, which carries the pair.
 
+**If a run comes back one short, capture the whole output.** On 2026-08-13 a
+run reported `269/270` exactly once. The `FAIL` line was printed and then
+thrown away by a `| tail -2`, and it has not reproduced in more than ten full
+runs since, including four consecutive ones run specifically to hunt it. So it
+is recorded rather than explained: not diagnosed, not dismissed, and not
+"fixed". Pipe to a file, not to `tail` — the suite names what failed, and the
+one time it mattered that name was discarded.
+
 Install every dependency in **one** `npm install --no-save` command:
 
     npm install --no-save playwright-core pngjs sharp
