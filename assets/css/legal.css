@@ -5,6 +5,12 @@
 .legal h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.8rem, 4vw, 2.8rem); line-height: 1.2; margin: 0 0 10px; }
 .legal__meta { font-size: 14px; color: var(--mocha); margin: 0 0 clamp(30px, 5vw, 50px); }
 .legal h2 { font-family: var(--serif); font-weight: 600; font-size: clamp(1.15rem, 2.2vw, 1.5rem); margin: clamp(30px, 4vw, 44px) 0 12px; }
+/* h3 had no rule in either stylesheet, so it fell through to the UA default —
+   1.17em BOLD SANS off a 17px body, i.e. 19.9px, against an h2 that clamps to
+   18.4px at 390px. The subordinate heading rendered LARGER and heavier than
+   its parent on every viewport under ~904px, on five of the content pages.
+   Same family and weight as the h2, one step down, so the hierarchy reads. */
+.legal h3 { font-family: var(--serif); font-weight: 600; font-size: clamp(1rem, 1.6vw, 1.15rem); line-height: 1.35; margin: clamp(22px, 3vw, 30px) 0 8px; color: var(--charcoal); }
 /* cost.html only (see the opt-in comment in its markup): the homepage's
    chapter rule and 72px champagne signature, on each of the page's seven
    h2s — the rhythm styles.css:218 argues for ("a reader feels the page turn
@@ -32,7 +38,15 @@
 .legal p, .legal li { font-size: 16px; color: var(--mocha); max-width: 68ch; }
 .legal ul { padding-inline-start: 22px; }
 .legal li { margin-bottom: 8px; }
-.legal a { color: var(--mocha); border-bottom: 1px solid var(--line); }
+/* Was color:var(--mocha) — the exact colour of .legal p beside it — plus a
+   border-bottom in --line, which resolves to 1.19:1 against the page. So an
+   inline link carried no colour difference AND no visible underline: nothing
+   distinguished it from the sentence around it. That is SC 1.4.1, and it bit
+   hardest on the content pages, which are link-dense by design.
+   champagne-ink measures 5.08:1 on cream, and the underline is now visible on
+   its own so the signal survives for a reader who cannot separate the hues. */
+.legal a { color: var(--champagne-ink); border-bottom: 1px solid currentColor; }
+.legal a:hover { color: var(--charcoal); }
 .legal__draft {
   border: 1px solid var(--terracotta);
   border-radius: 2px;
@@ -76,10 +90,35 @@
   margin-inline: auto;
   color: var(--mocha, #6B5B4B);
 }
+/* opacity:.85 on already-desaturated mocha computed to #807263 on cream —
+   4.18:1, under the 4.5 floor for 12px text (SC 1.4.3). Dropping the opacity
+   alone lifts it to 5.85:1, and there is no visual difference worth defending.
+   The lesson generalises: this and .form__step-note were the site's only uses
+   of opacity on body text that was already low-contrast, and one of the two
+   landed under the line. */
 .mag-figure figcaption {
   margin-top: 12px;
   font-size: var(--t-micro, 12px);
   color: var(--mocha, #6B5B4B);
   text-align: center;
-  opacity: .85;
 }
+
+/* At 390px the shell is 354px wide against a 720-unit viewBox, so the whole
+   drawing scaled by 0.49: font-size 13 rendered at 6.4 CSS px and the 2px
+   strokes at 0.98px. Measured, not guessed. Below 640px the figure switches
+   to the tall viewBox variant set by the markup's own media-driven class, and
+   the type is enlarged in user units so it survives the downscale. */
+@media (max-width: 640px) {
+  .mag-diagram { font-size: 22px; }
+  .mag-diagram text { font-size: 22px; }
+  .mag-diagram g[stroke] { stroke-width: 3.5; }
+}
+/* The geometry is hard-coded right-to-left, and these pages DO ship in
+   English and Russian — i18n.js sets dir="ltr" and NO_TRANSLATE_PAGE does not
+   exclude them. Without this the arrows point left through a left-to-right
+   document and the sequence reads 03 -> 02 -> 01: the exact defect that was
+   caught and fixed for Hebrew, reintroduced for the two LTR locales.
+   Mirroring the whole drawing flips the arrows and the order together; the
+   labels are un-mirrored again so the digits do not read backwards. */
+[dir="ltr"] .mag-diagram { transform: scaleX(-1); }
+[dir="ltr"] .mag-diagram text { transform: scaleX(-1); transform-origin: center; transform-box: fill-box; }

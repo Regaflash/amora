@@ -307,36 +307,10 @@ summary::-webkit-details-marker { display: none; }
 
 /* Replace-me media slots. Swap the whole `.ph` element for an <img>/<video>
    and keep the aspect ratio via the same --ratio custom property. */
-.ph {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  aspect-ratio: var(--ratio, 4 / 5);
-  background: repeating-linear-gradient(135deg, #EFE6D6 0 7px, #F7F2EA 7px 15px);
-  border: 1px solid var(--line);
-  border-radius: 0;
-}
-.ph--flush { border: 0; border-radius: 0; }
-.ph--dark {
-  background: repeating-linear-gradient(135deg, #26221C 0 8px, #1C1A18 8px 18px);
-  border-color: rgba(201, 174, 140, 0.35);
-}
-.ph__label {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .06em;
-  color: var(--mocha);
-  text-align: center;
-  padding: 10px;
-}
-.ph-note {
-  position: absolute;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .1em;
-  color: rgba(217, 195, 165, 0.5);
-  margin: 0;
-}
+/* The .ph placeholder family (.ph, .ph--flush, .ph--dark, .ph__label, .ph-note)
+   was removed 2026-08-13: "replace-me media slots" from before the studio's
+   own photographs landed. Zero occurrences of class="ph in any HTML or JS. */
+
 
 /* Buttons / links ---------------------------------------------------- */
 

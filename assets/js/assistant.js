@@ -79,6 +79,7 @@
       a: 'גלריית תמונות ראשונה תוך 7 ימים.\n' +
          'הגלריה המלאה והסרט תוך 30 יום מהאירוע.\n' +
          'אלבום מודפס — עוד שבועיים אחרי שאתם מאשרים את הבחירה.',
+      actions: ['delivery'],
       next: ['package', 'film', 'album']
     },
     {
@@ -99,6 +100,7 @@
       // the old copy — or any competitor's — still asks for a "צלם שני".
       keys: ['צלם שני', 'שני צלמים', 'שלושה צלמים', 'כמה צלמים', 'צוות', 'מי מצלם', 'צלמת', 'הצלם', 'הצלמים', 'עוד צלם', 'צלם נוסף'],
       a: 'בחתונה מלאה תמיד. שניים על הסטילס ואחד על הווידאו, ובחופה ובריקודים כולם על הזוג משלוש זוויות.',
+      actions: ['crew'],
       next: ['package', 'people', 'gear']
     },
     {
@@ -120,6 +122,7 @@
       a: 'כן, ובכל עסקה — לא כתוספת בתשלום, ובלי הגבלה על הכמות.\n' +
          'הסריקה נעשית דרך אפליקציה שמורידים פעם אחת, ואז התמונה הופכת לסרטון.\n' +
          'את זה מייצר Regaflash, העסק האח שלנו.',
+      actions: ['magnetsPage'],
       next: ['package', 'delivery', 'price']
     },
     {
@@ -170,7 +173,7 @@
       chip: 'מה זה צילומי Save the Date?',
       keys: ['save the date', 'זוגיות', 'צילומי זוגיות', 'לפני החתונה', 'לוקיישן', 'סייב דה דייט'],
       a: 'שעה וחצי בלוקיישן שאתם אוהבים, לפני היום הגדול. אפשר להוסיף את זה לחבילת החתונה.',
-      actions: ['gallery:std', 'form'],
+      actions: ['stdPage', 'gallery:std', 'form'],
       next: ['package', 'price', 'gallery']
     },
     {
@@ -189,7 +192,7 @@
       // there. The longer key is the specific one and must win.
       keys: ['חינה', 'אירוסין', 'בר מצווה', 'בת מצווה', 'מצווה', 'יום הולדת', 'אירוע אחר', 'ברית מילה', 'מסיבה', 'שהם לא חתונה', 'מצלמים אירועים', 'אירוע חברה', 'ערב חברה', 'אירועי חברות', 'משאבי אנוש'],
       a: 'כן — חינה, אירוסין, בר ובת מצווה, ימי הולדת ואירועי חברה. אותה עין, אותו צוות.',
-      actions: ['gallery:events', 'form'],
+      actions: ['corporate', 'gallery:events', 'form'],
       next: ['package', 'area', 'price']
     },
     {
@@ -236,6 +239,7 @@
       // appear in a gear question or outranks the gear key it contains.
       keys: ['חשוך', 'חושך', 'אולם חשוך', 'איך זה מצטלם', 'תאורה באולם', 'אור נמוך', 'גן אירועים חשוך', 'בערב'],
       a: 'אנחנו מצלמים על גוף פול־פריים ועדשות פריים מהירות, כאלה שאוספות הרבה אור, ומשלימים בתאורה שמכבדת את האור שכבר יש בחדר. בלי פלאשים שמסמאים את האורחים.',
+      actions: ['lowlight'],
       next: ['gear', 'photographers', 'package']
     },
     {
@@ -604,7 +608,18 @@
    *  dead-control rule that keeps the strip counter off the desktop. */
   var PAGE_ACTIONS = {
     cost: { file: 'cost.html', label: 'מה משפיע על המחיר' },
-    camera: { file: 'camera-3d.html', label: 'לדגם התלת־ממד' }
+    camera: { file: 'camera-3d.html', label: 'לדגם התלת־ממד' },
+    // Added 2026-08-13. The assistant ships on all six of these pages and had
+    // ZERO references to any of them: it could answer a question about
+    // delivery times and had no way to hand the visitor the page that answers
+    // it at length. Same shape as the two above, so goTo()'s cross-page
+    // fallback and carryCampaign() apply unchanged.
+    delivery: { file: 'delivery.html', label: 'כמה זמן עד התמונות' },
+    crew: { file: 'photographers.html', label: 'צלם אחד או שלושה' },
+    lowlight: { file: 'low-light.html', label: 'אולם חשוך — איך מצלמים' },
+    magnetsPage: { file: 'magnets.html', label: 'איך המגנטים עובדים' },
+    stdPage: { file: 'save-the-date.html', label: 'על צילומי Save the Date' },
+    corporate: { file: 'corporate.html', label: 'אירועי חברה' }
   };
 
   // Same four names cost.html's glimpse links use, so a visitor sent to

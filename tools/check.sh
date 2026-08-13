@@ -250,9 +250,15 @@ print(f'{"טבעת פוקוס לא בוטלה ולא נשברה":<46} ✓')
 PY
 
 # CSP hashes vs the inline scripts that are actually on the pages. A one-word
-# edit to the inline bootstrap silently invalidates its hash; today the policy
-# is Report-Only so nothing breaks visibly, which is exactly why this needs a
-# machine to notice.
+# edit to the inline bootstrap silently invalidates its hash.
+# THIS STOPPED BEING COSMETIC ON 2026-08-13. The comment here used to say "the
+# policy is Report-Only so nothing breaks visibly" — true when written, and
+# false the moment vercel.json moved to an enforcing Content-Security-Policy.
+# An unhashed boot is now BLOCKED, not reported: a returning en/ru visitor gets
+# the full-page RTL->LTR mirror flash that the boot exists to prevent.
+# Known limit, stated rather than hidden: this asserts that every copy's hash is
+# ALLOWED, not that the nine copies are identical to each other. Fork the boot
+# on one page, add a fifth sha256 to vercel.json, and this still prints green.
 # Only executable inline scripts are hashed. <script type="application/ld+json">
 # is a data block: HTML never prepares it as a script, so script-src never sees
 # it. Verified in Chromium — an ld+json block under `script-src 'none'` raises
@@ -486,7 +492,7 @@ for never in ('id', 'created_at', 'handled'):
 print(f'{"שדות הטופס מול הרשאת anon":<46} ✓ ({len(posts)} עמודות)')
 PY
 
-# The lead form exists in THREE copies (index, cost, magnets) and main.js binds
+# The lead form exists in EIGHT copies and main.js binds
 # the first [data-form] on the page, so nothing at runtime notices when they
 # drift -- a visitor on the wrong page simply gets a different question set.
 # Compares the ordered field/option/error/step attribute sequence of each copy.
@@ -522,4 +528,59 @@ if bad:
     sys.exit(1)
 print(f'{"עותקי הטופס זהים":<46} ✓ ({len(pages)} עותקים)')
 PYFORM
+# Two link guards. Both exist because the site grew from 4 pages to 9 in one
+# day and neither failure was visible to anything:
+#
+#  (a) CROSS-PAGE FRAGMENTS. The id-reference check above matches href="#..."
+#      anchored at the quote, so href="index.html#services" -- 25 of them --
+#      was invisible to it. Renaming one homepage section id killed 25 links
+#      across 8 files with a green build.
+#  (b) REACHABILITY. delivery.html, save-the-date.html and corporate.html
+#      shipped with ZERO inbound links from anywhere on the site. They were
+#      in sitemap.xml and in llms.txt and could not be reached by clicking.
+python3 - <<'PYLINKS' || fail=1
+import io, os, re, sys, glob
+
+pages = sorted(glob.glob("*.html"))
+src = {p: io.open(p, encoding="utf-8").read() for p in pages}
+ids = {p: set(re.findall(r'\sid="([^"]+)"', s)) for p, s in src.items()}
+
+# (a) every href="other.html#frag" must resolve in THAT file
+dead = []
+for p, s in src.items():
+    for tgt, frag in re.findall(r'href="([A-Za-z0-9._-]+\.html)#([^"]+)"', s):
+        if not os.path.isfile(tgt):
+            dead.append(f"{p}: {tgt} לא קיים"); continue
+        # gallery deep links are JS filter values, not ids — main.js resolves them
+        if frag.startswith("gallery-") or frag.startswith("photo-"): continue
+        if frag not in ids[tgt]:
+            dead.append(f"{p}: {tgt}#{frag}")
+if dead:
+    print(f'{"עוגנים חוצי-עמודים נפתרים":<46} ✗')
+    for d in sorted(set(dead))[:12]: print("    " + d)
+    sys.exit(1)
+print(f'{"עוגנים חוצי-עמודים נפתרים":<46} ✓')
+
+# (b) every indexable page must be reachable by clicking from index.html
+def links(s):
+    return set(re.findall(r'href="([A-Za-z0-9._-]+\.html)(?:#[^"]*)?"', s))
+indexable = set()
+for p, s in src.items():
+    m = re.search(r'<meta name="robots" content="([^"]*)"', s)
+    if m and "noindex" in m.group(1): continue
+    if p == "admin.html": continue
+    indexable.add(p)
+seen, frontier = {"index.html"}, ["index.html"]
+while frontier:
+    cur = frontier.pop()
+    for nxt in links(src.get(cur, "")):
+        if nxt in src and nxt not in seen:
+            seen.add(nxt); frontier.append(nxt)
+orphans = sorted(indexable - seen)
+if orphans:
+    print(f'{"כל עמוד ניתן להגעה מעמוד הבית":<46} ✗')
+    for o in orphans: print(f"    {o} — אין אליו מסלול קליקים מ-index.html")
+    sys.exit(1)
+print(f'{"כל עמוד ניתן להגעה מעמוד הבית":<46} ✓ ({len(indexable)} עמודים)')
+PYLINKS
 exit $fail

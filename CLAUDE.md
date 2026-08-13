@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 23 checks + a phone-format count
+1. tools/check.sh          # must exit 0 — 25 checks + a phone-format count
    node tools/verify.mjs   # must exit 0 — 270 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
