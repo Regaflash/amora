@@ -619,10 +619,31 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   straight to the endpoint, bypassing Make. What is verified is the endpoint,
   not that a real status change fires it.
 
-  **The campaign is off**, and the last `6821619` run was 4.8 18:27 while
-  `fld_1519` was only mapped 5.8 12:45 — so no lead in Origami carries a Meta
-  id at all. Until a new lead arrives, a status change returns
-  `skipped: no usable meta lead id`, correctly.
+  ~~**The campaign is off**, and the last `6821619` run was 4.8 18:27~~ —
+  **both halves were wrong by 2026-08-13, and the correction matters more than
+  the original claim did.** Make's execution log shows scenario `6821619`
+  running **every day** since — 6.8, 7.8, 8.8, 9.8, 10.8, 11.8 (four times),
+  12.8, and 13.8 at 00:17 — all status 1. Meta leads are arriving daily. The
+  scenario was also renamed on 10.8 to **"אמורה — לידים פייסבוק ← HubSpot +
+  אוריגמי + WhatsApp"**: HubSpot is now a second destination alongside Origami,
+  which no document in this repo describes and which sits awkwardly beside the
+  standing "do not duplicate Origami" rule. Ask before building against either.
+
+  `fld_1519` was mapped 5.8 12:45, so leads from 6.8 onward should carry a Meta
+  id — the old blocker ("no lead in Origami carries one") has most likely
+  cleared itself. **Re-check before planning CAPI work on the assumption that
+  it hasn't.**
+
+  Three executions failed on 10.8 with `The string supplied did not seem to be
+  a phone number` (one surfacing as Origami's `fld_1509/טלפון - פורמט מספר
+  טלפון לא חוקי`). They cluster around the owner's own edits that day and
+  everything since 10.8 19:34 succeeds, but a phone-parse failure is a lead
+  that fell through the floor, and it is not recorded whether those three were
+  recovered.
+
+  This entry is the third in this file to have been confidently wrong about
+  production. The lesson is the one already written above it: **status is not
+  knowable by reading anything.** Ask the live system.
 
 - **Lead alerts: sending — but the destination changed on 5.8, and that is the
   whole lesson.** A trigger on INSERT into `public.leads`
