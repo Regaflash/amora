@@ -486,4 +486,40 @@ for never in ('id', 'created_at', 'handled'):
 print(f'{"שדות הטופס מול הרשאת anon":<46} ✓ ({len(posts)} עמודות)')
 PY
 
+# The lead form exists in THREE copies (index, cost, magnets) and main.js binds
+# the first [data-form] on the page, so nothing at runtime notices when they
+# drift -- a visitor on the wrong page simply gets a different question set.
+# Compares the ordered field/option/error/step attribute sequence of each copy.
+python3 - <<'PYFORM' || fail=1
+import io, re, sys, glob
+
+def shape(html):
+    m = re.search(r'<form class="form" data-form.*?</form>', html, re.S)
+    if not m: return None
+    b = m.group(0)
+    return (re.findall(r'data-field="([^"]+)"', b),
+            re.findall(r'<option value="([^"]*)"', b),
+            re.findall(r'data-error="([^"]+)"', b),
+            re.findall(r'data-form-step="([^"]+)"', b))
+
+shapes = {}
+for p in sorted(glob.glob('*.html')):
+    sh = shape(io.open(p, encoding='utf-8').read())
+    if sh: shapes[p] = sh
+pages = sorted(shapes)
+if len(pages) < 2:
+    print(f'{"עותקי הטופס זהים":<46} ✗ נמצא רק עותק אחד'); sys.exit(1)
+base = pages[0]
+bad = [p for p in pages[1:] if shapes[p] != shapes[base]]
+if bad:
+    print(f'{"עותקי הטופס זהים":<46} ✗')
+    for p in bad:
+        for i, name in enumerate(('data-field', 'option', 'data-error', 'data-form-step')):
+            if shapes[p][i] != shapes[base][i]:
+                print(f'    {p} vs {base} — {name}')
+                print(f'      {base}: {shapes[base][i]}')
+                print(f'      {p}: {shapes[p][i]}')
+    sys.exit(1)
+print(f'{"עותקי הטופס זהים":<46} ✓ ({len(pages)} עותקים)')
+PYFORM
 exit $fail

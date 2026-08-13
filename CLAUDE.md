@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 22 checks + a phone-format count
+1. tools/check.sh          # must exit 0 — 23 checks + a phone-format count
    node tools/verify.mjs   # must exit 0 — 270 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
@@ -214,6 +214,21 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   inside `.faq__a` breaks the byte-lock, which is the same trap that put the
   `cost.html` link there. The explainer deliberately adds no second outbound
   link, so that stays one link in one place.
+
+  **The scan needs an APP, and two of the owner's own documents disagreed
+  about it.** `רגעפלאש-שיכתוב קופי` spells out "מורידים את האפליקציה →
+  סורקים את המגנט"; the February video scripts say only "תסרקי", with no app.
+  The site had followed the second reading and told visitors they simply point
+  a phone — including `magnets.html`, written on 2026-08-13, and `#process`
+  step 03. **Owner-confirmed the same day: an app is required**, and both were
+  corrected. This is the second time a contractor's marketing copy contradicted
+  itself about a load-bearing fact (the first was the photographer count), and
+  the resolution was the same: ask the owner, do not pick the reading that
+  reads better.
+
+  Two further facts confirmed at the same time and now published: the magnets
+  are **unlimited in number**, and guests **collect them from a station** at
+  the event. Both were in the ad copy and in neither the site nor this file.
 
   It sits INSIDE `#process` for the same reason the deliverables ledger above
   it does: the eyebrows are a hand-numbered 01→09 sequence, and a new

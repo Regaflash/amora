@@ -557,15 +557,15 @@ await page.waitForTimeout(200);
            i.querySelector('.faq__a').children.length === 0);
      }), true, true);
 
-  ok('the ledger holds five rows and every timing lives in a byte-locked answer',
+  ok('the ledger holds six rows and every timing lives in a byte-locked answer',
      await p.evaluate(() => {
        const rows = [...document.querySelectorAll('#process .deliver__item')];
-       if (rows.length !== 5) return false;
+       if (rows.length !== 6) return false;
        const faqs = [...document.querySelectorAll('.faq__a')].map((a) => a.textContent);
        return rows.every((r) => {
          const when = r.querySelector('.deliver__when').textContent.trim();
          return faqs.some((f) => f.includes(when));
-       }) && rows[4].querySelector('.deliver__what').textContent.includes('תוספת');
+       }) && rows[5].querySelector('.deliver__what').textContent.includes('תוספת');
      }), true, true);
 
   await p.goto(BASE + '/#photo-5', { waitUntil: 'load' });
@@ -596,9 +596,9 @@ await page.waitForTimeout(200);
   const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const np = await ctx.newPage();
   await np.goto(BASE + '/', { waitUntil: 'load' });
-  ok('with JS off, all ten answers and the five ledger rows are served',
+  ok('with JS off, all ten answers and the six ledger rows are served',
      await np.evaluate(() => document.querySelectorAll('.faq__a').length === 10
-       && document.querySelectorAll('.deliver__item').length === 5), true, true);
+       && document.querySelectorAll('.deliver__item').length === 6), true, true);
   await ctx.close();
 }
 
