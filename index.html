@@ -1252,6 +1252,23 @@
       <form class="form" data-form method="dialog" novalidate>
         <div class="form__fields" data-form-fields>
           <p class="form__title">בדיקת זמינות</p>
+          <!-- Two steps since 2026-08-13, and the SPLIT POINT is dictated by the
+               database, not by taste. public.leads has name and phone NOT NULL (with
+               length checks on both); event_date and event_type are nullable. So step
+               1 holds exactly the two columns a row cannot exist without -- which are
+               also exactly what you need in order to ring someone back. A "date
+               first" step reads better and is unbuildable: the partial row would
+               violate name NOT NULL.
+               DOM ORDER IS UNCHANGED by this split -- name, phone, date, date_tbd,
+               type, email, area, coverage, message, company, the same sequence as
+               before, just wrapped in two groups. That is what keeps verify.mjs's
+               "required fields precede the optional email" assertion true untouched.
+               Neither panel ships hidden: with JS off this is one complete form with
+               one submit button, exactly as it was. JS hides step 2 at init. -->
+          <p class="form__steps" data-form-steps hidden>שלב <span data-step-now>1</span> מתוך 2</p>
+
+          <div class="form__step" data-form-step="1" role="group" aria-labelledby="lead-step-1">
+            <p class="form__step-title" id="lead-step-1" tabindex="-1">קודם כול — לאן נחזור אליכם</p>
 
           <label class="field">
             <!-- The four aria-required fields carry a visible marker too. They
@@ -1273,6 +1290,12 @@
             <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
             <span class="field__error" id="err-phone" data-error="phone"></span>
           </label>
+
+            <p class="form__step-note">זה הכול לשלב הזה. גם אם תעצרו כאן, הפרטים מגיעים אלינו ונחזור אליכם.</p>
+          </div>
+
+          <div class="form__step" data-form-step="2" role="group" aria-labelledby="lead-step-2">
+            <p class="form__step-title" id="lead-step-2" tabindex="-1">ועכשיו — על האירוע עצמו</p>
 
           <div class="field-row">
             <!-- A <div> rather than a <label>: the opt-out below needs a label
@@ -1339,9 +1362,26 @@
             <textarea class="field__control" name="message" rows="3" data-field="message"></textarea>
           </label>
 
+
+            <!-- Back, not "cancel": nothing is cleared, so returning and continuing is
+                 lossless. In RTL forward is <- and back is ->, as everywhere else. -->
+            <button class="form__back" type="button" data-form-back hidden>→ חזרה</button>
+          </div>
+
           <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
 
-          <button class="form__submit" type="submit" data-submit>שלחו — נחזור אליכם היום</button>
+          <!-- Three labels as SPANS, not one textContent the JS rewrites. The old
+               code captured the button's text and wrote the literal 'שולחים…' over
+               it, which injected Hebrew into an English, Arabic or Russian page and
+               then tripped i18n.js's MutationObserver. Spans are translated on the
+               first pass, all three, because i18n walks text nodes without checking
+               visibility. Accessible-name computation skips display:none subtrees,
+               so the button announces exactly one of them. -->
+          <button class="form__submit" type="submit" data-submit>
+            <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים ←</span>
+            <span data-submit-label="send">שלחו — נחזור אליכם היום</span>
+            <span data-submit-label="sending" hidden>שולחים…</span>
+          </button>
           <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
           <p class="form__failure" data-form-failure role="alert" hidden></p>
           <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
