@@ -21,6 +21,16 @@ worse=$(for f in assets/img/*.webp; do j="${f%.webp}.jpg"; [ -f "$j" ] || contin
   [ "$(stat -c%s "$f")" -ge "$(stat -c%s "$j")" ] && basename "$f"; done)
 if [ -n "$worse" ]; then say "WebP כבד מ-JPEG" "✗"; echo "$worse" | sed 's/^/    /'; fail=1; else say "כל WebP קטן מה-JPEG" "✓"; fi
 
+# Same rule one format along, and the reason is the same inversion: <picture>
+# serves the FIRST source the browser understands, so an AVIF heavier than the
+# WebP beside it hands the newest browsers the biggest file. build-assets.mjs
+# steps the AVIF quality down until it wins and writes NO file if it never
+# does — so a losing .avif on disk means someone put it there by hand.
+avifworse=$(for f in assets/img/*.avif; do [ -e "$f" ] || continue; w="${f%.avif}.webp"; [ -f "$w" ] || continue
+  [ "$(stat -c%s "$f")" -ge "$(stat -c%s "$w")" ] && basename "$f"; done)
+if [ -n "$avifworse" ]; then say "AVIF כבד מ-WebP" "✗"; echo "$avifworse" | sed 's/^/    /'; fail=1
+else say "כל AVIF קטן מה-WebP" "✓ ($(ls assets/img/*.avif 2>/dev/null | wc -l) קבצים)"; fi
+
 # the placeholder must be gone before launch
 if grep -rq 'SITE_URL' index.html robots.txt sitemap.xml 2>/dev/null; then
   say "SITE_URL עדיין placeholder" "✗ הרץ tools/set-site-url.sh"; fail=1

@@ -142,7 +142,28 @@ for (const s of SLOTS) {
       console.log(`!! ${base}.webp ${webp.length} B >= ${base}.jpg ${jpg.length} B`);
     }
     writeFileSync(`${OUT}/${base}.webp`, webp);
-    out.push({ w, h, base });
+
+    // AVIF, and the bar it has to clear is the WEBP, not the JPEG. <picture>
+    // takes the first source the browser understands, so an AVIF heavier than
+    // the WebP beside it would hand the NEWEST browsers the biggest file —
+    // the exact inversion the webp-vs-jpeg rule above exists to prevent.
+    // tools/check.sh asserts the same thing on disk.
+    // Quality numbers are not comparable across codecs: AVIF q55 sits around
+    // WebP q78 perceptually, hence a ladder that starts far lower. effort 4 is
+    // sharp's default and encodes these 48 files in about a minute; the sizes
+    // barely move above it.
+    // If nothing on the ladder beats the WebP the slot simply gets NO avif —
+    // no file is written, no <source> is emitted for it, and <picture> falls
+    // through. Shipping a losing AVIF would be worse than shipping none.
+    let avif = null;
+    for (const q of [55, 50, 45, 40, 35]) {
+      avif = await cut().avif({ quality: q, effort: 4 }).toBuffer();
+      if (avif.length < webp.length) break;
+    }
+    const avifWins = avif.length < webp.length;
+    if (avifWins) writeFileSync(`${OUT}/${base}.avif`, avif);
+    else console.log(`!! ${base}.avif ${avif.length} B >= ${base}.webp ${webp.length} B — skipped`);
+    out.push({ w, h, base, avif: avifWins });
   }
   manifest.push({ ...s, src: file, srcW: meta.width, srcH: meta.height, out });
   console.log(`${s.id.padEnd(14)} #${String(s.n).padStart(2)}  ${meta.width}x${meta.height} → ${out.map(o => o.w + 'x' + o.h).join(', ')}`);
