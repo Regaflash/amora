@@ -425,9 +425,11 @@
   <span>וואטסאפ</span>
 </a>
 
-<script src="assets/js/main.js"></script>
-
+<!-- Deferred, and reordered to match. See the note at the foot of index.html:
+     these three used to execute main → assistant → i18n regardless of the
+     file order, because only i18n carried defer. -->
+<script src="assets/js/main.js" defer></script>
+<script src="assets/js/assistant.js" defer></script>
 <script src="assets/js/i18n.js" defer></script>
-<script src="assets/js/assistant.js"></script>
 </body>
 </html>

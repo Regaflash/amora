@@ -13,8 +13,20 @@ and asserts what a visitor can observe. They catch different things and neither
 replaces the other — the focus ring once went invisible at 1.00:1 with entirely
 valid CSS, and no amount of reading the stylesheet would have found it.
 
-    tools/check.sh          # 19 static assertions, must exit 0
-    node tools/verify.mjs   # 28 runtime assertions, must exit 0
+    tools/check.sh          # 21 assertions + a phone-format count, must exit 0
+    node tools/verify.mjs   # 247 runtime assertions, must exit 0
+
+Those numbers said 19 and 28 until 2026-08-13, when they were re-counted
+against **what the scripts actually print**. The gap had grown large enough to
+mislead: a session that reads "28" and watches 247 assertions scroll past
+concludes it is running the wrong tool.
+
+Count them by running them, not by grepping them. `grep -c "ok(" verify.mjs`
+returns 238 and is **wrong** — several `ok()` calls sit inside loops, and the
+suite's own closing line is the only honest total. `check.sh` prints 22 lines,
+but one of them (`פורמטי טלפון בשימוש`) reports a number without ever setting
+`fail`, so it is a count and not an assertion. **When you add one, change the
+number in the same commit** — here and in `CLAUDE.md`, which carries the pair.
 
 | file | what it does |
 | --- | --- |

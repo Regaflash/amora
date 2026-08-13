@@ -1104,7 +1104,12 @@
   </section>
 
   <!-- ===== 08 · המלצות ===== -->
-  <section class="quotes" data-reveal>
+  <!-- id="quotes" added 2026-08-13. This was the ONLY section on the page
+       without one, so nothing could link to the social proof — not a message
+       to a couple, not cost.html, not the assistant's action router, which
+       already speaks #gallery-<cat> and #contact. Adding it costs nothing and
+       the id is checked by check.sh's id-reference pass like every other. -->
+  <section class="quotes" id="quotes" data-reveal>
     <div class="quotes__inner">
       <div class="chapter chapter--center">
         <p class="eyebrow" lang="en">07 — Our couples say</p>
@@ -1410,9 +1415,20 @@
   <a class="lightbox__cta" href="#contact" data-lightbox-cta>לבדיקת זמינות ←</a>
 </div>
 
-<script src="assets/js/main.js"></script>
-
+<!-- All three deferred as of 2026-08-13; 143KB of parser-blocking JavaScript
+     sat here before, and end-of-body is not the same as not blocking — the
+     parser still stops for the fetch. a11y-widget.js in <head> stays blocking
+     ON PURPOSE and must not be given defer: it applies stored contrast/motion
+     modes before first paint.
+     The ORDER here is load-bearing and was changed with the defer. It used to
+     read main → i18n(defer) → assistant, which EXECUTED as main, assistant,
+     i18n, because a deferred script waits for parsing and the two sync ones
+     did not. Deferring all three makes execution follow document order, so
+     the file order is rewritten to match what actually ran before. i18n's
+     MutationObserver would have picked the assistant's panel up either way,
+     but "either way" is not something to discover in production. -->
+<script src="assets/js/main.js" defer></script>
+<script src="assets/js/assistant.js" defer></script>
 <script src="assets/js/i18n.js" defer></script>
-<script src="assets/js/assistant.js"></script>
 </body>
 </html>

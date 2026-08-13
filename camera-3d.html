@@ -284,8 +284,13 @@
 
   <script src="assets/js/three-d-stage.js"></script>
   <script type="module" src="assets/js/camera-model.js"></script>
-  <script src="assets/js/main.js"></script>
+  <!-- Deferred, and reordered to match. See the note at the foot of
+       index.html: these three used to execute main → assistant → i18n
+       regardless of the file order, because only i18n carried defer.
+       three-d-stage.js above stays as it is — it defines the custom element
+       the markup below instantiates. -->
+  <script src="assets/js/main.js" defer></script>
+  <script src="assets/js/assistant.js" defer></script>
   <script src="assets/js/i18n.js" defer></script>
-  <script src="assets/js/assistant.js"></script>
 </body>
 </html>
