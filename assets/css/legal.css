@@ -62,3 +62,24 @@
      :hover after a tap. The :active press covers touch. */
   .legal__back:hover { background: var(--champagne); color: var(--charcoal); transform: translateY(-2px); }
 }
+
+/* The magnets diagram (magnets.html). An illustration, not a photograph —
+   see the comment at its markup. It follows the text colour via currentColor,
+   so the accessibility widget's contrast modes carry it instead of leaving a
+   fixed-colour picture stranded on an inverted page. */
+.mag-figure { margin: var(--sp-6, 34px) 0; }
+.mag-diagram {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 720px;
+  margin-inline: auto;
+  color: var(--mocha, #6B5B4B);
+}
+.mag-figure figcaption {
+  margin-top: 12px;
+  font-size: var(--t-micro, 12px);
+  color: var(--mocha, #6B5B4B);
+  text-align: center;
+  opacity: .85;
+}

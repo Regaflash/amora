@@ -11,13 +11,13 @@
      the three i18n pages so one CSP hash covers all; check.sh fails the
      build if this block and vercel.json ever drift. -->
 <script>try{var l=localStorage.getItem('amora.lang');if(l==='en'||l==='ru'){var d=document.documentElement;d.setAttribute('dir','ltr');d.setAttribute('data-lang-boot',l);setTimeout(function(){if(!d.hasAttribute('data-i18n-ready')){d.setAttribute('dir','rtl');d.removeAttribute('data-lang-boot');}},4000);}}catch(e){}</script>
-<title>מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio</title>
-<meta name="description" content="מגנט שנראה רגיל, עד שמכוונים אליו טלפון — ואז התמונה מתחילה לזוז. איך מגנטי הווידאו של Amora Studio עובדים, ולמה הם נכללים בכל חתונה." />
-<meta property="og:title" content="מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio" />
-<meta property="og:description" content="מגנט שנראה רגיל, עד שמכוונים אליו טלפון — ואז התמונה מתחילה לזוז. נכלל בכל חתונה." />
+<title>צילום אירועי חברה — ערב חברה, כנס והשקה | Amora Studio</title>
+<meta name="description" content="צילום סטילס ווידאו לאירועי חברה, עם עמדת מגנטים שהופכת כל תמונה לסרטון — מזכרת שהעובדים לוקחים הביתה באותו ערב." />
+<meta property="og:title" content="צילום אירועי חברה — ערב חברה, כנס והשקה | Amora Studio" />
+<meta property="og:description" content="צילום סטילס ווידאו לאירועי חברה, עם מגנטי וידאו שהעובדים לוקחים באותו ערב." />
 <meta property="og:type" content="article" />
-<link rel="canonical" href="https://www.amora-studios.com/magnets.html" />
-<meta property="og:url" content="https://www.amora-studios.com/magnets.html" />
+<link rel="canonical" href="https://www.amora-studios.com/corporate.html" />
+<meta property="og:url" content="https://www.amora-studios.com/corporate.html" />
 <meta property="og:site_name" content="Amora Studio" />
 <meta property="og:locale" content="he_IL" />
 <meta property="og:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
@@ -30,8 +30,8 @@
      site, so a shared link landing here was the one that degraded. Values mirror
      the page's own og: tags rather than the homepage's. -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio" />
-<meta name="twitter:description" content="מגנט שנראה רגיל, עד שמכוונים אליו טלפון — ואז התמונה מתחילה לזוז." />
+<meta name="twitter:title" content="צילום אירועי חברה — ערב חברה, כנס והשקה | Amora Studio" />
+<meta name="twitter:description" content="צילום אירועי חברה — סטילס, וידאו ומגנטים שמתעוררים לחיים." />
 <meta name="twitter:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
 <meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -60,25 +60,20 @@
      then the path 404s and the tag does nothing. privacy.html is written to
      match what this collects -- if this tag goes, that section goes with it. -->
 <script src="/_vercel/insights/script.js" defer></script>
-<!-- Built from cost.html's shell on purpose, not the legal-drafts one:
-     landing page, not article. Header, footer, WhatsApp float and a full copy
-     of the lead form, all reusing the homepage markup so main.js needs no
-     page-specific branch. The direction-boot IIFE above must stay
-     BYTE-IDENTICAL to the other i18n pages or its CSP hash stops covering it.
-     Why this page exists: the AR video magnets are the studio's sharpest
-     differentiator and until now they had one paragraph inside #process and
-     one line in a COLLAPSED FAQ answer -- no address of their own, and
-     nothing in the sitemap, which listed three URLs in total.
-     No price here either, by the same standing brief: what the magnets cost
-     is the one fact in the owner's landing-page brief deliberately unpublished.
-     Every other claim below is already on the homepage or in cost.html. -->
+<!-- Built from cost.html's shell: landing page, not article. Header,
+     footer, WhatsApp float and a full copy of the lead form, so main.js
+     needs no page-specific branch and check.sh's form-parity check stays
+     green. The direction-boot IIFE above must stay BYTE-IDENTICAL to the
+     other i18n pages or its CSP hash stops covering it.
+     Every claim below is already published on the homepage, in cost.html
+     or in the FAQ. This page states no price, by the standing brief. -->
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
  "@type": "WebPage",
- "@id": "https://www.amora-studios.com/magnets.html#webpage",
- "url": "https://www.amora-studios.com/magnets.html",
- "name": "מגנטים עם וידאו לחתונה",
+ "@id": "https://www.amora-studios.com/corporate.html#webpage",
+ "url": "https://www.amora-studios.com/corporate.html",
+ "name": "צילום אירועי חברה",
  "inLanguage": "he",
  "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
  "about": { "@id": "https://www.amora-studios.com/#business" },
@@ -89,11 +84,11 @@
 {
  "@context": "https://schema.org",
  "@type": "BreadcrumbList",
- "@id": "https://www.amora-studios.com/magnets.html#breadcrumb",
+ "@id": "https://www.amora-studios.com/corporate.html#breadcrumb",
  "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
  "itemListElement": [
   { "@type": "ListItem", "position": 1, "name": "Amora Studio", "item": "https://www.amora-studios.com/" },
-  { "@type": "ListItem", "position": 2, "name": "מגנטים עם וידאו לחתונה" }
+  { "@type": "ListItem", "position": 2, "name": "צילום אירועי חברה" }
  ]
 }
 </script>
@@ -161,95 +156,44 @@
      this sheet and keep the lighter shell deliberately. -->
 <div class="legal legal--article">
 
-<h1>מגנטים עם וידאו — התמונה ממשיכה לזוז</h1>
-<p class="legal__meta">נראה כמו מגנט רגיל, עד שסורקים אותו. מה זה, איך זה עובד, ולמה זה נכלל בכל חתונה שלנו — ללא הגבלת כמות.</p>
+<h1>צילום אירועי חברה</h1>
+<p class="legal__meta">אותו צוות שמצלם חתונות, אותה עין, ועמדת מגנטים שמוציאה כל עובד מהערב עם מזכרת שזזה. בלי מחירון — כי אירוע של 40 איש ואירוע של 400 הם לא אותה עבודה.</p>
 
-<p>בסוף כל חתונה האורחים לוקחים הביתה מגנט. זה לא רעיון חדש, וכנראה יש לכם אחד או שניים על המקרר בבית מחתונות של אחרים. מה שכן חדש הוא מה שקורה כשסורקים אותו: <strong>התמונה על המגנט מתחילה לזוז</strong> — אותו רגע בדיוק, בתור וידאו.</p>
+<p>רוב הצילום באירועי חברה נגמר באותו מקום: אלבום שמישהו במשאבי אנוש מוריד, שולח לכולם פעם אחת, ואיש לא פותח שוב. לא כי התמונות רעות — אלא כי אין סיבה לחזור אליהן.</p>
 
-<p>את זה מייצר <strong>Regaflash</strong>, העסק האח שלנו, והוא <strong>נכלל בכל עסקה ולא כתוספת בתשלום — ובלי הגבלה על מספר המגנטים</strong>.</p>
+<p>אנחנו ניגשים לזה מהצד השני: מה העובד לוקח <strong>הביתה</strong>, ומה ימשיך להזכיר לו את הערב חודשים אחר כך.</p>
 
-<h2>איך זה עובד</h2>
+<h2>מה אנחנו עושים בערב עצמו</h2>
 
-<h3>מצלמים</h3>
-<p>במהלך הערב אנחנו תופסים אתכם ואת האורחים ברגעים הכי יפים — אותו תיעוד ואותה עין שמצלמים בהם את שאר החתונה. זה לא צוות נפרד ולא עמדה בצד; זה חלק מהכיסוי.</p>
+<h3>סטילס ווידאו, מאותו סטודיו</h3>
+<p>כיסוי של האירוע כמו שהוא — הנאומים, ההופעה, השולחנות, האנשים בין לבין. הסטילס והווידאו הם אותו צוות ולא שני ספקים שצריך לתאם ביניהם, וזה אותו הרכב שמצלם חתונה מלאה: שניים על הסטילס, אחד על הווידאו.</p>
 
-<h3>מטמיעים</h3>
-<p>בכל מגנט מוטמע קטע הווידאו של אותו רגע בדיוק, והוא מודפס <strong>עוד באותו ערב</strong>. האורחים אוספים אותו מהעמדה שלנו באירוע — לא מחכים לדואר ולא מקבלים קישור, אלא יוצאים עם המגנט ביד.</p>
+<h3>עמדת מגנטים — וזה החלק שזוכרים</h3>
+<p>עמדה באירוע שאליה העובדים ניגשים ומצטלמים. אנחנו מצלמים תמונה <strong>וגם קטע וידאו קצר מאותו רגע</strong>, מדפיסים את המגנט במקום, והוא יוצא איתם באותו ערב.</p>
 
-<h3>סורקים</h3>
-<p>כאן צריך לדייק, כי זה החלק שאנשים שואלים עליו: <strong>הסריקה נעשית דרך אפליקציה שמורידים פעם אחת</strong> — לא דרך מצלמת הטלפון הרגילה. אחרי זה מכוונים אל המגנט והתמונה מתעוררת לחיים, כבר באירוע עצמו או חודשים אחר כך מול המקרר בבית.</p>
+<p>ואז מגיע החלק שגורם ל"וואו": סורקים את המגנט באפליקציה, והתמונה עליו מתחילה לזוז. אותו רגע, בתור סרטון. את הטכנולוגיה מייצר <a href="https://regaflash.com" target="_blank" rel="noopener">Regaflash</a>, העסק האח שלנו — ההסבר המלא נמצא ב<a href="magnets.html">עמוד מגנטי הווידאו</a>.</p>
 
-
-<!-- An ILLUSTRATION, and deliberately drawn as one: flat shapes, brand
-     colours, no photographic texture. On a site that sells photography, a
-     picture that could be mistaken for the studio's own work would be a claim
-     about their work. This one cannot be mistaken for a photograph.
-     Inline SVG so it costs no request and no dependency; currentColor and the
-     brand custom properties so it follows the a11y widget's contrast modes
-     instead of ignoring them. role="img" + <title> gives it one accessible
-     name; the decorative innards are aria-hidden by virtue of being inside it.
-     RTL: the flow reads right to left, so the arrows point left. -->
-<figure class="mag-figure">
-  <svg class="mag-diagram" viewBox="0 0 720 200" role="img" aria-labelledby="mag-diagram-title" focusable="false">
-    <title id="mag-diagram-title">שלושת השלבים: מצלמים תמונה וסרטון, מטמיעים אותם במגנט ומדפיסים באירוע, והאורח סורק באפליקציה והתמונה הופכת לסרטון.</title>
-    <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <!-- 01 · the camera. RIGHTMOST, because the page reads right to left and
-           this is the first step. Getting this backwards is the classic RTL
-           trap: drawn left-first, the row reads 03 -> 02 -> 01. -->
-      <rect x="536" y="60" width="112" height="80" rx="10" />
-      <path d="M564 60l10-14h44l10 14" />
-      <circle cx="592" cy="102" r="22" />
-      <circle cx="592" cy="102" r="9" fill="var(--champagne)" stroke="none" opacity=".5" />
-      <circle cx="630" cy="76" r="3" fill="currentColor" stroke="none" />
-      <!-- 02 · the magnet -->
-      <rect x="316" y="52" width="96" height="96" rx="8" />
-      <rect x="328" y="64" width="72" height="56" rx="3" fill="var(--champagne)" stroke="none" opacity=".28" />
-      <path d="M340 108l16-18 12 14 10-10 14 16" />
-      <circle cx="352" cy="80" r="5" />
-      <path d="M352 132h24" />
-      <!-- 03 · the phone, scanning. LEFTMOST = last. -->
-      <rect x="112" y="44" width="72" height="112" rx="10" />
-      <rect x="124" y="60" width="48" height="74" rx="4" fill="var(--champagne)" stroke="none" opacity=".28" />
-      <path d="M134 96h28M148 82v28" />
-      <circle cx="148" cy="146" r="4" fill="currentColor" stroke="none" />
-      <!-- arrows point left: right to left is forward here -->
-      <path d="M520 100H428m0 0l14-9m-14 9l14 9" />
-      <path d="M300 100H208m0 0l14-9m-14 9l14 9" />
-    </g>
-    <g font-size="13" font-family="Heebo, sans-serif" fill="currentColor" opacity=".75" text-anchor="middle">
-      <text x="592" y="184">01 · מצלמים</text>
-      <text x="364" y="184">02 · מטמיעים</text>
-      <text x="148" y="184">03 · סורקים</text>
-    </g>
-  </svg>
-  <figcaption>מימין לשמאל: מצלמים תמונה וסרטון של אותו רגע, מטמיעים אותם במגנט ומדפיסים אותו באירוע, והאורח סורק אותו באפליקציה.</figcaption>
-</figure>
-
-<h2>למה זה משנה</h2>
-
-<p>אלבום מודפס נפתח כמה פעמים בשנה. גלריה דיגיטלית נשלחת פעם אחת בוואטסאפ ואז נבלעת בגלילה. <strong>מגנט תלוי על המקרר ורואים אותו כל יום</strong> — וזה המקום היחיד שבו החתונה שלכם ממשיכה להופיע מול האורחים שלכם הרבה אחרי שהיא נגמרה.</p>
-
-<p>וזה עובד גם לכיוון השני: האורחים מקבלים משהו שהם באמת שומרים, במקום עוד פריט שנשכח במגירה בדרך הביתה.</p>
-
-<h2>מה זה לא</h2>
+<h2>למה זה עובד באירוע חברה דווקא</h2>
 
 <ul>
-  <li><strong>לא תוספת בתשלום.</strong> זה נכלל בכל חתונה מלאה, כמו הגלריה הדיגיטלית והסרט. אין אצלנו חבילה "בלי מגנטים" שעולה פחות.</li>
-  <li><strong>לא במקום התמונות.</strong> הגלריה המלאה, סרט החתונה של 3–5 דקות והטיזר הקצר לאינסטגרם מגיעים בדיוק כרגיל.</li>
-  <li><strong>לא צוות זר בחתונה שלכם.</strong> אותם צלמים שמצלמים את הערב מצלמים גם את זה.</li>
+  <li><strong>זה יוצר תור, וזה בסדר.</strong> העמדה עצמה היא אטרקציה — אנשים מצטלמים, מראים אחד לשני, וחוזרים.</li>
+  <li><strong>המזכרת יוצאת מהמשרד.</strong> מגנט נוסע הביתה ונתלה על המקרר. גלריה דיגיטלית נשארת בתיקייה.</li>
+  <li><strong>אין מה להוריד ואין למי להירשם</strong> ברגע האירוע — מקבלים חפץ פיזי ביד, והסריקה מחכה למתי שנוח.</li>
 </ul>
 
-<h2>איפה זה יושב בתוך מה שמקבלים</h2>
+<h2>לאיזה אירועים</h2>
 
-<p>מגנטי הווידאו הם פריט אחד מתוך מה שנשאר לכם ביד בסוף. הרשימה המלאה — הגלריה הראשונה תוך 7 ימים, הגלריה המלאה והסרט תוך 30 יום, הטיזר, והאלבום המודפס — נמצאת ב<a href="index.html#process">מקטע "איך זה עובד"</a> בעמוד הבית, לצד שלושת השלבים שלמעלה.</p>
+<p>ערב חברה, כנס, השקה, ימי גיבוש, אירועי סוף שנה. גם אירועים משפחתיים גדולים שאינם חתונה — בר ובת מצווה, ימי הולדת וחינה — נכנסים לאותו סוג עבודה, ויש להם <a href="index.html#services">מקום משלהם בעמוד השירותים</a>.</p>
 
-<p>ומי שרוצה לראות את הטכנולוגיה עצמה, אצל מי שמייצר אותה: <a href="https://regaflash.com" target="_blank" rel="noopener">regaflash.com</a>.</p>
+<h2>איפה אנחנו עובדים</h2>
 
-<h2>שאלה שכדאי לשאול כל סטודיו</h2>
+<p>בכל הארץ, מהגליל ועד אילת, והרבה מהאירועים שלנו בדרום ובשרון — אשקלון, אשדוד, באר שבע, נתניה וחדרה. הבסיס בתל אביב, בלי תוספת נסיעות באזור המרכז.</p>
 
-<p>"מה האורחים שלנו לוקחים הביתה מהערב, ומתי הם מקבלים את זה?" זו שאלה קטנה שמגלה הרבה, כי התשובה הנפוצה היא "נשלח לכם גלריה" — וזה משהו שמגיע אליכם, לא אליהם.</p>
+<h2>איך מקבלים הצעה</h2>
 
-<p><a href="cost.html">מה משפיע על המחיר</a> · <a href="index.html#gallery">לגלריה</a> · <a href="index.html#faq">שאלות נפוצות</a></p>
+<p>משאירים פרטים עם תאריך, מיקום וגודל משוער, ואנחנו חוזרים באותו יום. אין כאן מחירון, מאותה סיבה שאין אחד ל<a href="cost.html">חתונות</a>: מספר השעות, מספר הצלמים והאם רוצים עמדת מגנטים משנים את ההצעה לגמרי.</p>
+
+<p><a href="magnets.html">איך מגנטי הווידאו עובדים</a> · <a href="index.html#gallery-events">גלריית אירועים</a> · <a href="index.html#faq">שאלות נפוצות</a></p>
 
 </div>
 
@@ -267,8 +211,8 @@
     <div>
       <div class="chapter">
         <p class="eyebrow" lang="en">Let's talk</p>
-        <h2 class="contact__title">התאריך שלכם עדיין פנוי?</h2>
-        <p class="contact__text">ספרו לנו על האירוע ונחזור אליכם היום עם זמינות והצעה מותאמת — מגנטי הווידאו כלולים בה. אין התחייבות ואין מכירה בטלפון.</p>
+        <h2 class="contact__title">מתכננים אירוע חברה?</h2>
+        <p class="contact__text">ספרו לנו על האירוע — תאריך, מיקום וכמה אנשים — ונחזור אליכם היום עם זמינות והצעה מותאמת.</p>
       </div>
       <a class="contact__phone" href="tel:+972503662699">050-3662699</a>
     </div>
@@ -447,7 +391,7 @@
      message the visitor forwards. Kept in Hebrew on purpose: it is sent TO
      a Hebrew-speaking studio. -->
 <a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ"
-   data-wa-text="היי, קראתי אצלכם על מגנטי הווידאו ואשמח להצעה מותאמת לתאריך שלנו.">
+   data-wa-text="היי, אנחנו מארגנים אירוע חברה ואשמח לבדוק זמינות ופרטים.">
   <span>וואטסאפ</span>
 </a>
 
