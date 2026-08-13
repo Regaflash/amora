@@ -2615,7 +2615,16 @@ await page.waitForTimeout(200);
 {
   const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const bad = [];
-  p.on('response', (r) => { if (r.status() >= 400 && !r.url().includes('/old/')) bad.push(`${r.status()} ${r.url()}`); });
+  // /_vercel/* is excluded because the HOST serves it, not this repo: the
+  // analytics script exists only on a real Vercel deployment with Analytics
+  // enabled, so the local static server answers 404 for a path that is
+  // perfectly correct. The exclusion is deliberately prefix-narrow — this
+  // assertion's real job is catching a RELATIVE reference resolving against
+  // the dead path, and every one of those still lands in `bad`.
+  const hostServed = (u) => new URL(u).pathname.startsWith('/_vercel/');
+  p.on('response', (r) => {
+    if (r.status() >= 400 && !r.url().includes('/old/') && !hostServed(r.url())) bad.push(`${r.status()} ${r.url()}`);
+  });
   // Deep path on purpose: 404.html is served AT the address that was not found,
   // so a relative asset or link resolves against the dead path instead of root.
   const resp = await p.goto(BASE + '/old/link/that/died', { waitUntil: 'load' });

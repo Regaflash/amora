@@ -124,6 +124,15 @@
 </style>
 <link rel="stylesheet" href="/assets/css/a11y-widget.css" />
 <script src="/assets/js/a11y-widget.js"></script>
+<!-- Vercel Analytics, added 2026-08-13. Same-origin on purpose: the script and
+     its beacon are served from /_vercel/* by the host, so the enforcing CSP
+     needs no new source -- script-src 'self' and connect-src 'self' already
+     cover both, and check.sh's external-dependency guard stays honest because
+     nothing third-party is fetched at runtime.
+     It only exists once Analytics is enabled in the Vercel dashboard; until
+     then the path 404s and the tag does nothing. privacy.html is written to
+     match what this collects -- if this tag goes, that section goes with it. -->
+<script src="/_vercel/insights/script.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">דילוג לתוכן</a>
