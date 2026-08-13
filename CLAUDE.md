@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 25 checks + a phone-format count
+1. tools/check.sh          # must exit 0 — 26 checks + a phone-format count
    node tools/verify.mjs   # must exit 0 — 270 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
@@ -470,6 +470,31 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   nodes, one `<h1>`, zero skipped heading levels, and 602 words plus every
   FAQ answer (ten since 2026-08-09) rendered with JavaScript off. The YouTube hero is not the LCP
   element and is not hurting anything.
+- **`main.js` is 59% inert on the content pages, and splitting it is declined
+  on evidence rather than on the rule above.** Measured 2026-08-13: the file is
+  105,189 B raw / **35,614 B gzip**. The eight homepage-only sections — hero,
+  gallery + lightbox, phone strip, showreel, testimonial slider, cost-page
+  glimpse, services carousel, scroll reveal — are 61,985 B raw / **20,770 B
+  gzip**, and none of the six content pages carries a single DOM hook for any
+  of them. A split would leave those pages 15,778 B gzip instead of 35,614.
+
+  It is still not worth doing yet, for three measured reasons:
+
+  - **The dead sections do no runtime work.** Instrumented in Chromium:
+    `delivery.html` attaches **3 observers, 74 listeners and 0 intervals**
+    against the homepage's **31, 138 and 1**. Every one of them bails on a
+    null query. There is no leaked observer and no stray timer to fix.
+  - **`main.js` is deferred**, so those 20 KB land after the page is usable.
+    They are not on the critical path.
+  - **Nobody knows whether these pages get traffic**, because Analytics is
+    shipped and not switched on. Refactoring 2,054 lines that 270 assertions
+    depend on — with `AMORA_LOCK`, `measure()`, `waLink` and `carryCampaign`
+    crossing the boundary — before knowing whether anyone visits, is the wrong
+    order of operations.
+
+  Revisit when Analytics shows real traffic on the content pages. The numbers
+  above are the starting point; do not re-measure them.
+
 - **AI crawler policy: citation yes, training no.** `robots.txt` allows
   OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User and PerplexityBot,
   and declines GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, CCBot,

@@ -583,4 +583,75 @@ if orphans:
     sys.exit(1)
 print(f'{"כל עמוד ניתן להגעה מעמוד הבית":<46} ✓ ({len(indexable)} עמודים)')
 PYLINKS
+# Shell parity. The header, the mobile menu and the footer exist in nine
+# hand-copied copies each, and until now NOTHING compared them — the CSP hash
+# covered the RTL boot and the parity check above covered the form, and that
+# was the whole of it. What drift costs, concretely:
+#   header  — lose data-header-solid on one page and it spends its first 80px
+#             painting ivory text on sand: an invisible nav.
+#   menu    — lose data-menu-close on one page and AMORA_LOCK is never
+#             released: the body stays position:fixed and the visitor cannot
+#             scroll at all, with no way out but a reload.
+#   footer  — one stale phone number or one 404ing legal link, on one page,
+#             seen by nobody because nobody visits all nine footers.
+#   scripts — drop i18n.js from one copy and that page silently loses the
+#             language switcher; drop main.js and the form binds to nothing
+#             and writes no lead, with no error anywhere.
+#
+# The family is the pages carrying data-header-solid — the shared subpage
+# shell. index.html is EXCLUDED and named here rather than silently skipped:
+# it owns #gear and #process, which exist on no other page, so its nav is
+# legitimately two items longer. camera-3d.html is inside the family; its
+# cross-page #contact is normalised below, and its two extra module scripts
+# are ignored because only the three shared ones are order-critical.
+python3 - <<'PYSHELL' || fail=1
+import io, re, sys, glob
+
+def norm(t):
+    t = re.sub(r"<!--.*?-->", "", t, flags=re.S)      # comments drift freely
+    t = t.replace('href="index.html#', 'href="#')   # camera-3d's cross-page contact
+    return re.sub(r"\s+", " ", t).strip()
+
+def block(s, start, end):
+    i = s.find(start)
+    if i < 0: return None
+    j = s.find(end, i)
+    return norm(s[i:j + len(end)]) if j > 0 else None
+
+def scripts(s):
+    core = ("main.js", "assistant.js", "i18n.js")
+    got = re.findall(r'<script src="assets/js/([a-z0-9-]+\.js)"([^>]*)>', s)
+    return [(f, "defer" in a) for f, a in got if f in core]
+
+family = sorted(p for p in glob.glob("*.html")
+                if "data-header-solid" in io.open(p, encoding="utf-8").read())
+if len(family) < 2:
+    print(f'{"מעטפת זהה בין העמודים":<46} ✗ פחות משני עמודים במשפחה'); sys.exit(1)
+
+PARTS = {
+    "header": ('<header class="site-header', "</header>"),
+    "menu": ('<div class="menu" id="mobile-menu"', "</div>"),
+    "footer": ('<footer class="site-footer">', "</footer>"),
+}
+shapes = {}
+for p in family:
+    s = io.open(p, encoding="utf-8").read()
+    d = {k: block(s, a, b) for k, (a, b) in PARTS.items()}
+    d["scripts"] = scripts(s)
+    shapes[p] = d
+
+base = family[0]
+bad = []
+for p in family[1:]:
+    for k in list(PARTS) + ["scripts"]:
+        if shapes[p][k] != shapes[base][k]:
+            bad.append((p, k))
+missing = [(p, k) for p in family for k in PARTS if shapes[p][k] is None]
+if bad or missing:
+    print(f'{"מעטפת זהה בין העמודים":<46} ✗')
+    for p, k in missing: print(f"    {p}: אין בלוק {k} בכלל")
+    for p, k in bad:     print(f"    {p}: {k} שונה מ-{base}")
+    sys.exit(1)
+print(f'{"מעטפת זהה בין העמודים":<46} ✓ ({len(family)} עמודים, 4 בלוקים)')
+PYSHELL
 exit $fail
