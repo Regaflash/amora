@@ -10,7 +10,7 @@ private CRM at `admin.html` reads it back.
 ```
 Before any change goes out:
 1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 247 runtime checks in a real browser
+   node tools/verify.mjs   # must exit 0 — 263 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
    # check.sh number was right and untouched, the verify.mjs one had been
@@ -461,6 +461,51 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   bare fragments: `check.sh` fails any in-page fragment that resolves to
   nothing. It carries `data-header-solid` because it has no hero, and without
   it the header spends its first 80px as ivory text on the sand background.
+
+- **The lead form is TWO STEPS, and the split point is the database's, not a
+  designer's.** Step 1 is name + phone; step 2 is date, type, email, area,
+  coverage, message. Asked in that order because `public.leads` has **`name`
+  and `phone` NOT NULL** (with length CHECKs on both) while `event_date` and
+  `event_type` are nullable — so those two are the only pair that can stand
+  alone as a row. A "date first" step reads better as marketing and is
+  unbuildable: the partial row violates `name NOT NULL`. Verified against the
+  live database on 2026-08-13, not against `docs/`.
+
+  **One INSERT, in both paths.** Finish step 2 → the full payload on submit.
+  Press the step-1 button and then leave → the same payload, minus what was
+  never typed, on `pagehide`/`visibilitychange` with `keepalive`, its `source`
+  **prefixed** `חלקי · ` (prefixed and not appended, because `leadSource()`
+  already returns a 200-char slice and an overflow fails the whole row).
+  `anon` has **no UPDATE grant at all**, so insert-then-enrich does not exist
+  as an option. `buildPayload()` is the only place a Supabase row is built, so
+  the column list cannot fork — and `LEADS_PATH` sits **above** it on purpose:
+  `check.sh` finds the payload by searching for `/rest/v1/leads` followed by
+  the first `payload = {`, and moving either one silently prints
+  `לא נמצא ה-payload` instead of checking the grant.
+
+  **`armed` is the consent gate and is the load-bearing part.** The exit write
+  fires only for someone who actually pressed a button that says we will get
+  back to them. Someone who typed and closed the tab is never written.
+  `privacy.html` states all three cases in as many words.
+
+  **The accepted defect, deliberately not fixed:** background the page after
+  step 1, return, and finish → two rows and two alert emails, same phone,
+  minutes apart, the second complete. Latching the partial as final instead
+  would discard the name, type and message they went on to type. Do **not**
+  "fix" it by listening to `pagehide` alone — Chrome on Android discards
+  backgrounded tabs without firing it.
+
+  Sixteen assertions in `verify.mjs` hold this up, and two of them were
+  mutation-tested rather than trusted: deleting the `armed` gate and deleting
+  the `partialSent` latch each turn one red. That is the standing lesson of
+  the FAQ byte-lock below — **a guarantee written in this file is not a
+  guarantee that runs.**
+
+  The submit button carries **three label spans** (`next` / `send` /
+  `sending`) instead of a rewritten `textContent`. The old code wrote the
+  literal `'שולחים…'` over whatever the button said, which injected Hebrew
+  into an EN/AR/RU page and then tripped `i18n.js`'s MutationObserver — a live
+  defect on every translated page, removed by this change.
 
 - **Adding a form field needs a GRANT, and forgetting it kills the form
   silently.** `anon`'s INSERT on `public.leads` is **column-scoped** in

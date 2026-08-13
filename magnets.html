@@ -11,13 +11,13 @@
      the three i18n pages so one CSP hash covers all; check.sh fails the
      build if this block and vercel.json ever drift. -->
 <script>try{var l=localStorage.getItem('amora.lang');if(l==='en'||l==='ru'){var d=document.documentElement;d.setAttribute('dir','ltr');d.setAttribute('data-lang-boot',l);setTimeout(function(){if(!d.hasAttribute('data-i18n-ready')){d.setAttribute('dir','rtl');d.removeAttribute('data-lang-boot');}},4000);}}catch(e){}</script>
-<title>מה משפיע על מחיר צילום חתונה | Amora Studio</title>
-<meta name="description" content="למה אין מחירון קבוע לצילום חתונה, ומה באמת מזיז את המחיר — שעות, מספר צלמים, לוקיישנים ותוספות. הסבר כן, בלי מספרים ובלי הפתעות." />
-<meta property="og:title" content="מה משפיע על מחיר צילום חתונה | Amora Studio" />
-<meta property="og:description" content="למה אין מחירון קבוע, ומה באמת מזיז את המחיר — שעות, מספר צלמים, לוקיישנים ותוספות." />
+<title>מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio</title>
+<meta name="description" content="מגנט שנראה רגיל, עד שמכוונים אליו טלפון — ואז התמונה מתחילה לזוז. איך מגנטי הווידאו של Amora Studio עובדים, ולמה הם נכללים בכל חתונה." />
+<meta property="og:title" content="מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio" />
+<meta property="og:description" content="מגנט שנראה רגיל, עד שמכוונים אליו טלפון — ואז התמונה מתחילה לזוז. נכלל בכל חתונה." />
 <meta property="og:type" content="article" />
-<link rel="canonical" href="https://www.amora-studios.com/cost.html" />
-<meta property="og:url" content="https://www.amora-studios.com/cost.html" />
+<link rel="canonical" href="https://www.amora-studios.com/magnets.html" />
+<meta property="og:url" content="https://www.amora-studios.com/magnets.html" />
 <meta property="og:site_name" content="Amora Studio" />
 <meta property="og:locale" content="he_IL" />
 <meta property="og:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
@@ -30,8 +30,8 @@
      site, so a shared link landing here was the one that degraded. Values mirror
      the page's own og: tags rather than the homepage's. -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="מה משפיע על מחיר צילום חתונה | Amora Studio" />
-<meta name="twitter:description" content="למה אין מחירון קבוע, ומה באמת מזיז את המחיר — שעות, צלמים, לוקיישנים." />
+<meta name="twitter:title" content="מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio" />
+<meta name="twitter:description" content="מגנט שנראה רגיל, עד שמכוונים אליו טלפון — ואז התמונה מתחילה לזוז." />
 <meta name="twitter:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
 <meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -60,20 +60,25 @@
      then the path 404s and the tag does nothing. privacy.html is written to
      match what this collects -- if this tag goes, that section goes with it. -->
 <script src="/_vercel/insights/script.js" defer></script>
-<!-- No price appears on this page, deliberately: the studio publishes none, by
-     the owner's brief. The page exists because "כמה עולה צלם חתונות" is a real
-     question a couple asks before they enquire, and answering it honestly —
-     with what moves the number rather than the number — is better for them and
-     for us than staying silent and hoping they fill in the form anyway.
-     Every claim below is already published on the homepage. Nothing here is
-     new information about the studio. -->
+<!-- Built from cost.html's shell on purpose, not the legal-drafts one:
+     landing page, not article. Header, footer, WhatsApp float and a full copy
+     of the lead form, all reusing the homepage markup so main.js needs no
+     page-specific branch. The direction-boot IIFE above must stay
+     BYTE-IDENTICAL to the other i18n pages or its CSP hash stops covering it.
+     Why this page exists: the AR video magnets are the studio's sharpest
+     differentiator and until now they had one paragraph inside #process and
+     one line in a COLLAPSED FAQ answer -- no address of their own, and
+     nothing in the sitemap, which listed three URLs in total.
+     No price here either, by the same standing brief: what the magnets cost
+     is the one fact in the owner's landing-page brief deliberately unpublished.
+     Every other claim below is already on the homepage or in cost.html. -->
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
  "@type": "WebPage",
- "@id": "https://www.amora-studios.com/cost.html#webpage",
- "url": "https://www.amora-studios.com/cost.html",
- "name": "מה משפיע על מחיר צילום חתונה",
+ "@id": "https://www.amora-studios.com/magnets.html#webpage",
+ "url": "https://www.amora-studios.com/magnets.html",
+ "name": "מגנטים עם וידאו לחתונה",
  "inLanguage": "he",
  "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
  "about": { "@id": "https://www.amora-studios.com/#business" },
@@ -84,11 +89,11 @@
 {
  "@context": "https://schema.org",
  "@type": "BreadcrumbList",
- "@id": "https://www.amora-studios.com/cost.html#breadcrumb",
+ "@id": "https://www.amora-studios.com/magnets.html#breadcrumb",
  "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
  "itemListElement": [
   { "@type": "ListItem", "position": 1, "name": "Amora Studio", "item": "https://www.amora-studios.com/" },
-  { "@type": "ListItem", "position": 2, "name": "מה משפיע על מחיר צילום חתונה" }
+  { "@type": "ListItem", "position": 2, "name": "מגנטים עם וידאו לחתונה" }
  ]
 }
 </script>
@@ -156,125 +161,49 @@
      this sheet and keep the lighter shell deliberately. -->
 <div class="legal legal--article">
 
-<h1>מה משפיע על מחיר צילום חתונה</h1>
-<p class="legal__meta">הסבר קצר וכן. אין כאן מחירון — יש כאן מה שמזיז את המספר, כדי שתדעו מה אתם משווים.</p>
+<h1>מגנטים עם וידאו — התמונה ממשיכה לזוז</h1>
+<p class="legal__meta">נראה כמו מגנט רגיל, עד שמכוונים אליו טלפון. מה זה, איך זה עובד, ולמה זה נכלל בכל חתונה שלנו.</p>
 
-<p>אם הגעתם לכאן אחרי שחיפשתם כמה עולה צלם חתונות, כנראה כבר גיליתם שכמעט אף אחד לא נוקב במספר. זה לא תרגיל שיווקי. פשוט אין מחיר אחד: חתונה של 150 איש בגן אירועים בחמש אחר הצהריים וחתונה של 400 איש עם הכנות משתי דירות והופעה עד שתיים בלילה הן שתי עבודות שונות לגמרי.</p>
+<p>בסוף כל חתונה האורחים לוקחים הביתה מגנט. זה לא רעיון חדש, וכנראה יש לכם אחד או שניים על המקרר בבית מחתונות של אחרים. מה שכן חדש הוא מה שקורה כשמכוונים אליו טלפון: <strong>התמונה על המגנט מתחילה לזוז</strong> — אותו רגע בדיוק, בתור וידאו.</p>
 
-<p>מה שכן אפשר לעשות זה להגיד לכם בדיוק <strong>מה מרכיב את ההצעה</strong>, כדי שכשתקבלו הצעות משלושה סטודיו תדעו מה אתם משווים.</p>
+<p>את זה מייצר <strong>Regaflash</strong>, העסק האח שלנו, והוא <strong>נכלל בכל עסקה ולא כתוספת בתשלום</strong>.</p>
 
-<h2>שלושת הדברים שמזיזים את המחיר</h2>
+<h2>איך זה עובד</h2>
 
-<h3>מספר השעות</h3>
-<p>ההבדל בין להתחיל בהכנות בבוקר לבין להגיע שעה לפני החופה הוא ההבדל הגדול ביותר בהצעה. זה לא רק זמן הצילום עצמו — כל שעה בשטח מוסיפה גם שעות עריכה אחריה.</p>
+<h3>מצלמים</h3>
+<p>במהלך הערב אנחנו תופסים אתכם ואת האורחים ברגעים הכי יפים — אותו תיעוד ואותה עין שמצלמים בהם את שאר החתונה. זה לא צוות נפרד ולא עמדה בצד; זה חלק מהכיסוי.</p>
 
-<h3>מספר הצלמים</h3>
-<p>בחתונה מלאה אצלנו יש תמיד שלושה צלמים: שניים על הסטילס ואחד על הווידאו. בחופה ובריקודים כולם על הזוג משלוש זוויות. זה לא שדרוג שמוכרים לכם בהמשך — זו ברירת המחדל, ולכן היא כבר בתוך המספר.</p>
+<h3>מטמיעים</h3>
+<p>בכל מגנט מוטמע קטע הווידאו של אותו רגע בדיוק, והוא מודפס <strong>עוד באותו ערב</strong>. האורחים לא מחכים לדואר ולא מקבלים קישור — הם יוצאים מהאירוע עם המגנט ביד.</p>
 
-<h3>לוקיישנים</h3>
-<p>הכנות בשני מקומות שונים, צילומי זוג בלוקיישן נפרד לפני האולם, מעבר בין אתרים — כל אחד מהם מוסיף זמן, נסיעה ולוגיסטיקה.</p>
+<h3>סורקים</h3>
+<p>האורח מכוון את הטלפון אל המגנט שקיבל, והתמונה שבידו מתעוררת לחיים. אפשר לעשות את זה כבר באירוע עצמו, ואפשר חודשים אחר כך מול המקרר בבית.</p>
 
-<h2>מה כלול אצלנו בחתונה מלאה</h2>
-<p>כדי שיהיה ברור מה נמצא בבסיס ולא נמכר בנפרד:</p>
+<h2>למה זה משנה</h2>
+
+<p>אלבום מודפס נפתח כמה פעמים בשנה. גלריה דיגיטלית נשלחת פעם אחת בוואטסאפ ואז נבלעת בגלילה. <strong>מגנט תלוי על המקרר ורואים אותו כל יום</strong> — וזה המקום היחיד שבו החתונה שלכם ממשיכה להופיע מול האורחים שלכם הרבה אחרי שהיא נגמרה.</p>
+
+<p>וזה עובד גם לכיוון השני: האורחים מקבלים משהו שהם באמת שומרים, במקום עוד פריט שנשכח במגירה בדרך הביתה.</p>
+
+<h2>מה זה לא</h2>
+
 <ul>
-  <li>כיסוי מלא של היום, סטילס ווידאו</li>
-  <li>שלושה צלמים</li>
-  <li>עריכת צבע לכל תמונה נבחרת</li>
-  <li>גלריה דיגיטלית לשיתוף</li>
-  <li>סרט חתונה של 3–5 דקות</li>
-  <li>טיזר קצר לאינסטגרם</li>
-  <!-- Included in every booking, owner-confirmed 2026-08-05. This list is
-       headed "מה נמצא בבסיס ולא נמכר בנפרד", so omitting the magnets made
-       it wrong, not merely incomplete. Produced by Regaflash, the sister
-       business; index.html carries the link. -->
-  <li>מגנטים עם סורק AR שהופך כל תמונה לסרטון</li>
+  <li><strong>לא תוספת בתשלום.</strong> זה נכלל בכל חתונה מלאה, כמו הגלריה הדיגיטלית והסרט. אין אצלנו חבילה "בלי מגנטים" שעולה פחות.</li>
+  <li><strong>לא במקום התמונות.</strong> הגלריה המלאה, סרט החתונה של 3–5 דקות והטיזר הקצר לאינסטגרם מגיעים בדיוק כרגיל.</li>
+  <li><strong>לא צוות זר בחתונה שלכם.</strong> אותם צלמים שמצלמים את הערב מצלמים גם את זה.</li>
 </ul>
 
-<h2>מה אפשר להוסיף</h2>
-<p>אלבום מודפס, וצילומי Save the Date — שעה וחצי בלוקיישן שאתם אוהבים, לפני היום הגדול. שניהם תוספות, לא חלק מהבסיס.</p>
+<h2>איפה זה יושב בתוך מה שמקבלים</h2>
 
-<h2>מה לא מוסיף לכם לחשבון</h2>
-<ul>
-  <li><strong>נסיעות באזור המרכז.</strong> אנחנו מבוססים בתל אביב ומצלמים מהגליל ועד אילת, בלי תוספת נסיעות באזור המרכז.</li>
-  <li><strong>דחיית תאריך.</strong> התאריך עובר איתכם ללא עלות, בכפוף לזמינות. אם אנחנו תפוסים בתאריך החדש — מחזירים את המקדמה במלואה.</li>
-</ul>
+<p>מגנטי הווידאו הם פריט אחד מתוך מה שנשאר לכם ביד בסוף. הרשימה המלאה — הגלריה הראשונה תוך 7 ימים, הגלריה המלאה והסרט תוך 30 יום, הטיזר, והאלבום המודפס — נמצאת ב<a href="index.html#process">מקטע "איך זה עובד"</a> בעמוד הבית, לצד שלושת השלבים שלמעלה.</p>
 
-<h2>שאלה טובה לשאול כל סטודיו</h2>
-<p>לא רק אותנו: <strong>בקשו לראות אלבום שלם של חתונה אחת</strong>, מהבוקר ועד הסוף — לא רק את הפריים המושלם מכל אירוע. זה מה שמראה אם מישהו עקבי או שהיה לו מזל. אצלנו, בשיחה, שולחים 2–3 גלריות מלאות של חתונות דומות לשלכם.</p>
+<p>ומי שרוצה לראות את הטכנולוגיה עצמה, אצל מי שמייצר אותה: <a href="https://regaflash.com" target="_blank" rel="noopener">regaflash.com</a>.</p>
 
-<!-- Visual proof next to the trust question above: this page argued the
-     studio's case in words while showing none of the work. Six frames from
-     the homepage gallery, as plain LINKS to it — not lightbox buttons. The
-     lightbox and its JS live on the homepage; a button here would open
-     nothing, which is the visible-but-dead control this repo keeps refusing
-     to ship. Same six ship as 500/900 pairs the gallery already serves, so
-     no new derivative and no check.sh churn. Each link targets its frame's
-     own category (#gallery-<cat>, handled by main.js on the homepage): a
-     visitor drawn by the prep shot lands on the prep gallery, not on frame
-     one of eighteen. With JS off the fragment matches no id, so the browser
-     simply lands at the top — same page, nothing broken. -->
-<h2>ככה נראית העבודה</h2>
-<ul class="glimpse" aria-label="טעימה מהגלריה">
-  <li class="glimpse__item">
-    <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: רגע החופה">
-      <picture>
-        <source type="image/webp" srcset="assets/img/g01-500.webp 500w, assets/img/g01-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
-        <img class="glimpse__photo" src="assets/img/g01-900.jpg" srcset="assets/img/g01-500.jpg 500w, assets/img/g01-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="רגע החופה" width="900" height="1125" loading="lazy" decoding="async" />
-      </picture>
-      <span class="glimpse__cap">חתונות<span aria-hidden="true"> ←</span></span>
-    </a>
-  </li>
-  <li class="glimpse__item">
-    <a class="glimpse__link" href="index.html#gallery-prep" aria-label="לגלריית ההכנות: איפור בבוקר האירוע">
-      <picture>
-        <source type="image/webp" srcset="assets/img/g09-500.webp 500w, assets/img/g09-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
-        <img class="glimpse__photo" src="assets/img/g09-900.jpg" srcset="assets/img/g09-500.jpg 500w, assets/img/g09-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="איפור בבוקר האירוע" width="900" height="1125" loading="lazy" decoding="async" />
-      </picture>
-      <span class="glimpse__cap">הכנות<span aria-hidden="true"> ←</span></span>
-    </a>
-  </li>
-  <li class="glimpse__item">
-    <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: רגע שקט בין בני הזוג בחתונה">
-      <picture>
-        <source type="image/webp" srcset="assets/img/g16-500.webp 500w, assets/img/g16-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
-        <img class="glimpse__photo" src="assets/img/g16-900.jpg" srcset="assets/img/g16-500.jpg 500w, assets/img/g16-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="רגע שקט בין בני הזוג בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
-      </picture>
-      <span class="glimpse__cap">חתונות<span aria-hidden="true"> ←</span></span>
-    </a>
-  </li>
-  <li class="glimpse__item">
-    <a class="glimpse__link" href="index.html#gallery-events" aria-label="לגלריית האירועים: עיצוב שולחנות באירוע">
-      <picture>
-        <source type="image/webp" srcset="assets/img/g12-500.webp 500w, assets/img/g12-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
-        <img class="glimpse__photo" src="assets/img/g12-900.jpg" srcset="assets/img/g12-500.jpg 500w, assets/img/g12-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="עיצוב שולחנות באירוע" width="900" height="1125" loading="lazy" decoding="async" />
-      </picture>
-      <span class="glimpse__cap">אירועים<span aria-hidden="true"> ←</span></span>
-    </a>
-  </li>
-  <li class="glimpse__item">
-    <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: שמלת הכלה והצעדים הראשונים בחתונה">
-      <picture>
-        <source type="image/webp" srcset="assets/img/g05-500.webp 500w, assets/img/g05-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
-        <img class="glimpse__photo" src="assets/img/g05-900.jpg" srcset="assets/img/g05-500.jpg 500w, assets/img/g05-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="שמלת הכלה והצעדים הראשונים בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
-      </picture>
-      <span class="glimpse__cap">חתונות<span aria-hidden="true"> ←</span></span>
-    </a>
-  </li>
-  <li class="glimpse__item">
-    <a class="glimpse__link" href="index.html#gallery-std" aria-label="לגלריית ה-Save the Date: פורטרט זוגי בצילומי Save the Date">
-      <picture>
-        <source type="image/webp" srcset="assets/img/g18-500.webp 500w, assets/img/g18-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
-        <img class="glimpse__photo" src="assets/img/g18-900.jpg" srcset="assets/img/g18-500.jpg 500w, assets/img/g18-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="פורטרט זוגי בצילומי Save the Date" width="900" height="1125" loading="lazy" decoding="async" />
-      </picture>
-      <span class="glimpse__cap">Save the Date<span aria-hidden="true"> ←</span></span>
-    </a>
-  </li>
-</ul>
+<h2>שאלה שכדאי לשאול כל סטודיו</h2>
 
-<h2>איך מקבלים מספר</h2>
-<p>משאירים פרטים, ואנחנו חוזרים באותו יום עם זמינות והצעה שמתאימה למה שסיפרתם. אם עוד לא קבעתם תאריך, אפשר לסמן את זה בטופס — זו שאלה לגיטימית לשאול לפני שסוגרים אולם.</p>
+<p>"מה האורחים שלנו לוקחים הביתה מהערב, ומתי הם מקבלים את זה?" זו שאלה קטנה שמגלה הרבה, כי התשובה הנפוצה היא "נשלח לכם גלריה" — וזה משהו שמגיע אליכם, לא אליהם.</p>
 
-<p><a href="index.html#faq">שאלות נפוצות</a> · <a href="index.html#gallery">לגלריה</a></p>
+<p><a href="cost.html">מה משפיע על המחיר</a> · <a href="index.html#gallery">לגלריה</a> · <a href="index.html#faq">שאלות נפוצות</a></p>
 
 </div>
 
@@ -291,8 +220,8 @@
     <div>
       <div class="chapter">
         <p class="eyebrow" lang="en">Let's talk</p>
-        <h2 class="contact__title">רוצים את המספר שלכם?</h2>
-        <p class="contact__text">ספרו לנו על האירוע ונחזור אליכם היום עם זמינות והצעה מותאמת. אין התחייבות ואין מכירה בטלפון.</p>
+        <h2 class="contact__title">התאריך שלכם עדיין פנוי?</h2>
+        <p class="contact__text">ספרו לנו על האירוע ונחזור אליכם היום עם זמינות והצעה מותאמת — מגנטי הווידאו כלולים בה. אין התחייבות ואין מכירה בטלפון.</p>
       </div>
       <a class="contact__phone" href="tel:+972503662699">050-3662699</a>
     </div>
@@ -470,7 +399,7 @@
      message the visitor forwards. Kept in Hebrew on purpose: it is sent TO
      a Hebrew-speaking studio. -->
 <a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ"
-   data-wa-text="היי, קראתי אצלכם על מה משפיע על המחיר ואשמח להצעה מותאמת לתאריך שלנו.">
+   data-wa-text="היי, קראתי אצלכם על מגנטי הווידאו ואשמח להצעה מותאמת לתאריך שלנו.">
   <span>וואטסאפ</span>
 </a>
 

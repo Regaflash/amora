@@ -1708,6 +1708,61 @@
     var done = $('[data-form-done]', form);
     var sending = false;
 
+    /* ---------------------------------------------------- the two steps ---
+       Step 1 is name + phone; step 2 is everything about the event. The split
+       is the database's, not a preference: public.leads has name and phone
+       NOT NULL, event_date and event_type nullable, so those two are the only
+       pair that can stand alone as a row.
+
+       ONE INSERT, EVER, in both paths. Finish step 2 -> the full payload goes
+       on submit. Finish step 1 and leave -> the same payload, minus what was
+       never typed, goes on pagehide/visibilitychange. `armed` is what makes
+       the second path defensible: it is set only when the visitor has
+       actually PRESSED the step-1 button, so nobody who typed two digits and
+       closed the tab is ever written. anon has no UPDATE grant on this table
+       (checked against the live database, not the docs), so insert-then-enrich
+       is not available and was never designed for.
+
+       The accepted defect, stated rather than hidden: background the page
+       after step 1, come back, and finish, and the studio gets two rows and
+       two alert emails -- same phone, minutes apart, the second one complete.
+       That is deliberate. Latching the partial as final instead would throw
+       away the name, type and message they went on to type, and a visible
+       duplicate is a smaller harm than silently discarded data. Do not
+       "fix" it by listening to pagehide alone: Chrome on Android discards
+       backgrounded tabs without firing it. */
+    var stepPanels = { 1: $('[data-form-step="1"]', form), 2: $('[data-form-step="2"]', form) };
+    var stepsLabel = $('[data-form-steps]', form);
+    var stepNowEl = $('[data-step-now]', form);
+    var backBtn = $('[data-form-back]', form);
+    var twoStep = Boolean(stepPanels[1] && stepPanels[2]);
+    var stepNow = 1;
+    var armed = false, partialSent = false, fullSent = false;
+
+    // Which step owns each validated field. Anything absent is optional and
+    // never blocks either press.
+    var STEP_OF = { name: 1, phone: 1, date: 2, type: 2, email: 2 };
+
+    function setSubmitLabel(which) {
+      $$('[data-submit-label]', form).forEach(function (span) {
+        span.hidden = span.getAttribute('data-submit-label') !== which;
+      });
+    }
+
+    function showStep(n, moveFocus) {
+      if (!twoStep) return;
+      stepNow = n;
+      stepPanels[1].hidden = n !== 1;
+      stepPanels[2].hidden = n !== 2;
+      if (backBtn) backBtn.hidden = n !== 2;
+      if (stepNowEl) stepNowEl.textContent = String(n);
+      setSubmitLabel(n === 1 ? 'next' : 'send');
+      if (moveFocus) {
+        var title = $('.form__step-title', stepPanels[n]);
+        if (title) title.focus();
+      }
+    }
+
     function showError(name, message) {
       var box = $('[data-error="' + name + '"]', form);
       var input = $('[data-field="' + name + '"]', form);
@@ -1768,6 +1823,19 @@
       return errors;
     }
 
+    // The step filter, layered on top of validate() rather than beside it:
+    // one rule set, no second copy to drift. `<= step` and not `=== step` on
+    // purpose -- going back to step 1, blanking the phone and pressing שלחו
+    // must still be caught from step 2.
+    function errorsForStep(values, step) {
+      if (!twoStep) return validate(values);
+      var all = validate(values), out = {};
+      Object.keys(all).forEach(function (k) {
+        if ((STEP_OF[k] || 1) <= step) out[k] = all[k];
+      });
+      return out;
+    }
+
     // Read through a helper. Every one of these eight reads dereferenced a
     // node with no null guard, after preventDefault() had already suppressed
     // the native submit — so deleting any one question from the contact
@@ -1798,6 +1866,89 @@
       };
     }
 
+    // Declared here, above buildPayload, for a reason that is not style:
+    // tools/check.sh cross-checks the columns this form posts against anon's
+    // column-scoped INSERT grant by searching main.js for `/rest/v1/leads`
+    // followed by the first `payload = { … };`. The literal must therefore
+    // come FIRST in source order, and the object below must stay assigned to
+    // a variable literally named `payload` and close with `};` on its own
+    // line. Break either and the check prints "לא נמצא ה-payload" -- which is
+    // easy to skim past, and the grant is the thing that silently killed
+    // every submission for a day in August.
+    var LEADS_PATH = '/rest/v1/leads';
+
+    // The ONLY Supabase row this file builds. Both the full submit and the
+    // abandonment write go through it, so the column list cannot fork.
+    // Sanitised against the table's CHECK constraints rather than trusting
+    // validate(): name is clamped to 120 (validate only asserts >= 2, so a
+    // pasted 200-character name failed leads_name_len on the old form too),
+    // and an email that does not match the shape check is dropped to null
+    // instead of failing the whole INSERT.
+    function buildPayload(values, partial) {
+      var email = values.email.trim();
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) email = '';
+      // Prefixed, never appended: leadSource() already returns a 200-char
+      // slice, so appending a marker can overflow the column's length check
+      // and take the whole row with it. Prefixing means truncation eats the
+      // referrer, which is the part we can afford to lose.
+      var src = partial ? ('חלקי · ' + leadSource()).slice(0, 200) : leadSource();
+      var payload = {
+        name: values.name.trim().slice(0, 120),
+        phone: values.phone.trim(),
+        email: email || null,
+        event_date: values.dateTbd ? null : (values.date || null),
+        // The checkbox has always existed and its answer has always been
+        // thrown away: the row said event_date: null either way, so a couple
+        // who has not booked a venue yet was indistinguishable from a blank
+        // field. They are not the same lead.
+        date_tbd: values.dateTbd,
+        event_type: values.type || null,
+        area: values.area || null,
+        coverage: values.coverage || null,
+        message: values.message || null,
+        source: src
+      };
+      return payload;
+    }
+
+    function supabaseReady() {
+      return Boolean(CONFIG.supabaseUrl && CONFIG.supabaseKey);
+    }
+
+    // The abandonment write. Guarded five ways, and every guard matters:
+    // never before the visitor pressed the step-1 button, never twice, never
+    // after the full submit has landed, never mid-send, and never for a
+    // tripped honeypot -- which must suppress this exactly as it suppresses
+    // the real submit. keepalive and no AbortController: a 12-second timeout
+    // is meaningless on a page that is going away.
+    function commitPartial() {
+      if (!twoStep || !armed || partialSent || fullSent || sending) return;
+      if (!supabaseReady()) return;
+      var values = readValues();
+      if (values.company) return;
+      if (!values.name.trim() || !values.phone.trim()) return;
+      partialSent = true;
+      try {
+        fetch(CONFIG.supabaseUrl.replace(/\/+$/, '') + LEADS_PATH, {
+          method: 'POST',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            apikey: CONFIG.supabaseKey,
+            Authorization: 'Bearer ' + CONFIG.supabaseKey,
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify(buildPayload(values, true))
+        }).catch(function () {});
+      } catch (e) { /* a dying page is not a place to report errors */ }
+    }
+
+    window.addEventListener('pagehide', commitPartial);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') commitPartial();
+    });
+
     // A malformed phone number used to be reported only after all six
     // controls were filled and שלחו was pressed — and that regex has already
     // bounced a real lead once. Validate on leaving a field, but ONLY a
@@ -1815,14 +1966,32 @@
       showError(name, errors[name] || '');
     });
 
+    // Fold to step 1. Everything above ships VISIBLE in the markup, so with
+    // scripting off the visitor gets the whole form and one submit button —
+    // the same progressive-enhancement contract the gallery hint, the strip
+    // counter and the share button keep.
+    if (twoStep) {
+      if (backBtn) {
+        backBtn.addEventListener('click', function () {
+          showStep(1, true);
+        });
+      }
+      if (stepsLabel) stepsLabel.hidden = false;
+      showStep(1, false);
+    }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       if (sending) return;
 
       var values = readValues();
 
-      var errors = validate(values);
+      var errors = errorsForStep(values, stepNow);
+      // Only clear/paint the fields this step can speak for: a step-1 press
+      // must not light up "בחרו סוג אירוע" on a control the visitor has not
+      // been shown yet.
       ['name', 'phone', 'email', 'date', 'type'].forEach(function (k) {
+        if (twoStep && (STEP_OF[k] || 1) > stepNow) return;
         showError(k, errors[k]);
       });
       var badKeys = Object.keys(errors);
@@ -1859,6 +2028,15 @@
         }
         var firstBad = $('[aria-invalid="true"]', form);
         if (firstBad) firstBad.focus();
+        return;
+      }
+
+      // Step 1 cleared. `armed` from here on: the visitor has pressed a
+      // button that says we will get back to them, which is what licenses
+      // the abandonment write above.
+      if (twoStep && stepNow === 1) {
+        armed = true;
+        showStep(2, true);
         return;
       }
 
@@ -1909,15 +2087,15 @@
       }
 
       if (failure) failure.hidden = true;
-      // Captured, not re-written as a literal: on a translated page the
-      // button's text is English/Arabic/Russian, and the failure path runs
-      // exactly when the network — including the translator — is down, so a
-      // restored Hebrew literal would strand the CTA in the wrong language
-      // at the worst moment. Restore what the visitor was actually shown.
-      var restoreLabel = submitBtn ? submitBtn.textContent : '';
+      // Three pre-rendered spans, one of them shown. This used to capture the
+      // button's textContent and write the Hebrew literal 'שולחים…' over it,
+      // which on an English, Arabic or Russian page injected Hebrew and then
+      // tripped i18n.js's MutationObserver — a live defect on every
+      // translated page, removed here as a side effect. The spans were
+      // translated on the first pass, all three of them.
       if (submitBtn) {
         submitBtn.classList.add('is-sending');
-        submitBtn.textContent = 'שולחים…';
+        setSubmitLabel('sending');
       }
       // Latched only after the button writes above: submitBtn is a lookup,
       // and a throw between `sending = true` and the release would have left
@@ -1928,12 +2106,15 @@
         sending = false;
         if (submitBtn) {
           submitBtn.classList.remove('is-sending');
-          submitBtn.textContent = restoreLabel;
+          setSubmitLabel(twoStep && stepNow === 1 ? 'next' : 'send');
         }
       }
 
       function succeed() {
         release();
+        // Latched before anything else: a full row has landed, so the
+        // abandonment write must never fire behind it.
+        fullSent = true;
         fields.hidden = true;
         done.hidden = false;
         done.setAttribute('tabindex', '-1');
@@ -1950,27 +2131,12 @@
       var headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
       var payload;
 
-      if (CONFIG.supabaseUrl && CONFIG.supabaseKey) {
-        endpoint = CONFIG.supabaseUrl.replace(/\/+$/, '') + '/rest/v1/leads';
+      if (supabaseReady()) {
+        endpoint = CONFIG.supabaseUrl.replace(/\/+$/, '') + LEADS_PATH;
         headers.apikey = CONFIG.supabaseKey;
         headers.Authorization = 'Bearer ' + CONFIG.supabaseKey;
         headers.Prefer = 'return=minimal';
-        payload = {
-          name: values.name.trim(),
-          phone: values.phone.trim(),
-          email: values.email.trim() || null,
-          event_date: values.dateTbd ? null : (values.date || null),
-          // The checkbox has always existed and its answer has always been
-          // thrown away: the row said event_date: null either way, so a couple
-          // who has not booked a venue yet was indistinguishable from a blank
-          // field. They are not the same lead.
-          date_tbd: values.dateTbd,
-          event_type: values.type || null,
-          area: values.area || null,
-          coverage: values.coverage || null,
-          message: values.message || null,
-          source: leadSource()
-        };
+        payload = buildPayload(values, false);
       }
 
       // Nothing configured yet: hand the details to WhatsApp. The send is not
@@ -1997,6 +2163,9 @@
 
       fetch(endpoint, {
         method: 'POST',
+        // Survives the visitor tapping שלחו and immediately backgrounding
+        // the app, which today loses the lead outright.
+        keepalive: true,
         headers: headers,
         body: JSON.stringify(payload),
         signal: abort.signal

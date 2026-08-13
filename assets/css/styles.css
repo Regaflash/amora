@@ -2444,6 +2444,46 @@ html:not(.js) .quotes__controls { display: none; }
    this the JS setting fields.hidden = true leaves the whole form on screen
    underneath the thank-you panel. Same pattern as the rules above. */
 .form__fields[hidden] { display: none; }
+
+/* The two-step panels. display:grid outranks [hidden]'s UA display:none for
+   exactly the reason spelled out above, so each of these needs its own
+   override -- without it, hiding step 2 leaves it on screen under step 1. */
+.form__step { display: grid; gap: 20px; }
+.form__step[hidden] { display: none; }
+.form__steps[hidden],
+.form__back[hidden],
+.form__submit span[hidden] { display: none; }
+.form__steps {
+  font-size: var(--t-micro);
+  letter-spacing: .16em;
+  color: var(--mocha);
+  margin: 0;
+}
+.form__step-title {
+  font-size: var(--t-small);
+  color: var(--charcoal);
+  margin: 0;
+}
+/* tabindex="-1" targets: the step change is announced by MOVING FOCUS here,
+   the same way the thank-you panel announces itself. No aria-live region on
+   top of that -- two mechanisms would double-announce. The ring must stay
+   visible; check.sh fails a killed focus ring. */
+.form__step-title:focus-visible { outline: 3px solid var(--charcoal); outline-offset: 4px; }
+.form__step-note { font-size: var(--t-micro); color: var(--mocha); margin: 0; opacity: .85; }
+/* Padding, not just text: WCAG 2.2 SC 2.5.8 wants 24x24 and verify.mjs
+   fails anything visible under it, with no exemption for this control. */
+.form__back {
+  justify-self: start;
+  background: none;
+  border: 0;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: var(--t-micro);
+  letter-spacing: .16em;
+  color: var(--mocha);
+  cursor: pointer;
+}
+.form__back:hover { color: var(--charcoal); }
 .form__title {
   font-family: var(--serif);
   font-weight: 600;

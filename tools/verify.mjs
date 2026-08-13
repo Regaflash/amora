@@ -67,6 +67,24 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const results = [];
 const ok = (name, pass, got, want) => results.push({ name, pass: !!pass, got, want });
 
+// The lead form has been two steps since 2026-08-13 — name + phone, then
+// everything about the event. Any assertion that touches a step-2 control has
+// to clear step 1 first, or Playwright sits on a display:none element until it
+// times out and takes the whole suite down with it (which is exactly how this
+// change announced itself). Fills step 1 and waits for step 2 to be on screen.
+const advanceForm = async (p, name = 'בדיקה בדיקתית', phone = '0501234567') => {
+  await p.fill('[data-field="name"]', name);
+  await p.fill('[data-field="phone"]', phone);
+  await p.locator('[data-submit]').click();
+  await p.waitForSelector('[data-form-step="2"]:not([hidden])');
+};
+// The submit button carries three label spans and shows one. textContent would
+// concatenate all three, which makes a label comparison vacuously true.
+const submitLabel = (p) => p.evaluate(() => {
+  const s = document.querySelector('[data-submit] [data-submit-label]:not([hidden])');
+  return s ? s.textContent.trim() : document.querySelector('[data-submit]').textContent.trim();
+});
+
 const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
 const lum = (r, g, b) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
@@ -893,6 +911,35 @@ await page.waitForTimeout(200);
   await p.goto(BASE + '/', { waitUntil: 'load' });
   await p.waitForTimeout(600);
 
+  // Step 1 first — the eager-blur assertions all live on name and phone, and
+  // after advancing they would be behind display:none.
+  await p.locator('[data-field="phone"]').fill('12');
+  await p.locator('[data-field="name"]').focus();   // blur the phone
+  await p.waitForTimeout(200);
+  ok('a bad filled phone is called out on leaving the field',
+     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent.length > 0
+       && document.querySelector('[data-field="phone"]').getAttribute('aria-invalid') === 'true'),
+     true, true);
+  await p.locator('[data-field="phone"]').fill('0521234567');
+  await p.locator('[data-field="name"]').focus();
+  await p.waitForTimeout(200);
+  ok('a corrected phone clears on the next blur',
+     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent === ''
+       && !document.querySelector('[data-field="phone"]').hasAttribute('aria-invalid')),
+     true, true);
+  // Blur the still-empty name onto the phone. This used to blur onto email,
+  // which now lives on step 2 — the pairing changed, the property under test
+  // (an untouched field is never blamed) did not.
+  await p.locator('[data-field="name"]').focus();
+  await p.locator('[data-field="phone"]').focus();
+  await p.waitForTimeout(200);
+  ok('an empty tabbed-through field is never blamed',
+     await p.evaluate(() => document.querySelector('[data-error="name"]').textContent === ''
+       && !document.querySelector('[data-field="name"]').hasAttribute('aria-invalid')),
+     true, true);
+
+  // Now step 2, where the date and its hatch live.
+  await advanceForm(p, 'נועה', '0521234567');
   const reqSel = '[data-field="date"]';
   const markOf = () => p.evaluate((sel) => {
     const f = document.querySelector(sel).closest('.field').querySelector('.field__req');
@@ -918,27 +965,6 @@ await page.waitForTimeout(200);
          if (!req || !ctl) return true;
          return req.hidden || ctl.getAttribute('aria-required') === 'true';
        })), true, true);
-
-  await p.locator('[data-field="phone"]').fill('12');
-  await p.locator('[data-field="name"]').focus();   // blur the phone
-  await p.waitForTimeout(200);
-  ok('a bad filled phone is called out on leaving the field',
-     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent.length > 0
-       && document.querySelector('[data-field="phone"]').getAttribute('aria-invalid') === 'true'),
-     true, true);
-  await p.locator('[data-field="phone"]').fill('0521234567');
-  await p.locator('[data-field="name"]').focus();
-  await p.waitForTimeout(200);
-  ok('a corrected phone clears on the next blur',
-     await p.evaluate(() => document.querySelector('[data-error="phone"]').textContent === ''
-       && !document.querySelector('[data-field="phone"]').hasAttribute('aria-invalid')),
-     true, true);
-  await p.locator('[data-field="email"]').focus();   // blur empty name
-  await p.waitForTimeout(200);
-  ok('an empty tabbed-through field is never blamed',
-     await p.evaluate(() => document.querySelector('[data-error="name"]').textContent === ''
-       && !document.querySelector('[data-field="name"]').hasAttribute('aria-invalid')),
-     true, true);
 
   await p.goto(BASE + '/', { waitUntil: 'load' });
   await p.waitForTimeout(600);
@@ -1966,6 +1992,7 @@ await page.waitForTimeout(200);
 {
   await page.goto(BASE + '/', { waitUntil: 'load' });
   await page.waitForTimeout(700);
+  await advanceForm(page, 'בדיקה', '0521234567');
   const date = page.locator('[data-field="date"]');
   ok('date is required before the hatch is ticked',
      (await date.getAttribute('aria-required')) === 'true', 'true', 'true');
@@ -1975,8 +2002,7 @@ await page.waitForTimeout(200);
      (await date.isDisabled()) && (await date.getAttribute('aria-required')) === 'false',
      { disabled: await date.isDisabled(), required: await date.getAttribute('aria-required') },
      '{disabled:true, required:false}');
-  await page.fill('[data-field="name"]', 'בדיקה');
-  await page.fill('[data-field="phone"]', '0521234567');
+  await page.selectOption('[data-field="type"]', 'wedding');
   await page.locator('[data-submit]').click();
   await page.waitForTimeout(600);
   const err = await page.evaluate(() => document.querySelector('[data-error="date"]')?.textContent.trim());
@@ -2615,7 +2641,16 @@ await page.waitForTimeout(200);
 {
   const p = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const bad = [];
-  p.on('response', (r) => { if (r.status() >= 400 && !r.url().includes('/old/')) bad.push(`${r.status()} ${r.url()}`); });
+  // /_vercel/* is excluded because the HOST serves it, not this repo: the
+  // analytics script exists only on a real Vercel deployment with Analytics
+  // enabled, so the local static server answers 404 for a path that is
+  // perfectly correct. The exclusion is deliberately prefix-narrow — this
+  // assertion's real job is catching a RELATIVE reference resolving against
+  // the dead path, and every one of those still lands in `bad`.
+  const hostServed = (u) => new URL(u).pathname.startsWith('/_vercel/');
+  p.on('response', (r) => {
+    if (r.status() >= 400 && !r.url().includes('/old/') && !hostServed(r.url())) bad.push(`${r.status()} ${r.url()}`);
+  });
   // Deep path on purpose: 404.html is served AT the address that was not found,
   // so a relative asset or link resolves against the dead path instead of root.
   const resp = await p.goto(BASE + '/old/link/that/died', { waitUntil: 'load' });
@@ -2960,8 +2995,7 @@ await page.waitForTimeout(200);
   });
   await p.goto(BASE + '/?utm_source=check', { waitUntil: 'load' });
   await p.waitForTimeout(600);
-  await p.fill('[data-field="name"]', 'בדיקה בדיקתית');
-  await p.fill('[data-field="phone"]', '0501234567');
+  await advanceForm(p);
   await p.check('[data-date-tbd]');
   await p.selectOption('[data-field="type"]', 'wedding');
   await p.locator('[data-submit]').click();
@@ -2991,19 +3025,18 @@ await page.waitForTimeout(200);
   await p.route('**/rest/v1/leads**', (route) => { attempts++; route.abort('failed'); });
   await p.goto(BASE + '/', { waitUntil: 'load' });
   await p.waitForTimeout(600);
-  await p.fill('[data-field="name"]', 'בדיקה בדיקתית');
-  await p.fill('[data-field="phone"]', '0501234567');
+  await advanceForm(p);
   await p.check('[data-date-tbd]');
   await p.selectOption('[data-field="type"]', 'wedding');
-  const labelBefore = (await p.locator('[data-submit]').textContent()).trim();
+  const labelBefore = await submitLabel(p);
   await p.locator('[data-submit]').click();
   await p.waitForTimeout(900);
   const failState = await p.evaluate(() => {
     const f = document.querySelector('[data-form-failure]');
     const a = f.querySelector('a[href^="https://wa.me/"]');
-    return { shown: !f.hidden, wa: a ? decodeURIComponent(a.href) : '',
-             label: document.querySelector('[data-submit]').textContent.trim() };
+    return { shown: !f.hidden, wa: a ? decodeURIComponent(a.href) : '' };
   });
+  failState.label = await submitLabel(p);
   ok('a network failure hands the typed lead to WhatsApp and frees the button',
      failState.shown && failState.wa.includes('0501234567') && failState.label === labelBefore,
      JSON.stringify({ label: failState.label, want: labelBefore }), 'panel + summary + restored label');
@@ -3027,8 +3060,7 @@ await page.waitForTimeout(200);
   await p.route('**/rest/v1/leads**', (route) => { attempts++; route.abort('failed'); });
   await p.goto(BASE + '/', { waitUntil: 'load' });
   await p.waitForTimeout(600);
-  await p.fill('[data-field="name"]', 'בדיקה בדיקתית');
-  await p.fill('[data-field="phone"]', '0501234567');
+  await advanceForm(p);
   await p.check('[data-date-tbd]');
   await p.selectOption('[data-field="type"]', 'wedding');
   await p.evaluate(() => { document.querySelector('[data-field="company"]').value = 'Acme Inc'; });
@@ -3040,6 +3072,196 @@ await page.waitForTimeout(200);
        return !f.hidden && !!f.querySelector('a[href^="https://wa.me/"]');
      }), attempts, '0 requests, visible WhatsApp route');
   await p.close();
+}
+
+// ------------------------------------------------ the two-step lead form --
+// The whole point of the split is that a visitor who gives a name and a phone
+// and then leaves is still a lead. That is a claim about how many rows reach
+// the database and when, so it is asserted by counting requests, not by
+// reading the source. The exactly-once property in particular has three ways
+// to go wrong — never, twice, or for someone who never consented — and each
+// gets its own assertion below.
+{
+  // What each step shows, on BOTH copies of the form. Derived from the DOM,
+  // not from a hand-written list, so a field added to the wrong panel fails.
+  for (const url of ['/', '/cost.html', '/magnets.html']) {
+    const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    await p.goto(BASE + url, { waitUntil: 'load' });
+    await p.waitForTimeout(600);
+    const shape = await p.evaluate(() => {
+      const vis = (n) => !!(n.offsetWidth || n.offsetHeight || n.getClientRects().length);
+      const named = (sel) => [...document.querySelectorAll('[data-form] ' + sel)]
+        .filter((n) => !n.classList.contains('honeypot'))
+        .filter(vis).map((n) => n.getAttribute('data-field'));
+      return {
+        on: named('[data-field]'),
+        label: (document.querySelector('[data-submit] [data-submit-label]:not([hidden])') || {}).textContent,
+        counter: (document.querySelector('[data-step-now]') || {}).textContent,
+      };
+    });
+    ok(`step 1 asks only for a name and a phone on ${url}`,
+       JSON.stringify(shape.on) === JSON.stringify(['name', 'phone']),
+       JSON.stringify(shape.on), '["name","phone"]');
+    ok(`and the button on ${url} offers to continue, not to send`,
+       /המשך/.test(shape.label || '') && shape.counter === '1',
+       JSON.stringify(shape), 'continue label + counter 1');
+    await p.close();
+  }
+}
+{
+  const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(400);
+  ok('an empty step 1 does not advance, and blames only its own two fields',
+     await p.evaluate(() => document.querySelector('[data-form-step="2"]').hidden
+       && document.activeElement === document.querySelector('[data-field="name"]')
+       && document.querySelector('[data-error="type"]').textContent === ''),
+     true, 'held on step 1, type unblamed');
+
+  await advanceForm(p, 'נועה ואיתי', '0521234567');
+  ok('a cleared step 1 advances, moves focus to the new step, and counts it',
+     await p.evaluate(() => document.activeElement
+         === document.querySelector('[data-form-step="2"] .form__step-title')
+       && document.querySelector('[data-step-now]').textContent === '2'
+       && document.querySelector('[data-form-step="1"]').hidden),
+     true, 'focused step-2 title + counter 2');
+  ok('every step-2 required field is marked required once it is on screen',
+     await p.evaluate(() => [...document.querySelectorAll('[data-form-step="2"] [aria-required="true"]')]
+       .every((c) => {
+         const mark = c.closest('.field').querySelector('.field__req');
+         return mark && !mark.hidden && mark.getClientRects().length > 0;
+       })), true, true);
+
+  await p.locator('[data-form-back]').click();
+  await p.waitForTimeout(300);
+  ok('back is lossless: step 1 returns with what was typed still in it',
+     await p.evaluate(() => document.querySelector('[data-field="name"]').value === 'נועה ואיתי'
+       && document.querySelector('[data-field="phone"]').value === '0521234567'
+       && !document.querySelector('[data-form-step="1"]').hidden
+       && document.activeElement === document.querySelector('[data-form-step="1"] .form__step-title')),
+     true, 'values kept, focus returned');
+  await p.close();
+}
+{
+  // Exactly one row for a completed form. The old single-step form posted one;
+  // a two-step form that posts a partial AND a full would double every lead
+  // and send the studio two alert emails for one couple.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let rows = 0;
+  await p.route('**/rest/v1/leads**', async (route) => {
+    rows++;
+    await route.fulfill({ status: 201, body: '' });
+  });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await advanceForm(p, 'נועה ואיתי', '0521234567');
+  await p.check('[data-date-tbd]');
+  await p.selectOption('[data-field="type"]', 'wedding');
+  await p.locator('[data-submit]').click();
+  await p.waitForTimeout(900);
+  // Then leave. The exit handler must see fullSent and stand down.
+  await p.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('pagehide'));
+  });
+  await p.waitForTimeout(400);
+  ok('a completed form writes exactly one row, and leaving afterwards adds none',
+     rows === 1, rows, 1);
+  await p.close();
+}
+{
+  // Abandonment after step 1 — the case this whole change exists for. The
+  // event is dispatched synthetically because page.route does not reliably
+  // intercept a keepalive request issued during a real navigation; this
+  // exercises the handler, not the browser's unload semantics, and the real
+  // path still wants one manual check on a device.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  const posted = [];
+  await p.route('**/rest/v1/leads**', async (route) => {
+    posted.push(route.request().postDataJSON());
+    await route.fulfill({ status: 201, body: '' });
+  });
+  await p.goto(BASE + '/?utm_source=check', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await advanceForm(p, 'נועה ואיתי', '0521234567');
+  await p.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await p.waitForTimeout(500);
+  ok('abandoning after step 1 saves the lead — once, named, and flagged partial',
+     posted.length === 1 && posted[0].name === 'נועה ואיתי'
+       && posted[0].phone === '0521234567' && /^חלקי · /.test(posted[0].source || '')
+       && posted[0].event_date === null && posted[0].event_type === null,
+     JSON.stringify(posted).slice(0, 120), 'one partial row');
+  // Fire it again: the latch must hold, or a page that backgrounds twice
+  // writes twice.
+  await p.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await p.waitForTimeout(300);
+  ok('and a second hide does not write a second copy', posted.length === 1, posted.length, 1);
+  await p.close();
+}
+{
+  // The consent guarantee, and the reason `armed` exists: someone who typed
+  // into the form but never pressed the button has not asked us for anything.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let rows = 0;
+  await p.route('**/rest/v1/leads**', async (route) => { rows++; await route.fulfill({ status: 201, body: '' }); });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await p.fill('[data-field="name"]', 'נועה ואיתי');
+  await p.fill('[data-field="phone"]', '0521234567');
+  await p.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await p.waitForTimeout(500);
+  ok('a filled-but-unsubmitted step 1 is never written — nobody asked us to',
+     rows === 0, rows, 0);
+  await p.close();
+}
+{
+  // The honeypot has to suppress the exit write too, or the bot filter has a
+  // hole exactly the width of this feature.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'reduce' });
+  let rows = 0;
+  await p.route('**/rest/v1/leads**', async (route) => { rows++; await route.fulfill({ status: 201, body: '' }); });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(600);
+  await advanceForm(p, 'נועה ואיתי', '0521234567');
+  await p.evaluate(() => {
+    document.querySelector('[data-field="company"]').value = 'Acme Inc';
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await p.waitForTimeout(500);
+  ok('a tripped honeypot suppresses the abandonment write as well', rows === 0, rows, 0);
+  await p.close();
+}
+{
+  // Progressive enhancement: with scripting off the split must not exist at
+  // all. This is the assertion that keeps the panels shipping visible in the
+  // markup — the property everything else here depends on.
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  const np = await ctx.newPage();
+  await np.goto(BASE + '/', { waitUntil: 'load' });
+  const shape = await np.evaluate(() => {
+    const vis = (n) => !!(n.offsetWidth || n.offsetHeight || n.getClientRects().length);
+    return {
+      fields: [...document.querySelectorAll('[data-form] [data-field]')]
+        .filter((n) => !n.classList.contains('honeypot')).filter(vis).length,
+      submits: [...document.querySelectorAll('[data-form] [data-submit]')].filter(vis).length,
+      counter: !!document.querySelector('[data-form-steps]:not([hidden])'),
+      back: [...document.querySelectorAll('[data-form-back]')].filter(vis).length,
+    };
+  });
+  ok('with JS off it is one form again: every field visible, one submit, no step chrome',
+     shape.fields === 9 && shape.submits === 1 && !shape.counter && shape.back === 0,
+     JSON.stringify(shape), '9 fields, 1 submit, no counter, no back');
+  await ctx.close();
 }
 
 // ---------------------------------------------- form ergonomics, regression --

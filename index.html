@@ -268,6 +268,15 @@
 </script>
 <link rel="stylesheet" href="assets/css/a11y-widget.css" />
 <script src="assets/js/a11y-widget.js"></script>
+<!-- Vercel Analytics, added 2026-08-13. Same-origin on purpose: the script and
+     its beacon are served from /_vercel/* by the host, so the enforcing CSP
+     needs no new source -- script-src 'self' and connect-src 'self' already
+     cover both, and check.sh's external-dependency guard stays honest because
+     nothing third-party is fetched at runtime.
+     It only exists once Analytics is enabled in the Vercel dashboard; until
+     then the path 404s and the tag does nothing. privacy.html is written to
+     match what this collects -- if this tag goes, that section goes with it. -->
+<script src="/_vercel/insights/script.js" defer></script>
 <!-- BEGIN generated image schema — tools/gen-image-schema.py -->
 <script type="application/ld+json">
 {
@@ -1101,10 +1110,22 @@
         <p class="step__text">האורח מכוון את הטלפון אל המגנט שקיבל, והתמונה שבידו מתעוררת לחיים.</p>
       </div>
     </div>
+    <!-- The one link out of this block, and it is INTERNAL. The note above
+         says the explainer deliberately adds no second OUTBOUND link so that
+         regaflash.com stays one link in one place — magnets.html is ours, and
+         it is where the same story is told at length. Reuses .faq__more, the
+         class that exists precisely because a link may not sit inside a
+         byte-locked answer. -->
+    <p class="faq__more"><a class="link-underline" href="magnets.html">איך מגנטי הווידאו עובדים — בהרחבה ←</a></p>
   </section>
 
   <!-- ===== 08 · המלצות ===== -->
-  <section class="quotes" data-reveal>
+  <!-- id="quotes" added 2026-08-13. This was the ONLY section on the page
+       without one, so nothing could link to the social proof — not a message
+       to a couple, not cost.html, not the assistant's action router, which
+       already speaks #gallery-<cat> and #contact. Adding it costs nothing and
+       the id is checked by check.sh's id-reference pass like every other. -->
+  <section class="quotes" id="quotes" data-reveal>
     <div class="quotes__inner">
       <div class="chapter chapter--center">
         <p class="eyebrow" lang="en">07 — Our couples say</p>
@@ -1231,6 +1252,23 @@
       <form class="form" data-form method="dialog" novalidate>
         <div class="form__fields" data-form-fields>
           <p class="form__title">בדיקת זמינות</p>
+          <!-- Two steps since 2026-08-13, and the SPLIT POINT is dictated by the
+               database, not by taste. public.leads has name and phone NOT NULL (with
+               length checks on both); event_date and event_type are nullable. So step
+               1 holds exactly the two columns a row cannot exist without -- which are
+               also exactly what you need in order to ring someone back. A "date
+               first" step reads better and is unbuildable: the partial row would
+               violate name NOT NULL.
+               DOM ORDER IS UNCHANGED by this split -- name, phone, date, date_tbd,
+               type, email, area, coverage, message, company, the same sequence as
+               before, just wrapped in two groups. That is what keeps verify.mjs's
+               "required fields precede the optional email" assertion true untouched.
+               Neither panel ships hidden: with JS off this is one complete form with
+               one submit button, exactly as it was. JS hides step 2 at init. -->
+          <p class="form__steps" data-form-steps hidden>שלב <span data-step-now>1</span> מתוך 2</p>
+
+          <div class="form__step" data-form-step="1" role="group" aria-labelledby="lead-step-1">
+            <p class="form__step-title" id="lead-step-1" tabindex="-1">קודם כול — לאן נחזור אליכם</p>
 
           <label class="field">
             <!-- The four aria-required fields carry a visible marker too. They
@@ -1252,6 +1290,12 @@
             <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
             <span class="field__error" id="err-phone" data-error="phone"></span>
           </label>
+
+            <p class="form__step-note">זה הכול לשלב הזה. גם אם תעצרו כאן, הפרטים מגיעים אלינו ונחזור אליכם.</p>
+          </div>
+
+          <div class="form__step" data-form-step="2" role="group" aria-labelledby="lead-step-2">
+            <p class="form__step-title" id="lead-step-2" tabindex="-1">ועכשיו — על האירוע עצמו</p>
 
           <div class="field-row">
             <!-- A <div> rather than a <label>: the opt-out below needs a label
@@ -1318,9 +1362,26 @@
             <textarea class="field__control" name="message" rows="3" data-field="message"></textarea>
           </label>
 
+
+            <!-- Back, not "cancel": nothing is cleared, so returning and continuing is
+                 lossless. In RTL forward is <- and back is ->, as everywhere else. -->
+            <button class="form__back" type="button" data-form-back hidden>→ חזרה</button>
+          </div>
+
           <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
 
-          <button class="form__submit" type="submit" data-submit>שלחו — נחזור אליכם היום</button>
+          <!-- Three labels as SPANS, not one textContent the JS rewrites. The old
+               code captured the button's text and wrote the literal 'שולחים…' over
+               it, which injected Hebrew into an English, Arabic or Russian page and
+               then tripped i18n.js's MutationObserver. Spans are translated on the
+               first pass, all three, because i18n walks text nodes without checking
+               visibility. Accessible-name computation skips display:none subtrees,
+               so the button announces exactly one of them. -->
+          <button class="form__submit" type="submit" data-submit>
+            <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים ←</span>
+            <span data-submit-label="send">שלחו — נחזור אליכם היום</span>
+            <span data-submit-label="sending" hidden>שולחים…</span>
+          </button>
           <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
           <p class="form__failure" data-form-failure role="alert" hidden></p>
           <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
@@ -1410,9 +1471,20 @@
   <a class="lightbox__cta" href="#contact" data-lightbox-cta>לבדיקת זמינות ←</a>
 </div>
 
-<script src="assets/js/main.js"></script>
-
+<!-- All three deferred as of 2026-08-13; 143KB of parser-blocking JavaScript
+     sat here before, and end-of-body is not the same as not blocking — the
+     parser still stops for the fetch. a11y-widget.js in <head> stays blocking
+     ON PURPOSE and must not be given defer: it applies stored contrast/motion
+     modes before first paint.
+     The ORDER here is load-bearing and was changed with the defer. It used to
+     read main → i18n(defer) → assistant, which EXECUTED as main, assistant,
+     i18n, because a deferred script waits for parsing and the two sync ones
+     did not. Deferring all three makes execution follow document order, so
+     the file order is rewritten to match what actually ran before. i18n's
+     MutationObserver would have picked the assistant's panel up either way,
+     but "either way" is not something to discover in production. -->
+<script src="assets/js/main.js" defer></script>
+<script src="assets/js/assistant.js" defer></script>
 <script src="assets/js/i18n.js" defer></script>
-<script src="assets/js/assistant.js"></script>
 </body>
 </html>
