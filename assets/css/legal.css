@@ -122,3 +122,58 @@
    labels are un-mirrored again so the digits do not read backwards. */
 [dir="ltr"] .mag-diagram { transform: scaleX(-1); }
 [dir="ltr"] .mag-diagram text { transform: scaleX(-1); transform-origin: center; transform-box: fill-box; }
+
+/* "להמשך קריאה" — replaced a row of links separated by " · ". That row put
+   three tap targets on one line with roughly an 11px gutter at 390px: each
+   cleared 24x24 on its own, so SC 2.5.8 passed, and it was still a mis-tap
+   pattern. It also wasted the most valuable slot on the page — the moment a
+   reader finishes — on bare titles with no reason to click.
+   Rows, not a grid: at 820px of shell, three cards side by side would give
+   each about 250px, which is not enough for a title plus a line of context. */
+.next-read {
+  margin: clamp(38px, 5vw, 56px) 0 0;
+  padding-block-start: clamp(26px, 3vw, 34px);
+  border-top: 1px solid var(--rule);
+}
+.next-read__head {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  letter-spacing: .18em;
+  color: var(--champagne-ink);
+  margin: 0 0 var(--sp-3);
+}
+.next-read__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+/* The whole row is the target — title, blurb and the space around them —
+   rather than the title alone. Padding on the anchor, not the li, so the hit
+   area and the focus ring describe the same rectangle. */
+/* `.legal a` (0-2-0) carries the inline-link underline and outranks a bare
+   `.next-read__link` (0-1-0), so a `border: 0` here did nothing and every card
+   wore a full-width champagne rule along its bottom edge — an underline
+   stretched across a grid box. Caught by looking at the render, not the rule.
+   Scoped with .legal to win, and the separator is then put back deliberately
+   between items rather than under each one. */
+.legal .next-read__link {
+  display: grid;
+  gap: 3px;
+  padding: 14px 16px;
+  margin-inline: -16px;
+  border-bottom: 0;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: background 220ms var(--ease);
+}
+.legal .next-read__link:hover { background: rgba(201, 174, 140, 0.12); }
+.next-read__item + .next-read__item { border-top: 1px solid var(--rule); }
+.next-read__title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: var(--charcoal);
+}
+/* The arrow is supplied here and flips with [dir], for the same reason the
+   form's arrows were taken out of the markup: a glyph inside a translated
+   text node keeps pointing the way the Hebrew wanted. */
+.next-read__title::after { content: "\00a0\2190"; color: var(--champagne-ink); }
+[dir="ltr"] .next-read__title::after { content: "\00a0\2192"; }
+.next-read__blurb { font-size: 14px; line-height: 1.6; color: var(--mocha); }
