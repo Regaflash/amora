@@ -8,7 +8,7 @@
      deferred i18n.js mounted. This pre-sets dir only - never lang, which
      would hand a screen reader an English voice for Hebrew glyphs - and a
      4s watchdog restores RTL if i18n.js never executes. Byte-identical on
-     the three i18n pages so one CSP hash covers all; check.sh fails the
+     all nine content pages so one CSP hash covers them all; check.sh fails the
      build if this block and vercel.json ever drift. -->
 <script>try{var l=localStorage.getItem('amora.lang');if(l==='en'||l==='ru'){var d=document.documentElement;d.setAttribute('dir','ltr');d.setAttribute('data-lang-boot',l);setTimeout(function(){if(!d.hasAttribute('data-i18n-ready')){d.setAttribute('dir','rtl');d.removeAttribute('data-lang-boot');}},4000);}}catch(e){}</script>
 <title>מה משפיע על מחיר צילום חתונה | Amora Studio</title>
@@ -178,6 +178,7 @@
 <p>כדי שיהיה ברור מה נמצא בבסיס ולא נמכר בנפרד:</p>
 <ul>
   <li>כיסוי מלא של היום, סטילס ווידאו</li>
+  <li>צילומי רחפן מהאירוע</li>
   <li>שלושה צלמים</li>
   <li>עריכת צבע לכל תמונה נבחרת</li>
   <li>גלריה דיגיטלית לשיתוף</li>
@@ -187,7 +188,8 @@
        headed "מה נמצא בבסיס ולא נמכר בנפרד", so omitting the magnets made
        it wrong, not merely incomplete. Produced by Regaflash, the sister
        business; index.html carries the link. -->
-  <li>מגנטים עם סורק AR שהופך כל תמונה לסרטון</li>
+  <li>מגנטים ללא הגבלה, עם סורק AR שהופך כל תמונה לסרטון</li>
+  <li>חבילת מתנות לזוג — קליפ, סרט ערוך ואלבומים דיגיטליים</li>
 </ul>
 
 <h2>מה אפשר להוסיף</h2>
@@ -195,7 +197,7 @@
 
 <h2>מה לא מוסיף לכם לחשבון</h2>
 <ul>
-  <li><strong>נסיעות באזור המרכז.</strong> אנחנו מבוססים בתל אביב ומצלמים מהגליל ועד אילת, בלי תוספת נסיעות באזור המרכז.</li>
+  <li><strong>נסיעות באזור המרכז.</strong> הבסיס בתל אביב, הרבה מהאירועים שלנו בדרום ובשרון, ומצלמים מהגליל ועד אילת — בלי תוספת נסיעות באזור המרכז.</li>
   <li><strong>דחיית תאריך.</strong> התאריך עובר איתכם ללא עלות, בכפוף לזמינות. אם אנחנו תפוסים בתאריך החדש — מחזירים את המקדמה במלואה.</li>
 </ul>
 
@@ -218,6 +220,7 @@
   <li class="glimpse__item">
     <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: רגע החופה">
       <picture>
+        <source type="image/avif" srcset="assets/img/g01-500.avif 500w, assets/img/g01-900.avif 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <source type="image/webp" srcset="assets/img/g01-500.webp 500w, assets/img/g01-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <img class="glimpse__photo" src="assets/img/g01-900.jpg" srcset="assets/img/g01-500.jpg 500w, assets/img/g01-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="רגע החופה" width="900" height="1125" loading="lazy" decoding="async" />
       </picture>
@@ -227,6 +230,7 @@
   <li class="glimpse__item">
     <a class="glimpse__link" href="index.html#gallery-prep" aria-label="לגלריית ההכנות: איפור בבוקר האירוע">
       <picture>
+        <source type="image/avif" srcset="assets/img/g09-500.avif 500w, assets/img/g09-900.avif 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <source type="image/webp" srcset="assets/img/g09-500.webp 500w, assets/img/g09-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <img class="glimpse__photo" src="assets/img/g09-900.jpg" srcset="assets/img/g09-500.jpg 500w, assets/img/g09-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="איפור בבוקר האירוע" width="900" height="1125" loading="lazy" decoding="async" />
       </picture>
@@ -236,6 +240,7 @@
   <li class="glimpse__item">
     <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: רגע שקט בין בני הזוג בחתונה">
       <picture>
+        <source type="image/avif" srcset="assets/img/g16-500.avif 500w, assets/img/g16-900.avif 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <source type="image/webp" srcset="assets/img/g16-500.webp 500w, assets/img/g16-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <img class="glimpse__photo" src="assets/img/g16-900.jpg" srcset="assets/img/g16-500.jpg 500w, assets/img/g16-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="רגע שקט בין בני הזוג בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
       </picture>
@@ -245,6 +250,7 @@
   <li class="glimpse__item">
     <a class="glimpse__link" href="index.html#gallery-events" aria-label="לגלריית האירועים: עיצוב שולחנות באירוע">
       <picture>
+        <source type="image/avif" srcset="assets/img/g12-500.avif 500w, assets/img/g12-900.avif 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <source type="image/webp" srcset="assets/img/g12-500.webp 500w, assets/img/g12-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <img class="glimpse__photo" src="assets/img/g12-900.jpg" srcset="assets/img/g12-500.jpg 500w, assets/img/g12-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="עיצוב שולחנות באירוע" width="900" height="1125" loading="lazy" decoding="async" />
       </picture>
@@ -254,6 +260,7 @@
   <li class="glimpse__item">
     <a class="glimpse__link" href="index.html#gallery-weddings" aria-label="לגלריית החתונות: שמלת הכלה והצעדים הראשונים בחתונה">
       <picture>
+        <source type="image/avif" srcset="assets/img/g05-500.avif 500w, assets/img/g05-900.avif 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <source type="image/webp" srcset="assets/img/g05-500.webp 500w, assets/img/g05-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <img class="glimpse__photo" src="assets/img/g05-900.jpg" srcset="assets/img/g05-500.jpg 500w, assets/img/g05-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="שמלת הכלה והצעדים הראשונים בחתונה" width="900" height="1125" loading="lazy" decoding="async" />
       </picture>
@@ -263,6 +270,7 @@
   <li class="glimpse__item">
     <a class="glimpse__link" href="index.html#gallery-std" aria-label="לגלריית ה-Save the Date: פורטרט זוגי בצילומי Save the Date">
       <picture>
+        <source type="image/avif" srcset="assets/img/g18-500.avif 500w, assets/img/g18-900.avif 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <source type="image/webp" srcset="assets/img/g18-500.webp 500w, assets/img/g18-900.webp 900w" sizes="(max-width: 560px) 72vw, 250px" />
         <img class="glimpse__photo" src="assets/img/g18-900.jpg" srcset="assets/img/g18-500.jpg 500w, assets/img/g18-900.jpg 900w" sizes="(max-width: 560px) 72vw, 250px" alt="פורטרט זוגי בצילומי Save the Date" width="900" height="1125" loading="lazy" decoding="async" />
       </picture>
@@ -274,7 +282,29 @@
 <h2>איך מקבלים מספר</h2>
 <p>משאירים פרטים, ואנחנו חוזרים באותו יום עם זמינות והצעה שמתאימה למה שסיפרתם. אם עוד לא קבעתם תאריך, אפשר לסמן את זה בטופס — זו שאלה לגיטימית לשאול לפני שסוגרים אולם.</p>
 
-<p><a href="index.html#faq">שאלות נפוצות</a> · <a href="index.html#gallery">לגלריה</a></p>
+<nav class="next-read" aria-label="להמשך קריאה">
+  <p class="next-read__head">להמשך קריאה</p>
+  <ul class="next-read__list">
+  <li class="next-read__item">
+    <a class="next-read__link" href="photographers.html">
+      <span class="next-read__title">צלם אחד או שלושה</span>
+      <span class="next-read__blurb">הסעיף שהכי קשה להשוות בין הצעות, מוסבר.</span>
+    </a>
+  </li>
+  <li class="next-read__item">
+    <a class="next-read__link" href="delivery.html">
+      <span class="next-read__title">כמה זמן עד התמונות</span>
+      <span class="next-read__blurb">מה מגיע מתי, ולמה.</span>
+    </a>
+  </li>
+  <li class="next-read__item">
+    <a class="next-read__link" href="magnets.html">
+      <span class="next-read__title">מגנטים עם וידאו</span>
+      <span class="next-read__blurb">כלולים בכל חתונה מלאה, ללא הגבלת כמות.</span>
+    </a>
+  </li>
+  </ul>
+</nav>
 
 </div>
 
@@ -284,7 +314,8 @@
      without a second code path. The ids repeat the home page's, which is fine
      — they only have to be unique within one document. -->
 <section class="contact section" id="contact">
-  <picture class="contact__bg-wrap"><source type="image/webp" srcset="assets/img/cta-1200.webp" /><img class="contact__bg" src="assets/img/cta-1200.jpg" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
+  <picture class="contact__bg-wrap"><source type="image/avif" srcset="assets/img/cta-1200.avif" />
+<source type="image/webp" srcset="assets/img/cta-1200.webp" /><img class="contact__bg" src="assets/img/cta-1200.jpg" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
   <div class="contact__scrim" aria-hidden="true"></div>
 
   <div class="contact__grid">
@@ -354,6 +385,7 @@
               <option value="std">Save the Date</option>
               <option value="henna">חינה / אירוסין</option>
               <option value="mitzvah">בר / בת מצווה</option>
+              <option value="corporate">אירוע חברה</option>
               <option value="other">אירוע אחר</option>
             </select>
             <span class="field__error" id="err-type" data-error="type"></span>
@@ -396,7 +428,7 @@
 
           <!-- Back, not "cancel": nothing is cleared, so returning and continuing is
                lossless. In RTL forward is <- and back is ->, as everywhere else. -->
-          <button class="form__back" type="button" data-form-back hidden>→ חזרה</button>
+          <button class="form__back" type="button" data-form-back hidden><span>חזרה</span></button>
         </div>
 
         <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
@@ -409,13 +441,13 @@
              visibility. Accessible-name computation skips display:none subtrees,
              so the button announces exactly one of them. -->
         <button class="form__submit" type="submit" data-submit>
-          <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים ←</span>
+          <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים</span>
           <span data-submit-label="send">שלחו — נחזור אליכם היום</span>
           <span data-submit-label="sending" hidden>שולחים…</span>
         </button>
         <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
         <p class="form__failure" data-form-failure role="alert" hidden></p>
-        <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
+        <p class="form__alt"><span class="form__alt-lead">או בוואטסאפ ישירות</span> <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
       </div>
 
       <div class="form__done" data-form-done hidden>
@@ -439,7 +471,7 @@
   <div class="site-footer__top">
     <div>
       <img class="site-footer__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="64" height="64" />
-      <p class="site-footer__blurb">צילום וידאו וסטילס לחתונות ואירועים. תל אביב — ובכל הארץ.</p>
+      <p class="site-footer__blurb">צילום וידאו וסטילס לחתונות ואירועים. הדרום, השרון — ובכל הארץ.</p>
     </div>
     <nav class="site-footer__col" aria-label="ניווט פוטר">
       <a class="site-footer__link" href="index.html#about">אודות</a>
@@ -447,6 +479,23 @@
       <a class="site-footer__link" href="index.html#gallery">גלריה</a>
       <a class="site-footer__link" href="index.html#faq">שאלות נפוצות</a>
       <a class="site-footer__link" href="#contact">בדיקת זמינות</a>
+    </nav>
+    <!-- Added 2026-08-13. Until this block existed the footer linked ONLY to
+         homepage fragments, and so did the nav — which meant a page added to
+         the site had no route in from anywhere. Three of the pages written
+         that day (delivery, save-the-date, corporate) had zero inbound links
+         from the entire site and were reachable only through sitemap.xml.
+         This column is byte-identical on every page on purpose, self-links
+         included: one block, nine copies, trivial to compare. -->
+    <nav class="site-footer__col" aria-label="עמודי תוכן">
+      <a class="site-footer__link" href="cost.html">מה משפיע על המחיר</a>
+      <a class="site-footer__link" href="delivery.html">כמה זמן עד התמונות</a>
+      <a class="site-footer__link" href="photographers.html">צלם אחד או שלושה</a>
+      <a class="site-footer__link" href="low-light.html">אולם חשוך — איך מצלמים</a>
+      <a class="site-footer__link" href="magnets.html">מגנטים עם וידאו</a>
+      <a class="site-footer__link" href="save-the-date.html">צילומי Save the Date</a>
+      <a class="site-footer__link" href="corporate.html">אירועי חברה</a>
+      <a class="site-footer__link" href="camera-3d.html">המצלמה שלנו</a>
     </nav>
     <div class="site-footer__col">
       <a class="site-footer__link" href="tel:+972503662699">050-3662699</a>

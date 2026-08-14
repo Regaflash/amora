@@ -79,13 +79,15 @@
       a: 'גלריית תמונות ראשונה תוך 7 ימים.\n' +
          'הגלריה המלאה והסרט תוך 30 יום מהאירוע.\n' +
          'אלבום מודפס — עוד שבועיים אחרי שאתם מאשרים את הבחירה.',
+      actions: ['delivery'],
       next: ['package', 'film', 'album']
     },
     {
       id: 'area',
       chip: 'אתם מגיעים לכל הארץ?',
       keys: ['מגיעים', 'אזור', 'איפה אתם', 'כל הארץ', 'צפון', 'דרום', 'גליל', 'אילת', 'ירושלים', 'מרכז', 'נסיעות', 'נסיעה', 'תל אביב', 'רחוק'],
-      a: 'כן. הבסיס שלנו בתל אביב ואנחנו מצלמים מהגליל ועד אילת, בלי תוספת נסיעות באזור המרכז.',
+      a: 'כן. מצלמים בכל הארץ, מהגליל ועד אילת, והרבה מהאירועים שלנו בדרום ובשרון — אשקלון, אשדוד, באר שבע, נתניה וחדרה.\n' +
+         'הבסיס בתל אביב, בלי תוספת נסיעות באזור המרכז.',
       next: ['availability', 'package']
     },
     {
@@ -98,6 +100,7 @@
       // the old copy — or any competitor's — still asks for a "צלם שני".
       keys: ['צלם שני', 'שני צלמים', 'שלושה צלמים', 'כמה צלמים', 'צוות', 'מי מצלם', 'צלמת', 'הצלם', 'הצלמים', 'עוד צלם', 'צלם נוסף'],
       a: 'בחתונה מלאה תמיד. שניים על הסטילס ואחד על הווידאו, ובחופה ובריקודים כולם על הזוג משלוש זוויות.',
+      actions: ['crew'],
       next: ['package', 'people', 'gear']
     },
     {
@@ -106,8 +109,8 @@
       // חבילות/חבילת: the plural and construct forms never contain חבילה, and
       // the widget's own chip subject scored 0 on "מה יש בחבילות".
       keys: ['מה כולל', 'כוללת', 'חבילה', 'חבילות', 'חבילת', 'מה מקבלים', 'מה נכנס', 'מה יש בפנים', 'כלול'],
-      a: 'כיסוי מלא של היום, סטילס ווידאו, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, ' +
-         'סרט חתונה של 3–5 דקות, טיזר קצר לאינסטגרם ומגנטים עם סורק AR שהופך כל תמונה לסרטון.\n' +
+      a: 'כיסוי מלא של היום, סטילס ווידאו, צילומי רחפן, עריכת צבע לכל תמונה נבחרת, גלריה דיגיטלית לשיתוף, ' +
+         'סרט חתונה של 3–5 דקות, טיזר קצר לאינסטגרם ומגנטים ללא הגבלה עם סורק AR שהופך כל תמונה לסרטון.\n' +
          'אלבום מודפס וצילומי Save the Date אפשר להוסיף.',
       next: ['magnets', 'delivery', 'photographers']
     },
@@ -116,9 +119,10 @@
       chip: 'יש מגנטים?',
       // 'AR' normalises to 2 chars — below WEAK, it could never win. Dead key.
       keys: ['מגנט', 'מגנטים', 'מגנטים בחתונה', 'סורק', 'מציאות רבודה', 'מציאות מוגברת', 'תמונה שזזה', 'מתעורר', 'מתעוררים לחיים'],
-      a: 'כן, ובכל עסקה — לא כתוספת בתשלום.\n' +
-         'הם מגיעים עם סורק AR: מכוונים את הטלפון למגנט והתמונה הופכת לסרטון.\n' +
+      a: 'כן, ובכל עסקה — לא כתוספת בתשלום, ובלי הגבלה על הכמות.\n' +
+         'הסריקה נעשית דרך אפליקציה שמורידים פעם אחת, ואז התמונה הופכת לסרטון.\n' +
          'את זה מייצר Regaflash, העסק האח שלנו.',
+      actions: ['magnetsPage'],
       next: ['package', 'delivery', 'price']
     },
     {
@@ -169,7 +173,7 @@
       chip: 'מה זה צילומי Save the Date?',
       keys: ['save the date', 'זוגיות', 'צילומי זוגיות', 'לפני החתונה', 'לוקיישן', 'סייב דה דייט'],
       a: 'שעה וחצי בלוקיישן שאתם אוהבים, לפני היום הגדול. אפשר להוסיף את זה לחבילת החתונה.',
-      actions: ['gallery:std', 'form'],
+      actions: ['stdPage', 'gallery:std', 'form'],
       next: ['package', 'price', 'gallery']
     },
     {
@@ -183,9 +187,12 @@
     {
       id: 'events',
       chip: 'ואירועים שהם לא חתונה?',
-      keys: ['חינה', 'אירוסין', 'בר מצווה', 'בת מצווה', 'מצווה', 'יום הולדת', 'אירוע אחר', 'ברית מילה', 'מסיבה', 'שהם לא חתונה', 'מצלמים אירועים'],
-      a: 'כן — חינה, אירוסין, בר ובת מצווה וימי הולדת. אותה עין, אותו צוות.',
-      actions: ['gallery:events', 'form'],
+      // 'אירועי חברות' is deliberately spelled out rather than relying on
+      // 'חברות', which belongs to the `people` entry and means girlfriends
+      // there. The longer key is the specific one and must win.
+      keys: ['חינה', 'אירוסין', 'בר מצווה', 'בת מצווה', 'מצווה', 'יום הולדת', 'אירוע אחר', 'ברית מילה', 'מסיבה', 'שהם לא חתונה', 'מצלמים אירועים', 'אירוע חברה', 'ערב חברה', 'אירועי חברות', 'משאבי אנוש'],
+      a: 'כן — חינה, אירוסין, בר ובת מצווה, ימי הולדת ואירועי חברה. אותה עין, אותו צוות.',
+      actions: ['corporate', 'gallery:events', 'form'],
       next: ['package', 'area', 'price']
     },
     {
@@ -232,6 +239,7 @@
       // appear in a gear question or outranks the gear key it contains.
       keys: ['חשוך', 'חושך', 'אולם חשוך', 'איך זה מצטלם', 'תאורה באולם', 'אור נמוך', 'גן אירועים חשוך', 'בערב'],
       a: 'אנחנו מצלמים על גוף פול־פריים ועדשות פריים מהירות, כאלה שאוספות הרבה אור, ומשלימים בתאורה שמכבדת את האור שכבר יש בחדר. בלי פלאשים שמסמאים את האורחים.',
+      actions: ['lowlight'],
       next: ['gear', 'photographers', 'package']
     },
     {
@@ -269,7 +277,7 @@
       id: 'about',
       chip: 'מי אתם?',
       keys: ['מי אתם', 'אודות', 'עליכם', 'על עצמכם', 'הסטודיו', 'amora', 'אמורה'],
-      a: 'Amora Studio — סטודיו לצילום וידאו וסטילס לחתונות ואירועים, מתל אביב, פעילים בכל הארץ.\n' +
+      a: 'Amora Studio — סטודיו לצילום וידאו וסטילס לחתונות ואירועים, פעילים בכל הארץ ובעיקר בדרום ובשרון.\n' +
          'אנחנו מצלמים ביחד, סטילס ווידאו, מהבוקר של ההכנות ועד השיר האחרון — בלי לביים לכם את החתונה.',
       next: ['photographers', 'process', 'gallery']
     },
@@ -600,7 +608,18 @@
    *  dead-control rule that keeps the strip counter off the desktop. */
   var PAGE_ACTIONS = {
     cost: { file: 'cost.html', label: 'מה משפיע על המחיר' },
-    camera: { file: 'camera-3d.html', label: 'לדגם התלת־ממד' }
+    camera: { file: 'camera-3d.html', label: 'לדגם התלת־ממד' },
+    // Added 2026-08-13. The assistant ships on all six of these pages and had
+    // ZERO references to any of them: it could answer a question about
+    // delivery times and had no way to hand the visitor the page that answers
+    // it at length. Same shape as the two above, so goTo()'s cross-page
+    // fallback and carryCampaign() apply unchanged.
+    delivery: { file: 'delivery.html', label: 'כמה זמן עד התמונות' },
+    crew: { file: 'photographers.html', label: 'צלם אחד או שלושה' },
+    lowlight: { file: 'low-light.html', label: 'אולם חשוך — איך מצלמים' },
+    magnetsPage: { file: 'magnets.html', label: 'איך המגנטים עובדים' },
+    stdPage: { file: 'save-the-date.html', label: 'על צילומי Save the Date' },
+    corporate: { file: 'corporate.html', label: 'אירועי חברה' }
   };
 
   // Same four names cost.html's glimpse links use, so a visitor sent to

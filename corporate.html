@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- The direction boot: a returning visitor with a stored LTR language
+     used to get a full Hebrew-RTL paint and then a WHOLE-PAGE mirror once
+     deferred i18n.js mounted. This pre-sets dir only - never lang, which
+     would hand a screen reader an English voice for Hebrew glyphs - and a
+     4s watchdog restores RTL if i18n.js never executes. Byte-identical on
+     all nine content pages so one CSP hash covers them all; check.sh fails the
+     build if this block and vercel.json ever drift. -->
+<script>try{var l=localStorage.getItem('amora.lang');if(l==='en'||l==='ru'){var d=document.documentElement;d.setAttribute('dir','ltr');d.setAttribute('data-lang-boot',l);setTimeout(function(){if(!d.hasAttribute('data-i18n-ready')){d.setAttribute('dir','rtl');d.removeAttribute('data-lang-boot');}},4000);}}catch(e){}</script>
+<title>צילום אירועי חברה — ערב חברה, כנס והשקה | Amora Studio</title>
+<meta name="description" content="צילום סטילס ווידאו לאירועי חברה, עם עמדת מגנטים שהופכת כל תמונה לסרטון — מזכרת שהעובדים לוקחים הביתה באותו ערב." />
+<meta property="og:title" content="צילום אירועי חברה — ערב חברה, כנס והשקה | Amora Studio" />
+<meta property="og:description" content="צילום סטילס ווידאו לאירועי חברה, עם מגנטי וידאו שהעובדים לוקחים באותו ערב." />
+<meta property="og:type" content="article" />
+<link rel="canonical" href="https://www.amora-studios.com/corporate.html" />
+<meta property="og:url" content="https://www.amora-studios.com/corporate.html" />
+<meta property="og:site_name" content="Amora Studio" />
+<meta property="og:locale" content="he_IL" />
+<meta property="og:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
+<!-- Twitter card values mirror this page's own og: tags rather than the
+     homepage's, so a shared link previews the page it actually points at. -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="צילום אירועי חברה — ערב חברה, כנס והשקה | Amora Studio" />
+<meta name="twitter:description" content="צילום אירועי חברה — סטילס, וידאו ומגנטים שמתעוררים לחיים." />
+<meta name="twitter:image" content="https://www.amora-studios.com/assets/img/og-cover.jpg" />
+<meta name="twitter:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+<meta name="theme-color" content="#F7F2EA" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="icon" href="favicon.ico" sizes="48x48" />
+<link rel="icon" href="assets/img/icon-96.png" type="image/png" sizes="96x96" />
+<link rel="icon" href="assets/img/icon-192.png" type="image/png" sizes="192x192" />
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
+<link rel="stylesheet" href="assets/css/fonts.css" />
+<link rel="stylesheet" href="assets/css/styles.css" />
+<link rel="stylesheet" href="assets/css/legal.css" />
+<link rel="stylesheet" href="assets/css/a11y-widget.css" />
+<link rel="stylesheet" href="assets/css/assistant.css" />
+<!-- In <head>, blocking, exactly as the other seven pages load it: the widget
+     applies the visitor's saved display preferences, and deferring it to the
+     end of the body shows them the page in the settings they already opted out
+     of before it corrects itself. This page was the only one deferring it. -->
+<script src="assets/js/a11y-widget.js"></script>
+<!-- Vercel Analytics, added 2026-08-13. Same-origin on purpose: the script and
+     its beacon are served from /_vercel/* by the host, so the enforcing CSP
+     needs no new source -- script-src 'self' and connect-src 'self' already
+     cover both, and check.sh's external-dependency guard stays honest because
+     nothing third-party is fetched at runtime.
+     It only exists once Analytics is enabled in the Vercel dashboard; until
+     then the path 404s and the tag does nothing. privacy.html is written to
+     match what this collects -- if this tag goes, that section goes with it. -->
+<script src="/_vercel/insights/script.js" defer></script>
+<!-- Built from cost.html's shell: landing page, not article. Header,
+     footer, WhatsApp float and a full copy of the lead form, so main.js
+     needs no page-specific branch and check.sh's form-parity check stays
+     green. The direction-boot IIFE above must stay BYTE-IDENTICAL to the
+     other i18n pages or its CSP hash stops covering it.
+     Every claim below is already published on the homepage, in cost.html
+     or in the FAQ. This page states no price, by the standing brief. -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "WebPage",
+ "@id": "https://www.amora-studios.com/corporate.html#webpage",
+ "url": "https://www.amora-studios.com/corporate.html",
+ "name": "צילום אירועי חברה",
+ "inLanguage": "he",
+ "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
+ "about": { "@id": "https://www.amora-studios.com/#business" },
+ "primaryImageOfPage": "https://www.amora-studios.com/assets/img/og-cover.jpg"
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "@id": "https://www.amora-studios.com/corporate.html#breadcrumb",
+ "isPartOf": { "@id": "https://www.amora-studios.com/#website" },
+ "itemListElement": [
+  { "@type": "ListItem", "position": 1, "name": "Amora Studio", "item": "https://www.amora-studios.com/" },
+  { "@type": "ListItem", "position": 2, "name": "צילום אירועי חברה" }
+ ]
+}
+</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">דילוג לתוכן</a>
+
+<!-- data-header-solid: there is no hero on this page, so without it the header
+     spends its first 80px painting ivory text on the sand background — an
+     invisible nav. See assets/js/main.js.
+     The paragraph that used to sit here described cost.html, and was copied
+     verbatim into six pages that answer a different question. Removed
+     2026-08-13. -->
+<header class="site-header is-scrolled" data-header data-header-solid>
+  <div class="site-header__bar">
+    <a href="index.html" class="brand" aria-label="Amora Studio — לעמוד הבית">
+      <img class="brand__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="46" height="46" />
+    </a>
+
+    <!-- Cross-page fragments, not bare "#about": no such id exists on this
+         page, and tools/check.sh fails any in-page fragment that resolves to
+         nothing. (Which it proved by catching this comment when the example
+         was written out literally.) -->
+    <nav class="nav" aria-label="ניווט ראשי">
+      <a class="nav__link" href="index.html#about">אודות</a>
+      <a class="nav__link" href="index.html#services">שירותים</a>
+      <a class="nav__link" href="index.html#gallery">גלריה</a>
+      <a class="nav__link" href="index.html#faq">שאלות</a>
+      <a class="nav__cta" href="#contact">בדיקת זמינות</a>
+    </nav>
+
+    <div class="nav-mobile">
+      <a class="nav-mobile__cta" href="#contact">בדיקת זמינות</a>
+      <button class="burger" type="button" data-menu-toggle aria-label="תפריט" aria-expanded="false" aria-controls="mobile-menu">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="progress" aria-hidden="true">
+    <div class="progress__bar" data-progress></div>
+  </div>
+</header>
+
+<div class="menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="תפריט" hidden>
+  <button class="menu__close" type="button" data-menu-close aria-label="סגירה">✕</button>
+  <p class="menu__brand">Amora Studio</p>
+  <a class="menu__link" href="index.html#about" data-menu-link>אודות</a>
+  <a class="menu__link" href="index.html#services" data-menu-link>שירותים</a>
+  <a class="menu__link" href="index.html#gallery" data-menu-link>גלריה</a>
+  <a class="menu__link" href="index.html#faq" data-menu-link>שאלות נפוצות</a>
+  <a class="menu__cta" href="#contact" data-menu-link>לבדיקת זמינות</a>
+  <a class="menu__phone" href="tel:+972503662699">050-3662699</a>
+</div>
+
+<main id="main" tabindex="-1">
+<!-- legal--article: the chapter signature the rest of the site carries, on
+     this page's seven h2s. Opt-in modifier — the three legal drafts share
+     this sheet and keep the lighter shell deliberately. -->
+<div class="legal legal--article">
+
+<h1>צילום אירועי חברה</h1>
+<p class="legal__meta">אותו צוות שמצלם חתונות, אותה עין, ועמדת מגנטים שמוציאה כל עובד מהערב עם מזכרת שזזה. בלי מחירון — כי אירוע של 40 איש ואירוע של 400 הם לא אותה עבודה.</p>
+
+<p>רוב הצילום באירועי חברה נגמר באותו מקום: אלבום שמישהו במשאבי אנוש מוריד, שולח לכולם פעם אחת, ואיש לא פותח שוב. לא כי התמונות רעות — אלא כי אין סיבה לחזור אליהן.</p>
+
+<p>אנחנו ניגשים לזה מהצד השני: מה העובד לוקח <strong>הביתה</strong>, ומה ימשיך להזכיר לו את הערב חודשים אחר כך.</p>
+
+<h2>מה אנחנו עושים בערב עצמו</h2>
+
+<h3>סטילס ווידאו, מאותו סטודיו</h3>
+<p>כיסוי של האירוע כמו שהוא — הנאומים, ההופעה, השולחנות, האנשים בין לבין. הסטילס והווידאו הם אותו צוות ולא שני ספקים שצריך לתאם ביניהם, וזה אותו הרכב שמצלם חתונה מלאה: שניים על הסטילס, אחד על הווידאו.</p>
+
+<h3>עמדת מגנטים — וזה החלק שזוכרים</h3>
+<p>עמדה באירוע שאליה העובדים ניגשים ומצטלמים. אנחנו מצלמים תמונה <strong>וגם קטע וידאו קצר מאותו רגע</strong>, מדפיסים את המגנט במקום, והוא יוצא איתם באותו ערב.</p>
+
+<p>ואז מגיע החלק שגורם ל"וואו": סורקים את המגנט באפליקציה, והתמונה עליו מתחילה לזוז. אותו רגע, בתור סרטון. את הטכנולוגיה מייצר <a href="https://regaflash.com" target="_blank" rel="noopener">Regaflash</a>, העסק האח שלנו — ההסבר המלא נמצא ב<a href="magnets.html">עמוד מגנטי הווידאו</a>.</p>
+
+<h2>למה זה עובד באירוע חברה דווקא</h2>
+
+<ul>
+  <li><strong>זה יוצר תור, וזה בסדר.</strong> העמדה עצמה היא אטרקציה — אנשים מצטלמים, מראים אחד לשני, וחוזרים.</li>
+  <li><strong>המזכרת יוצאת מהמשרד.</strong> מגנט נוסע הביתה ונתלה על המקרר. גלריה דיגיטלית נשארת בתיקייה.</li>
+  <li><strong>אין מה להוריד ואין למי להירשם</strong> ברגע האירוע — מקבלים חפץ פיזי ביד, והסריקה מחכה למתי שנוח.</li>
+</ul>
+
+<h2>לאיזה אירועים</h2>
+
+<p>ערב חברה, כנס, השקה, ימי גיבוש, אירועי סוף שנה. גם אירועים משפחתיים גדולים שאינם חתונה — בר ובת מצווה, ימי הולדת וחינה — נכנסים לאותו סוג עבודה, ויש להם <a href="index.html#services">מקום משלהם בעמוד השירותים</a>.</p>
+
+<h2>איפה אנחנו עובדים</h2>
+
+<p>בכל הארץ, מהגליל ועד אילת, והרבה מהאירועים שלנו בדרום ובשרון — אשקלון, אשדוד, באר שבע, נתניה וחדרה. הבסיס בתל אביב, בלי תוספת נסיעות באזור המרכז.</p>
+
+<h2>איך מקבלים הצעה</h2>
+
+<p>משאירים פרטים עם תאריך, מיקום וגודל משוער, ואנחנו חוזרים באותו יום. אין כאן מחירון, מאותה סיבה שאין אחד ל<a href="cost.html">חתונות</a>: מספר השעות, מספר הצלמים והאם רוצים עמדת מגנטים משנים את ההצעה לגמרי.</p>
+
+<nav class="next-read" aria-label="להמשך קריאה">
+  <p class="next-read__head">להמשך קריאה</p>
+  <ul class="next-read__list">
+  <li class="next-read__item">
+    <a class="next-read__link" href="magnets.html">
+      <span class="next-read__title">איך מגנטי הווידאו עובדים</span>
+      <span class="next-read__blurb">העמדה, ההדפסה בערב עצמו, והסריקה שמפעילה את הסרטון.</span>
+    </a>
+  </li>
+  <li class="next-read__item">
+    <a class="next-read__link" href="photographers.html">
+      <span class="next-read__title">צלם אחד או שלושה</span>
+      <span class="next-read__blurb">אותו הרכב צוות שמגיע לחתונה מלאה מגיע גם לאירוע חברה.</span>
+    </a>
+  </li>
+  <li class="next-read__item">
+    <a class="next-read__link" href="delivery.html">
+      <span class="next-read__title">כמה זמן עד התמונות</span>
+      <span class="next-read__blurb">לוח הזמנים של החומרים אחרי האירוע.</span>
+    </a>
+  </li>
+  </ul>
+</nav>
+
+</div>
+
+<!-- The same form as the home page, on the page that raised the question.
+     Deliberately byte-identical in structure: assets/js/main.js binds to the
+     first [data-form] and needs nothing page-specific, so this stays working
+     without a second code path. The ids repeat the home page's, which is fine
+     — they only have to be unique within one document. -->
+<section class="contact section" id="contact">
+  <picture class="contact__bg-wrap"><source type="image/avif" srcset="assets/img/cta-1200.avif" />
+<source type="image/webp" srcset="assets/img/cta-1200.webp" /><img class="contact__bg" src="assets/img/cta-1200.jpg" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
+  <div class="contact__scrim" aria-hidden="true"></div>
+
+  <div class="contact__grid">
+    <div>
+      <div class="chapter">
+        <p class="eyebrow" lang="en">Let's talk</p>
+        <h2 class="contact__title">מתכננים אירוע חברה?</h2>
+        <p class="contact__text">ספרו לנו על האירוע — תאריך, מיקום וכמה אנשים — ונחזור אליכם היום עם זמינות והצעה מותאמת.</p>
+      </div>
+      <a class="contact__phone" href="tel:+972503662699">050-3662699</a>
+    </div>
+
+    <form class="form" data-form method="dialog" novalidate>
+      <div class="form__fields" data-form-fields>
+        <p class="form__title">בדיקת זמינות</p>
+        <!-- Two steps since 2026-08-13, and the SPLIT POINT is dictated by the
+             database, not by taste. public.leads has name and phone NOT NULL (with
+             length checks on both); event_date and event_type are nullable. So step
+             1 holds exactly the two columns a row cannot exist without -- which are
+             also exactly what you need in order to ring someone back. A "date
+             first" step reads better and is unbuildable: the partial row would
+             violate name NOT NULL.
+             DOM ORDER IS UNCHANGED by this split -- name, phone, date, date_tbd,
+             type, email, area, coverage, message, company, the same sequence as
+             before, just wrapped in two groups. That is what keeps verify.mjs's
+             "required fields precede the optional email" assertion true untouched.
+             Neither panel ships hidden: with JS off this is one complete form with
+             one submit button, exactly as it was. JS hides step 2 at init. -->
+        <p class="form__steps" data-form-steps hidden>שלב <span data-step-now>1</span> מתוך 2</p>
+
+        <div class="form__step" data-form-step="1" role="group" aria-labelledby="lead-step-1">
+          <p class="form__step-title" id="lead-step-1" tabindex="-1">קודם כול — לאן נחזור אליכם</p>
+
+        <label class="field">
+          <span class="field__label">שם מלא <span class="field__req" aria-hidden="true">(חובה)</span></span>
+          <input class="field__control" name="name" type="text" autocomplete="name" data-field="name" aria-required="true" aria-describedby="err-name" />
+          <span class="field__error" id="err-name" data-error="name"></span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">טלפון <span class="field__req" aria-hidden="true">(חובה)</span></span>
+          <input class="field__control" name="phone" type="tel" inputmode="tel" autocomplete="tel" data-field="phone" aria-required="true" aria-describedby="err-phone" />
+          <span class="field__error" id="err-phone" data-error="phone"></span>
+        </label>
+
+          <p class="form__step-note">זה הכול לשלב הזה. גם אם תעצרו כאן, הפרטים מגיעים אלינו ונחזור אליכם.</p>
+        </div>
+
+        <div class="form__step" data-form-step="2" role="group" aria-labelledby="lead-step-2">
+          <p class="form__step-title" id="lead-step-2" tabindex="-1">ועכשיו — על האירוע עצמו</p>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" for="lead-date">תאריך האירוע <span class="field__req" aria-hidden="true">(חובה)</span></label>
+            <input class="field__control" id="lead-date" name="date" type="date" data-field="date" aria-required="true" aria-describedby="err-date" />
+            <label class="field__opt-in">
+              <input type="checkbox" name="date_tbd" value="1" data-field="date_tbd" data-date-tbd />
+              <span>עוד לא קבענו תאריך</span>
+            </label>
+            <span class="field__error" id="err-date" data-error="date"></span>
+          </div>
+          <label class="field">
+            <span class="field__label">סוג האירוע <span class="field__req" aria-hidden="true">(חובה)</span></span>
+            <select class="field__control" name="type" data-field="type" aria-required="true" aria-describedby="err-type">
+              <option value="">בחרו</option>
+              <option value="wedding">חתונה</option>
+              <option value="std">Save the Date</option>
+              <option value="henna">חינה / אירוסין</option>
+              <option value="mitzvah">בר / בת מצווה</option>
+              <option value="corporate">אירוע חברה</option>
+              <option value="other">אירוע אחר</option>
+            </select>
+            <span class="field__error" id="err-type" data-error="type"></span>
+          </label>
+        </div>
+
+        <!-- After the required fields since 2026-08-09, same reasoning as the
+             homepage copy: one column at 390px, required-first. -->
+        <label class="field">
+          <span class="field__label">אימייל <span class="field__opt">(אופציונלי — כדי לשלוח הצעה וגלריות)</span></span>
+          <input class="field__control" name="email" type="email" inputmode="email" autocomplete="email" data-field="email" aria-describedby="err-email" />
+          <span class="field__error" id="err-email" data-error="email"></span>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">אזור / לוקיישן <span class="field__opt">(אם ידוע)</span></span>
+            <input class="field__control" name="area" type="text" data-field="area"
+                   placeholder="מרכז, צפון, ירושלים…" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span class="field__label">מה מצלמים</span>
+            <select class="field__control" name="coverage" data-field="coverage">
+              <!-- The placeholder must NOT be a real answer — see the
+                   homepage copy of this select. -->
+              <option value="">בחרו</option>
+              <option value="both">סטילס + וידאו</option>
+              <option value="stills">סטילס בלבד</option>
+              <option value="video">וידאו בלבד</option>
+              <option value="unsure">עוד לא בטוחים</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">הודעה <span class="field__opt">(אופציונלי)</span></span>
+          <textarea class="field__control" name="message" rows="3" data-field="message"></textarea>
+        </label>
+
+
+          <!-- Back, not "cancel": nothing is cleared, so returning and continuing is
+               lossless. In RTL forward is <- and back is ->, as everywhere else. -->
+          <button class="form__back" type="button" data-form-back hidden><span>חזרה</span></button>
+        </div>
+
+        <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
+
+        <!-- Three labels as SPANS, not one textContent the JS rewrites. The old
+             code captured the button's text and wrote the literal 'שולחים…' over
+             it, which injected Hebrew into an English, Arabic or Russian page and
+             then tripped i18n.js's MutationObserver. Spans are translated on the
+             first pass, all three, because i18n walks text nodes without checking
+             visibility. Accessible-name computation skips display:none subtrees,
+             so the button announces exactly one of them. -->
+        <button class="form__submit" type="submit" data-submit>
+          <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים</span>
+          <span data-submit-label="send">שלחו — נחזור אליכם היום</span>
+          <span data-submit-label="sending" hidden>שולחים…</span>
+        </button>
+        <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
+        <p class="form__failure" data-form-failure role="alert" hidden></p>
+        <p class="form__alt"><span class="form__alt-lead">או בוואטסאפ ישירות</span> <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
+      </div>
+
+      <div class="form__done" data-form-done hidden>
+        <p class="form__done-kicker">Thank you</p>
+        <h3 class="form__done-title">קיבלנו. נחזור אליכם היום.</h3>
+        <!-- A paraphrase of FAQ answer 9, deliberately NOT a byte-copy —
+             same note as the homepage's done panel. -->
+        <p class="form__done-text">חוזרים אליכם עוד היום עם זמינות והצעה מותאמת, ואחרי זה שיחת היכרות קצרה — בלי מחויבות.</p>
+        <p class="form__done-text">רוצים להוסיף משהו בינתיים?</p>
+        <a class="form__done-cta" href="https://wa.me/972503662699" target="_blank" rel="noopener"
+           data-wa-text="היי, השארתי עכשיו פרטים באתר ורציתי להוסיף משהו.">לוואטסאפ ←</a>
+        <p class="form__done-text form__done-text--tel">או בטלפון — <a href="tel:+972503662699">050-3662699</a></p>
+      </div>
+    </form>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__top">
+    <div>
+      <img class="site-footer__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="64" height="64" />
+      <p class="site-footer__blurb">צילום וידאו וסטילס לחתונות ואירועים. הדרום, השרון — ובכל הארץ.</p>
+    </div>
+    <nav class="site-footer__col" aria-label="ניווט פוטר">
+      <a class="site-footer__link" href="index.html#about">אודות</a>
+      <a class="site-footer__link" href="index.html#services">שירותים</a>
+      <a class="site-footer__link" href="index.html#gallery">גלריה</a>
+      <a class="site-footer__link" href="index.html#faq">שאלות נפוצות</a>
+      <a class="site-footer__link" href="#contact">בדיקת זמינות</a>
+    </nav>
+    <!-- Added 2026-08-13. Until this block existed the footer linked ONLY to
+         homepage fragments, and so did the nav — which meant a page added to
+         the site had no route in from anywhere. Three of the pages written
+         that day (delivery, save-the-date, corporate) had zero inbound links
+         from the entire site and were reachable only through sitemap.xml.
+         This column is byte-identical on every page on purpose, self-links
+         included: one block, nine copies, trivial to compare. -->
+    <nav class="site-footer__col" aria-label="עמודי תוכן">
+      <a class="site-footer__link" href="cost.html">מה משפיע על המחיר</a>
+      <a class="site-footer__link" href="delivery.html">כמה זמן עד התמונות</a>
+      <a class="site-footer__link" href="photographers.html">צלם אחד או שלושה</a>
+      <a class="site-footer__link" href="low-light.html">אולם חשוך — איך מצלמים</a>
+      <a class="site-footer__link" href="magnets.html">מגנטים עם וידאו</a>
+      <a class="site-footer__link" href="save-the-date.html">צילומי Save the Date</a>
+      <a class="site-footer__link" href="corporate.html">אירועי חברה</a>
+      <a class="site-footer__link" href="camera-3d.html">המצלמה שלנו</a>
+    </nav>
+    <div class="site-footer__col">
+      <a class="site-footer__link" href="tel:+972503662699">050-3662699</a>
+      <a class="site-footer__link" href="https://www.instagram.com/amora___studio/" target="_blank" rel="noopener" style="letter-spacing:.04em">Instagram — @amora___studio</a>
+      <p class="site-footer__meta">אזור פעילות: כל הארץ</p>
+    </div>
+  </div>
+  <div class="site-footer__bottom">
+    <p class="site-footer__copy">© 2026 Amora Studio · כל הזכויות שמורות</p>
+    <div class="site-footer__legal">
+      <a href="accessibility.html">הצהרת נגישות</a>
+      <a href="privacy.html">מדיניות פרטיות</a>
+      <a href="terms.html">תנאי שימוש</a>
+    </div>
+  </div>
+</footer>
+
+<!-- data-wa-text: the message names the page the visitor stood on, so a
+     WhatsApp lead from the money page is distinguishable from any other.
+     Page identity only — never utm_* tags, which must not ride into a
+     message the visitor forwards. Kept in Hebrew on purpose: it is sent TO
+     a Hebrew-speaking studio. -->
+<a class="wa-float" data-wa href="https://wa.me/972503662699" target="_blank" rel="noopener" aria-label="שליחת הודעה בוואטסאפ"
+   data-wa-text="היי, אנחנו מארגנים אירוע חברה ואשמח לבדוק זמינות ופרטים.">
+  <span>וואטסאפ</span>
+</a>
+
+<!-- Deferred, and reordered to match. See the note at the foot of index.html:
+     these three used to execute main → assistant → i18n regardless of the
+     file order, because only i18n carried defer. -->
+<script src="assets/js/main.js" defer></script>
+<script src="assets/js/assistant.js" defer></script>
+<script src="assets/js/i18n.js" defer></script>
+</body>
+</html>

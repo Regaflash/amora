@@ -557,15 +557,15 @@ await page.waitForTimeout(200);
            i.querySelector('.faq__a').children.length === 0);
      }), true, true);
 
-  ok('the ledger holds five rows and every timing lives in a byte-locked answer',
+  ok('the ledger holds six rows and every timing lives in a byte-locked answer',
      await p.evaluate(() => {
        const rows = [...document.querySelectorAll('#process .deliver__item')];
-       if (rows.length !== 5) return false;
+       if (rows.length !== 6) return false;
        const faqs = [...document.querySelectorAll('.faq__a')].map((a) => a.textContent);
        return rows.every((r) => {
          const when = r.querySelector('.deliver__when').textContent.trim();
          return faqs.some((f) => f.includes(when));
-       }) && rows[4].querySelector('.deliver__what').textContent.includes('תוספת');
+       }) && rows[5].querySelector('.deliver__what').textContent.includes('תוספת');
      }), true, true);
 
   await p.goto(BASE + '/#photo-5', { waitUntil: 'load' });
@@ -596,9 +596,9 @@ await page.waitForTimeout(200);
   const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
   const np = await ctx.newPage();
   await np.goto(BASE + '/', { waitUntil: 'load' });
-  ok('with JS off, all ten answers and the five ledger rows are served',
+  ok('with JS off, all ten answers and the six ledger rows are served',
      await np.evaluate(() => document.querySelectorAll('.faq__a').length === 10
-       && document.querySelectorAll('.deliver__item').length === 5), true, true);
+       && document.querySelectorAll('.deliver__item').length === 6), true, true);
   await ctx.close();
 }
 
@@ -2093,11 +2093,18 @@ await page.waitForTimeout(200);
 // submit and be rejected. Found when a real attempt to fill the form stalled on
 // exactly that, twice, before reaching the network.
 //
-// Both pages that carry the form are checked, derived rather than listed: the
-// homepage and cost.html hold separate copies of the same markup, and a fix
-// applied to one of them is the drift this repo keeps producing.
+// Every page that carries the form, derived from disk rather than listed. The
+// comment here used to say "derived rather than listed" above a two-item
+// literal — and when the site went from two form copies to eight, six of them
+// were never measured. They passed by omission, which is the failure mode this
+// whole file exists to prevent.
+const FORM_PAGES = fs.readdirSync(ROOT)
+  .filter((f) => f.endsWith('.html'))
+  .filter((f) => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('class="form" data-form'))
+  .map((f) => (f === 'index.html' ? '/' : '/' + f))
+  .sort();
 {
-  const pages = ['/', '/cost.html'];
+  const pages = FORM_PAGES;
   const bad = [];
   for (const url of pages) {
     const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
@@ -2124,10 +2131,16 @@ await page.waitForTimeout(200);
 // ------------------------------------------------------------ target sizes --
 // WCAG 2.2 SC 2.5.8. The exceptions are real and narrow: the honeypot is bot
 // bait no user can reach, and words inside a sentence are explicitly exempt.
+// Measured on every form-bearing page, not just the homepage. The six content
+// pages introduced no new interactive element, so this passed them by
+// construction rather than by inspection — and "passes because nothing looked"
+// is exactly what this file is supposed to make impossible.
 {
-  await page.goto(BASE + '/', { waitUntil: 'load' });
+  const small = [];
+  for (const url of FORM_PAGES) {
+  await page.goto(BASE + url, { waitUntil: 'load' });
   await page.waitForTimeout(700);
-  const small = await page.evaluate(() => {
+  small.push(...await page.evaluate((where) => {
     const INLINE_EXEMPT = ['.form__consent', '.form__alt'];
     return [...document.querySelectorAll('a,button,input,select,textarea,[role=button]')]
       .filter((n) => {
@@ -2138,11 +2151,12 @@ await page.waitForTimeout(200);
       })
       .map((n) => {
         const r = n.getBoundingClientRect();
-        return `${n.tagName}.${(n.className || '').toString().split(' ')[0]} ${r.width.toFixed(0)}x${r.height.toFixed(0)}`;
+        return `${where} ${n.tagName}.${(n.className || '').toString().split(' ')[0]} ${r.width.toFixed(0)}x${r.height.toFixed(0)}`;
       });
-  });
-  ok('every non-exempt target is at least 24x24 (WCAG 2.2 SC 2.5.8)',
-     small.length === 0, small.length ? small : 'all at or above 24px', 'none under 24px');
+  }, url));
+  }
+  ok('every non-exempt target is at least 24x24 on every form page (SC 2.5.8)',
+     small.length === 0, small.length ? small : `${FORM_PAGES.length} pages clean`, 'none under 24px');
 }
 
 // --------------------------- camera-3d: chrome standalone, no chrome embedded --
@@ -3071,6 +3085,87 @@ await page.waitForTimeout(200);
        const f = document.querySelector('[data-form-failure]');
        return !f.hidden && !!f.querySelector('a[href^="https://wa.me/"]');
      }), attempts, '0 requests, visible WhatsApp route');
+  await p.close();
+}
+
+// -------------------------------------------------------- AVIF delivery --
+// Three separate ways this can be green and wrong, so three assertions.
+// ORDER: <picture> takes the first source the browser understands, so an AVIF
+// listed after the WebP is dead weight that nothing will ever request.
+// COMPLETENESS: the markup edit was generated by a regex over the HTML, and
+// that regex silently skipped a <source> whose attributes ran media-then-
+// srcset instead of srcset-first. It happened to need no AVIF — but the next
+// one might, so the coverage is asserted against WHAT IS ON DISK rather than
+// against the pattern that wrote it.
+// DECODE: a truncated or malformed AVIF still parses as markup and still wins
+// the source selection; only naturalWidth proves a pixel arrived.
+{
+  const avifOnDisk = new Set(
+    fs.readdirSync(path.join(ROOT, 'assets/img'))
+      .filter((f) => f.endsWith('.avif'))
+      .map((f) => 'assets/img/' + f));
+
+  for (const url of ['/', '/cost.html', '/magnets.html']) {
+    const p = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await p.goto(BASE + url, { waitUntil: 'load' });
+    await p.waitForTimeout(500);
+    const audit = await p.evaluate((known) => {
+      const known2 = new Set(known);
+      const files = (s) => (s.getAttribute('srcset') || '')
+        .split(',').map((x) => x.trim().split(/\s+/)[0]).filter(Boolean);
+      const outOfOrder = [], uncovered = [];
+      let avifCount = 0;
+      for (const pic of document.querySelectorAll('picture')) {
+        const sources = [...pic.querySelectorAll('source')];
+        sources.forEach((s, i) => {
+          if (s.getAttribute('type') !== 'image/avif') return;
+          avifCount++;
+          // Every source before an AVIF one must also be AVIF.
+          const before = sources.slice(0, i);
+          if (before.some((b) => b.getAttribute('type') !== 'image/avif')) {
+            outOfOrder.push(files(s)[0] || '?');
+          }
+        });
+        for (const s of sources) {
+          if (s.getAttribute('type') !== 'image/webp') continue;
+          const webps = files(s);
+          if (!webps.length) continue;
+          const avifs = webps.map((f) => f.replace(/\.webp$/, '.avif'));
+          if (!avifs.every((a) => known2.has(a))) continue;   // nothing to serve
+          const media = s.getAttribute('media') || '';
+          const twin = sources.find((o) => o.getAttribute('type') === 'image/avif'
+            && (o.getAttribute('media') || '') === media
+            && JSON.stringify(files(o)) === JSON.stringify(avifs));
+          if (!twin) uncovered.push(webps[0]);
+        }
+      }
+      return { outOfOrder, uncovered, avifCount };
+    }, [...avifOnDisk]);
+
+    ok(`every AVIF source is offered before its WebP on ${url}`,
+       audit.outOfOrder.length === 0, audit.outOfOrder, 'none after a WebP');
+    ok(`no photograph on ${url} keeps a WebP-only source while an AVIF exists`,
+       audit.uncovered.length === 0, audit.uncovered, 'full coverage');
+    await p.close();
+  }
+}
+{
+  // And the bytes actually arrive and decode. Chromium takes AVIF, so this
+  // also proves the source selection reached it rather than falling through.
+  const p = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const served = new Set();
+  p.on('response', (r) => {
+    if (r.url().endsWith('.avif') && r.status() === 200) served.add(r.url().split('/').pop());
+  });
+  await p.goto(BASE + '/', { waitUntil: 'load' });
+  await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await p.waitForTimeout(2500);
+  const broken = await p.evaluate(() => [...document.querySelectorAll('img')]
+    .filter((i) => i.complete && i.currentSrc.endsWith('.avif') && i.naturalWidth === 0)
+    .map((i) => i.currentSrc.split('/').pop()));
+  ok('the homepage really is served AVIF, and every one of them decodes',
+     served.size > 0 && broken.length === 0,
+     { served: served.size, broken }, 'some served, none broken');
   await p.close();
 }
 

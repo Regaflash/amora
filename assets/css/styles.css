@@ -307,36 +307,10 @@ summary::-webkit-details-marker { display: none; }
 
 /* Replace-me media slots. Swap the whole `.ph` element for an <img>/<video>
    and keep the aspect ratio via the same --ratio custom property. */
-.ph {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  aspect-ratio: var(--ratio, 4 / 5);
-  background: repeating-linear-gradient(135deg, #EFE6D6 0 7px, #F7F2EA 7px 15px);
-  border: 1px solid var(--line);
-  border-radius: 0;
-}
-.ph--flush { border: 0; border-radius: 0; }
-.ph--dark {
-  background: repeating-linear-gradient(135deg, #26221C 0 8px, #1C1A18 8px 18px);
-  border-color: rgba(201, 174, 140, 0.35);
-}
-.ph__label {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: .06em;
-  color: var(--mocha);
-  text-align: center;
-  padding: 10px;
-}
-.ph-note {
-  position: absolute;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: .1em;
-  color: rgba(217, 195, 165, 0.5);
-  margin: 0;
-}
+/* The .ph placeholder family (.ph, .ph--flush, .ph--dark, .ph__label, .ph-note)
+   was removed 2026-08-13: "replace-me media slots" from before the studio's
+   own photographs landed. Zero occurrences of class="ph in any HTML or JS. */
+
 
 /* Buttons / links ---------------------------------------------------- */
 
@@ -1953,8 +1927,6 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
   cursor: pointer;
 }
 .film__back:hover { border-color: var(--champagne); }
-.film__note { bottom: 14px; right: 16px; color: rgba(217, 195, 165, 0.55); }
-
 /* --------------------------------------------------------------- gear --- */
 
 .gear {
@@ -2374,7 +2346,6 @@ html:not(.js) .quotes__controls { display: none; }
 .contact__bg-wrap { position: absolute; inset: 0; display: block; }
 .contact__bg { width: 100%; height: 100%; object-fit: cover; }
 .contact__scrim { position: absolute; inset: 0; background: var(--overlay); }
-.contact__note { bottom: 14px; left: 18px; z-index: 3; color: rgba(217, 195, 165, 0.45); }
 .contact__grid {
   position: relative;
   z-index: 2;
@@ -2495,7 +2466,14 @@ html:not(.js) .quotes__controls { display: none; }
 }
 .field { display: grid; gap: var(--sp-2); }
 .field__label { font-size: var(--t-micro); letter-spacing: .16em; color: var(--mocha); }
-.field__opt { opacity: .7; letter-spacing: normal; }
+/* opacity:.7 on mocha computed to #978C7F on the ivory panel — 3.24:1, well
+   under the 4.5 floor (SC 1.4.3). The comment below explains that .field__req
+   was deliberately given a COLOUR rather than a lowered opacity, and this rule
+   sat one line above it doing exactly the thing that comment argues against.
+   --mocha at full strength is 6.41:1 on ivory and 5.85:1 on cream; the aside
+   still reads as an aside because it is smaller and in parentheses, which is
+   how the form already qualifies labels. */
+.field__opt { color: var(--mocha); letter-spacing: normal; }
 /* Same weight and idiom as .field__opt beside it — the form already qualifies
    labels in parentheses, so requirement is said the way optionality already
    was, rather than with an asterisk that needs a legend to decode. Champagne
@@ -2503,6 +2481,14 @@ html:not(.js) .quotes__controls { display: none; }
    act on, not an aside. #806142 on the form's ivory panel measures 5.58:1, and
    5.08:1 on cream where cost.html renders the same form. */
 .field__req { color: var(--champagne-ink); letter-spacing: normal; }
+/* main.js hides this through the `hidden` PROPERTY when the "no date yet" box
+   is ticked. Every other conditional node in this form has a display backstop
+   (.form__fields, .form__step, .form__failure, .form__done, the submit label
+   spans); this one worked only because neither it nor .field__label declares
+   display, so the UA rule was never outranked. The first person to make the
+   label a flexbox — the obvious next tweak — would silently bring back the
+   defect main.js's own comment was written to fix. */
+.field__req[hidden] { display: none; }
 /* The "no date yet" opt-out. Sits in the date field's own grid cell so the
    two read as one control; the shared :focus-visible rule already gives the
    box the charcoal ring the rest of this form uses. */
@@ -2909,3 +2895,17 @@ three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
   .nav-mobile .am-launcher--header { width: 40px; height: 40px; }
   .site-header__bar { gap: 10px; }
 }
+
+/* Directional glyphs, supplied by CSS instead of baked into the text.
+   They used to live in the markup — "→ חזרה", "…שתיים ←", "…ישירות ←" — and
+   i18n.js translates the text NODE, so the arrow survived into the English and
+   Russian strings and then pointed the wrong way: in LTR "→" reads as forward,
+   on the control that goes backward. Same bug class as the magnets diagram,
+   in a second place. Now the glyph is chosen by [dir], so it flips with the
+   document and never enters a string a translator can see. */
+.form__back span::before { content: "\2192\00a0"; }        /* → , RTL = back */
+[dir="ltr"] .form__back span::before { content: "\2190\00a0"; }  /* ← */
+[data-submit-label="next"]::after,
+.form__alt-lead::after { content: "\00a0\2190"; }          /* ← , RTL = forward */
+[dir="ltr"] [data-submit-label="next"]::after,
+[dir="ltr"] .form__alt-lead::after { content: "\00a0\2192"; }

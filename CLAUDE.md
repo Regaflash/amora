@@ -9,8 +9,8 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 21 checks + a phone-format count
-   node tools/verify.mjs   # must exit 0 — 263 runtime checks in a real browser
+1. tools/check.sh          # must exit 0 — 27 checks + a phone-format count
+   node tools/verify.mjs   # must exit 0 — 270 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
    # check.sh number was right and untouched, the verify.mjs one had been
@@ -18,11 +18,15 @@ Before any change goes out:
    # that reads 43, watches 174 scroll past and concludes it is running the
    # wrong tool goes looking for a second verifier that does not exist. When
    # you add an ok(), change this line in the same commit.
-   # verify.mjs needs playwright-core and pngjs, which this repo deliberately
-   # does not vendor and has no package.json for:
-   #   npm install --no-save playwright-core pngjs
-   # Install both in ONE command — with no package.json, a second --no-save
-   # install removes the first package.
+   # verify.mjs needs playwright-core and pngjs, and build-assets.mjs needs
+   # sharp. None is vendored and there is no package.json:
+   #   npm install --no-save playwright-core pngjs sharp
+   # ALL THREE in ONE command — with no package.json, a second --no-save
+   # install removes what the first one put there. This is not theoretical:
+   # on 2026-08-13 installing sharp alone to build the AVIF derivatives
+   # deleted playwright-core, and verify.mjs then died with
+   # ERR_MODULE_NOT_FOUND, which reads like a broken suite and is a broken
+   # install.
    # And playwright-core ships NO browser. verify.mjs launches
    # /opt/pw-browsers/chromium, overridable with CHROMIUM_PATH, and fails at
    # launch if nothing is there. That failure is a missing binary, not a
@@ -54,6 +58,25 @@ The owner's accounts are already wired together:
   entry used to say it did, and it was wrong. Vercel lists
   `amora-studios.com` as "registered with a third party" and exposes no DNS
   tab for it.
+- **The Vercel MCP connector is authorised but points at an EMPTY scope, and
+  that is the whole story — do not re-derive it.** Measured 2026-08-14:
+  `list_teams` returns exactly one team (`amora`, slug `amora5`,
+  `team_AFHaG9WExAgNuDXRSuLhhxi4`); `list_projects` on it returns **zero
+  projects**; `get_project` on the slugs `amora` and `amora-studios` returns
+  404; and the repo has no `.vercel/project.json` to read an id from. The
+  project that serves `amora-studios.com` lives under a different account or
+  team than the one the connector was authorised against. Until that is
+  corrected, deploy status, runtime logs and Analytics data are all
+  unreachable from here regardless of how the connector is described.
+
+  **And even with the right scope, Analytics cannot be switched on from here.**
+  The MCP surface has `get_web_analytics` — a *query* tool — and no enable
+  tool. Vercel's own documented route is the CLI:
+  `npx vercel link && npx vercel project web-analytics --format json`.
+  There is no `vercel` binary and no `VERCEL_*` token in this environment, and
+  the MCP keeps its credentials internally, so that command is the owner's to
+  run. Asking for "full Vercel access" does not change either fact.
+
 - **Hostinger** — the registrar, and where DNS actually lives. Every DNS
   record for `amora-studios.com` is edited there, not in the Vercel
   dashboard: the `A` record pointing at Vercel, the `www` CNAME, the Google
@@ -210,6 +233,21 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   inside `.faq__a` breaks the byte-lock, which is the same trap that put the
   `cost.html` link there. The explainer deliberately adds no second outbound
   link, so that stays one link in one place.
+
+  **The scan needs an APP, and two of the owner's own documents disagreed
+  about it.** `רגעפלאש-שיכתוב קופי` spells out "מורידים את האפליקציה →
+  סורקים את המגנט"; the February video scripts say only "תסרקי", with no app.
+  The site had followed the second reading and told visitors they simply point
+  a phone — including `magnets.html`, written on 2026-08-13, and `#process`
+  step 03. **Owner-confirmed the same day: an app is required**, and both were
+  corrected. This is the second time a contractor's marketing copy contradicted
+  itself about a load-bearing fact (the first was the photographer count), and
+  the resolution was the same: ask the owner, do not pick the reading that
+  reads better.
+
+  Two further facts confirmed at the same time and now published: the magnets
+  are **unlimited in number**, and guests **collect them from a station** at
+  the event. Both were in the ad copy and in neither the site nor this file.
 
   It sits INSIDE `#process` for the same reason the deliverables ledger above
   it does: the eyebrows are a hand-numbered 01→09 sequence, and a new
@@ -404,6 +442,34 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   keeps a dead control off the page. Where the engine has View Transitions
   the filter FLIPs the wall; where it does not, it swaps.
 
+- **Every photograph ships in three formats, and the ORDER in `<picture>` is
+  the mechanism.** JPEG is the floor, WebP must beat the JPEG, AVIF must beat
+  the WebP — `build-assets.mjs` steps quality down a ladder until each format
+  wins and **writes no file at all** if it never does. A browser takes the
+  first `<source>` it understands, so a heavier newer format would hand the
+  newest browsers the biggest file; `check.sh` asserts both size rules on
+  disk, and `verify.mjs` asserts the ordering in a real browser.
+
+  Added 2026-08-13: 48 AVIF files, 24 of the 26 slots, **2.57 MB → 1.83 MB
+  against the WebP set (28.6%)**. Measured, not estimated.
+
+  **Three sources deliberately have no AVIF, and they are not an oversight.**
+  `g08` and `g10` have no file in `incoming/` — they are the two slots the
+  drop could not fill, and on a fresh clone the numbered Instagram-era library
+  is absent entirely, so there is nothing to encode from. `hero-wide-poster`
+  is built by a different (obsolete) tool. Re-encoding an AVIF out of an
+  already-compressed JPEG is lossy-on-lossy for a marginal gain, so
+  `<picture>` simply falls through to WebP for those three. The coverage
+  assertion in `verify.mjs` checks against **what is on disk**, so it stays
+  green for them and turns red the moment a slot gains an AVIF the markup
+  does not offer.
+
+  That last point is not decoration. The markup edit was generated by a regex
+  over the HTML, and it silently skipped a `<source>` whose attributes ran
+  `media` before `srcset` — 28 WebP sources, 24 rewritten, 3 reported, and one
+  never seen at all. It needed no AVIF, so nothing broke. **Assert coverage
+  against the filesystem, never against the pattern that wrote the markup.**
+
 - Three files are GENERATED. Do not hand-edit them; rerun the tool and let
   `check.sh` confirm: `sitemap.xml` (`tools/gen-sitemap.py`), the ImageGallery
   JSON-LD block in `index.html` (`tools/gen-image-schema.py`), and the icon set
@@ -423,6 +489,31 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   nodes, one `<h1>`, zero skipped heading levels, and 602 words plus every
   FAQ answer (ten since 2026-08-09) rendered with JavaScript off. The YouTube hero is not the LCP
   element and is not hurting anything.
+- **`main.js` is 59% inert on the content pages, and splitting it is declined
+  on evidence rather than on the rule above.** Measured 2026-08-13: the file is
+  105,189 B raw / **35,614 B gzip**. The eight homepage-only sections — hero,
+  gallery + lightbox, phone strip, showreel, testimonial slider, cost-page
+  glimpse, services carousel, scroll reveal — are 61,985 B raw / **20,770 B
+  gzip**, and none of the six content pages carries a single DOM hook for any
+  of them. A split would leave those pages 15,778 B gzip instead of 35,614.
+
+  It is still not worth doing yet, for three measured reasons:
+
+  - **The dead sections do no runtime work.** Instrumented in Chromium:
+    `delivery.html` attaches **3 observers, 74 listeners and 0 intervals**
+    against the homepage's **31, 138 and 1**. Every one of them bails on a
+    null query. There is no leaked observer and no stray timer to fix.
+  - **`main.js` is deferred**, so those 20 KB land after the page is usable.
+    They are not on the critical path.
+  - **Nobody knows whether these pages get traffic**, because Analytics is
+    shipped and not switched on. Refactoring 2,054 lines that 270 assertions
+    depend on — with `AMORA_LOCK`, `measure()`, `waLink` and `carryCampaign`
+    crossing the boundary — before knowing whether anyone visits, is the wrong
+    order of operations.
+
+  Revisit when Analytics shows real traffic on the content pages. The numbers
+  above are the starting point; do not re-measure them.
+
 - **AI crawler policy: citation yes, training no.** `robots.txt` allows
   OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User and PerplexityBot,
   and declines GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, CCBot,
@@ -587,10 +678,31 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   straight to the endpoint, bypassing Make. What is verified is the endpoint,
   not that a real status change fires it.
 
-  **The campaign is off**, and the last `6821619` run was 4.8 18:27 while
-  `fld_1519` was only mapped 5.8 12:45 — so no lead in Origami carries a Meta
-  id at all. Until a new lead arrives, a status change returns
-  `skipped: no usable meta lead id`, correctly.
+  ~~**The campaign is off**, and the last `6821619` run was 4.8 18:27~~ —
+  **both halves were wrong by 2026-08-13, and the correction matters more than
+  the original claim did.** Make's execution log shows scenario `6821619`
+  running **every day** since — 6.8, 7.8, 8.8, 9.8, 10.8, 11.8 (four times),
+  12.8, and 13.8 at 00:17 — all status 1. Meta leads are arriving daily. The
+  scenario was also renamed on 10.8 to **"אמורה — לידים פייסבוק ← HubSpot +
+  אוריגמי + WhatsApp"**: HubSpot is now a second destination alongside Origami,
+  which no document in this repo describes and which sits awkwardly beside the
+  standing "do not duplicate Origami" rule. Ask before building against either.
+
+  `fld_1519` was mapped 5.8 12:45, so leads from 6.8 onward should carry a Meta
+  id — the old blocker ("no lead in Origami carries one") has most likely
+  cleared itself. **Re-check before planning CAPI work on the assumption that
+  it hasn't.**
+
+  Three executions failed on 10.8 with `The string supplied did not seem to be
+  a phone number` (one surfacing as Origami's `fld_1509/טלפון - פורמט מספר
+  טלפון לא חוקי`). They cluster around the owner's own edits that day and
+  everything since 10.8 19:34 succeeds, but a phone-parse failure is a lead
+  that fell through the floor, and it is not recorded whether those three were
+  recovered.
+
+  This entry is the third in this file to have been confidently wrong about
+  production. The lesson is the one already written above it: **status is not
+  knowable by reading anything.** Ask the live system.
 
 - **Lead alerts: sending — but the destination changed on 5.8, and that is the
   whole lesson.** A trigger on INSERT into `public.leads`
@@ -658,10 +770,18 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   around by pointing at the owner's own inbox. **What verification buys is any
   recipient, not this one.**
 
-  **Still unverified:** whether Gmail recorded `SPF=PASS` / `DKIM=PASS` and a
-  DMARC result. That needs "show original" in the mailbox, and nobody guessed
-  at it. "Reached the inbox" is weaker evidence than a PASS line, and it is the
-  evidence there is.
+  ~~**Still unverified:** whether Gmail recorded `SPF=PASS` / `DKIM=PASS`~~ —
+  **it was verified, and this entry did not know.** `docs/chrome-agent-tasks.md`
+  records the result in its own status table: **SPF PASS, DKIM PASS, and no
+  DMARC record at all.** A browser agent read it out of "show original" in the
+  mailbox. The DMARC gap is the part that is still open, and it is a decision
+  about the business's mail rather than a provider setting — same reasoning as
+  the missing apex SPF below.
+
+  Worth naming the pattern rather than just the fact: this is the fifth claim in
+  this file to have been stale about production, and the answer was sitting in
+  another file in the same repo. **Before writing "unverified" here, grep
+  `docs/` for it.**
 
   Recorded but deliberately untouched: the domain has **no apex SPF record at
   all**, although its MX points at Google. Apex SPF governs every piece of mail

@@ -8,7 +8,7 @@
      deferred i18n.js mounted. This pre-sets dir only - never lang, which
      would hand a screen reader an English voice for Hebrew glyphs - and a
      4s watchdog restores RTL if i18n.js never executes. Byte-identical on
-     the three i18n pages so one CSP hash covers all; check.sh fails the
+     all nine content pages so one CSP hash covers them all; check.sh fails the
      build if this block and vercel.json ever drift. -->
 <script>try{var l=localStorage.getItem('amora.lang');if(l==='en'||l==='ru'){var d=document.documentElement;d.setAttribute('dir','ltr');d.setAttribute('data-lang-boot',l);setTimeout(function(){if(!d.hasAttribute('data-i18n-ready')){d.setAttribute('dir','rtl');d.removeAttribute('data-lang-boot');}},4000);}}catch(e){}</script>
 <title>מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio</title>
@@ -25,10 +25,8 @@
 <meta property="og:image:height" content="630" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:image:alt" content="זוג מתחת להינומה ברגע החופה — Amora Studio" />
-<!-- cost.html was the only indexable page without these, while index.html and
-     camera-3d.html both carried them. It is also the highest-intent page on the
-     site, so a shared link landing here was the one that degraded. Values mirror
-     the page's own og: tags rather than the homepage's. -->
+<!-- Twitter card values mirror this page's own og: tags rather than the
+     homepage's, so a shared link previews the page it actually points at. -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="מגנטים עם וידאו לחתונה — איך זה עובד | Amora Studio" />
 <meta name="twitter:description" content="מגנט שנראה רגיל, עד שמכוונים אליו טלפון — ואז התמונה מתחילה לזוז." />
@@ -102,15 +100,12 @@
 
 <a class="skip-link" href="#main">דילוג לתוכן</a>
 
-<!-- This page used to be the bare article shell the three legal drafts use:
-     no header, no footer, no WhatsApp button and no form — one text link back
-     to the home page. It is the page that answers "כמה עולה צלם חתונות", which
-     is the highest-intent search a couple makes about this business, so it was
-     the worst page on the site to leave without a way to enquire.
-
-     data-header-solid: there is no hero here, so the header must not spend the
-     first 80px transparent with ivory text on the sand background. See
-     assets/js/main.js. -->
+<!-- data-header-solid: there is no hero on this page, so without it the header
+     spends its first 80px painting ivory text on the sand background — an
+     invisible nav. See assets/js/main.js.
+     The paragraph that used to sit here described cost.html, and was copied
+     verbatim into six pages that answer a different question. Removed
+     2026-08-13. -->
 <header class="site-header is-scrolled" data-header data-header-solid>
   <div class="site-header__bar">
     <a href="index.html" class="brand" aria-label="Amora Studio — לעמוד הבית">
@@ -162,11 +157,11 @@
 <div class="legal legal--article">
 
 <h1>מגנטים עם וידאו — התמונה ממשיכה לזוז</h1>
-<p class="legal__meta">נראה כמו מגנט רגיל, עד שמכוונים אליו טלפון. מה זה, איך זה עובד, ולמה זה נכלל בכל חתונה שלנו.</p>
+<p class="legal__meta">נראה כמו מגנט רגיל, עד שסורקים אותו. מה זה, איך זה עובד, ולמה זה נכלל בכל חתונה שלנו — ללא הגבלת כמות.</p>
 
-<p>בסוף כל חתונה האורחים לוקחים הביתה מגנט. זה לא רעיון חדש, וכנראה יש לכם אחד או שניים על המקרר בבית מחתונות של אחרים. מה שכן חדש הוא מה שקורה כשמכוונים אליו טלפון: <strong>התמונה על המגנט מתחילה לזוז</strong> — אותו רגע בדיוק, בתור וידאו.</p>
+<p>בסוף כל חתונה האורחים לוקחים הביתה מגנט. זה לא רעיון חדש, וכנראה יש לכם אחד או שניים על המקרר בבית מחתונות של אחרים. מה שכן חדש הוא מה שקורה כשסורקים אותו: <strong>התמונה על המגנט מתחילה לזוז</strong> — אותו רגע בדיוק, בתור וידאו.</p>
 
-<p>את זה מייצר <strong>Regaflash</strong>, העסק האח שלנו, והוא <strong>נכלל בכל עסקה ולא כתוספת בתשלום</strong>.</p>
+<p>את זה מייצר <strong>Regaflash</strong>, העסק האח שלנו, והוא <strong>נכלל בכל עסקה ולא כתוספת בתשלום — ובלי הגבלה על מספר המגנטים</strong>.</p>
 
 <h2>איך זה עובד</h2>
 
@@ -174,10 +169,56 @@
 <p>במהלך הערב אנחנו תופסים אתכם ואת האורחים ברגעים הכי יפים — אותו תיעוד ואותה עין שמצלמים בהם את שאר החתונה. זה לא צוות נפרד ולא עמדה בצד; זה חלק מהכיסוי.</p>
 
 <h3>מטמיעים</h3>
-<p>בכל מגנט מוטמע קטע הווידאו של אותו רגע בדיוק, והוא מודפס <strong>עוד באותו ערב</strong>. האורחים לא מחכים לדואר ולא מקבלים קישור — הם יוצאים מהאירוע עם המגנט ביד.</p>
+<p>בכל מגנט מוטמע קטע הווידאו של אותו רגע בדיוק, והוא מודפס <strong>עוד באותו ערב</strong>. האורחים אוספים אותו מהעמדה שלנו באירוע — לא מחכים לדואר ולא מקבלים קישור, אלא יוצאים עם המגנט ביד.</p>
 
 <h3>סורקים</h3>
-<p>האורח מכוון את הטלפון אל המגנט שקיבל, והתמונה שבידו מתעוררת לחיים. אפשר לעשות את זה כבר באירוע עצמו, ואפשר חודשים אחר כך מול המקרר בבית.</p>
+<p>כאן צריך לדייק, כי זה החלק שאנשים שואלים עליו: <strong>הסריקה נעשית דרך אפליקציה שמורידים פעם אחת</strong> — לא דרך מצלמת הטלפון הרגילה. אחרי זה מכוונים אל המגנט והתמונה מתעוררת לחיים, כבר באירוע עצמו או חודשים אחר כך מול המקרר בבית.</p>
+
+
+<!-- An ILLUSTRATION, and deliberately drawn as one: flat shapes, brand
+     colours, no photographic texture. On a site that sells photography, a
+     picture that could be mistaken for the studio's own work would be a claim
+     about their work. This one cannot be mistaken for a photograph.
+     Inline SVG so it costs no request and no dependency; currentColor and the
+     brand custom properties so it follows the a11y widget's contrast modes
+     instead of ignoring them. role="img" + <title> gives it one accessible
+     name; the decorative innards are aria-hidden by virtue of being inside it.
+     RTL: the flow reads right to left, so the arrows point left. -->
+<figure class="mag-figure">
+  <svg class="mag-diagram" viewBox="0 0 720 200" role="img" aria-labelledby="mag-diagram-title" focusable="false">
+    <title id="mag-diagram-title">תרשים שלושת השלבים</title>
+    <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <!-- 01 · the camera. RIGHTMOST, because the page reads right to left and
+           this is the first step. Getting this backwards is the classic RTL
+           trap: drawn left-first, the row reads 03 -> 02 -> 01. -->
+      <rect x="536" y="60" width="112" height="80" rx="10" />
+      <path d="M564 60l10-14h44l10 14" />
+      <circle cx="592" cy="102" r="22" />
+      <circle cx="592" cy="102" r="9" fill="var(--champagne)" stroke="none" opacity=".5" />
+      <circle cx="630" cy="76" r="3" fill="currentColor" stroke="none" />
+      <!-- 02 · the magnet -->
+      <rect x="316" y="52" width="96" height="96" rx="8" />
+      <rect x="328" y="64" width="72" height="56" rx="3" fill="var(--champagne)" stroke="none" opacity=".28" />
+      <path d="M340 108l16-18 12 14 10-10 14 16" />
+      <circle cx="352" cy="80" r="5" />
+      <path d="M352 132h24" />
+      <!-- 03 · the phone, scanning. LEFTMOST = last. -->
+      <rect x="112" y="44" width="72" height="112" rx="10" />
+      <rect x="124" y="60" width="48" height="74" rx="4" fill="var(--champagne)" stroke="none" opacity=".28" />
+      <path d="M134 96h28M148 82v28" />
+      <circle cx="148" cy="146" r="4" fill="currentColor" stroke="none" />
+      <!-- arrows point left: right to left is forward here -->
+      <path d="M520 100H428m0 0l14-9m-14 9l14 9" />
+      <path d="M300 100H208m0 0l14-9m-14 9l14 9" />
+    </g>
+    <g font-size="13" font-family="Heebo, sans-serif" fill="currentColor" opacity=".75" text-anchor="middle">
+      <text x="592" y="184">01 · מצלמים</text>
+      <text x="364" y="184">02 · מטמיעים</text>
+      <text x="148" y="184">03 · סורקים</text>
+    </g>
+  </svg>
+  <figcaption>מצלמים תמונה וסרטון של אותו רגע, מטמיעים אותם במגנט ומדפיסים אותו באירוע, והאורח סורק אותו באפליקציה.</figcaption>
+</figure>
 
 <h2>למה זה משנה</h2>
 
@@ -203,7 +244,29 @@
 
 <p>"מה האורחים שלנו לוקחים הביתה מהערב, ומתי הם מקבלים את זה?" זו שאלה קטנה שמגלה הרבה, כי התשובה הנפוצה היא "נשלח לכם גלריה" — וזה משהו שמגיע אליכם, לא אליהם.</p>
 
-<p><a href="cost.html">מה משפיע על המחיר</a> · <a href="index.html#gallery">לגלריה</a> · <a href="index.html#faq">שאלות נפוצות</a></p>
+<nav class="next-read" aria-label="להמשך קריאה">
+  <p class="next-read__head">להמשך קריאה</p>
+  <ul class="next-read__list">
+  <li class="next-read__item">
+    <a class="next-read__link" href="corporate.html">
+      <span class="next-read__title">אירועי חברה</span>
+      <span class="next-read__blurb">אותה עמדה, בערב חברה — ומה העובדים לוקחים הביתה.</span>
+    </a>
+  </li>
+  <li class="next-read__item">
+    <a class="next-read__link" href="cost.html">
+      <span class="next-read__title">מה משפיע על המחיר</span>
+      <span class="next-read__blurb">המגנטים כלולים. הנה מה שכן מזיז את ההצעה.</span>
+    </a>
+  </li>
+  <li class="next-read__item">
+    <a class="next-read__link" href="delivery.html">
+      <span class="next-read__title">כמה זמן עד התמונות</span>
+      <span class="next-read__blurb">המגנטים יוצאים בערב עצמו; שאר החומרים בלוח אחר.</span>
+    </a>
+  </li>
+  </ul>
+</nav>
 
 </div>
 
@@ -213,7 +276,8 @@
      without a second code path. The ids repeat the home page's, which is fine
      — they only have to be unique within one document. -->
 <section class="contact section" id="contact">
-  <picture class="contact__bg-wrap"><source type="image/webp" srcset="assets/img/cta-1200.webp" /><img class="contact__bg" src="assets/img/cta-1200.jpg" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
+  <picture class="contact__bg-wrap"><source type="image/avif" srcset="assets/img/cta-1200.avif" />
+<source type="image/webp" srcset="assets/img/cta-1200.webp" /><img class="contact__bg" src="assets/img/cta-1200.jpg" alt="" aria-hidden="true" width="1200" height="514" loading="lazy" decoding="async" /></picture>
   <div class="contact__scrim" aria-hidden="true"></div>
 
   <div class="contact__grid">
@@ -283,6 +347,7 @@
               <option value="std">Save the Date</option>
               <option value="henna">חינה / אירוסין</option>
               <option value="mitzvah">בר / בת מצווה</option>
+              <option value="corporate">אירוע חברה</option>
               <option value="other">אירוע אחר</option>
             </select>
             <span class="field__error" id="err-type" data-error="type"></span>
@@ -325,7 +390,7 @@
 
           <!-- Back, not "cancel": nothing is cleared, so returning and continuing is
                lossless. In RTL forward is <- and back is ->, as everywhere else. -->
-          <button class="form__back" type="button" data-form-back hidden>→ חזרה</button>
+          <button class="form__back" type="button" data-form-back hidden><span>חזרה</span></button>
         </div>
 
         <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
@@ -338,13 +403,13 @@
              visibility. Accessible-name computation skips display:none subtrees,
              so the button announces exactly one of them. -->
         <button class="form__submit" type="submit" data-submit>
-          <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים ←</span>
+          <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים</span>
           <span data-submit-label="send">שלחו — נחזור אליכם היום</span>
           <span data-submit-label="sending" hidden>שולחים…</span>
         </button>
         <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
         <p class="form__failure" data-form-failure role="alert" hidden></p>
-        <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
+        <p class="form__alt"><span class="form__alt-lead">או בוואטסאפ ישירות</span> <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
       </div>
 
       <div class="form__done" data-form-done hidden>
@@ -368,7 +433,7 @@
   <div class="site-footer__top">
     <div>
       <img class="site-footer__mark" src="assets/img/logo.jpg" alt="Amora Studio" width="64" height="64" />
-      <p class="site-footer__blurb">צילום וידאו וסטילס לחתונות ואירועים. תל אביב — ובכל הארץ.</p>
+      <p class="site-footer__blurb">צילום וידאו וסטילס לחתונות ואירועים. הדרום, השרון — ובכל הארץ.</p>
     </div>
     <nav class="site-footer__col" aria-label="ניווט פוטר">
       <a class="site-footer__link" href="index.html#about">אודות</a>
@@ -376,6 +441,23 @@
       <a class="site-footer__link" href="index.html#gallery">גלריה</a>
       <a class="site-footer__link" href="index.html#faq">שאלות נפוצות</a>
       <a class="site-footer__link" href="#contact">בדיקת זמינות</a>
+    </nav>
+    <!-- Added 2026-08-13. Until this block existed the footer linked ONLY to
+         homepage fragments, and so did the nav — which meant a page added to
+         the site had no route in from anywhere. Three of the pages written
+         that day (delivery, save-the-date, corporate) had zero inbound links
+         from the entire site and were reachable only through sitemap.xml.
+         This column is byte-identical on every page on purpose, self-links
+         included: one block, nine copies, trivial to compare. -->
+    <nav class="site-footer__col" aria-label="עמודי תוכן">
+      <a class="site-footer__link" href="cost.html">מה משפיע על המחיר</a>
+      <a class="site-footer__link" href="delivery.html">כמה זמן עד התמונות</a>
+      <a class="site-footer__link" href="photographers.html">צלם אחד או שלושה</a>
+      <a class="site-footer__link" href="low-light.html">אולם חשוך — איך מצלמים</a>
+      <a class="site-footer__link" href="magnets.html">מגנטים עם וידאו</a>
+      <a class="site-footer__link" href="save-the-date.html">צילומי Save the Date</a>
+      <a class="site-footer__link" href="corporate.html">אירועי חברה</a>
+      <a class="site-footer__link" href="camera-3d.html">המצלמה שלנו</a>
     </nav>
     <div class="site-footer__col">
       <a class="site-footer__link" href="tel:+972503662699">050-3662699</a>

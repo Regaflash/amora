@@ -21,6 +21,16 @@ worse=$(for f in assets/img/*.webp; do j="${f%.webp}.jpg"; [ -f "$j" ] || contin
   [ "$(stat -c%s "$f")" -ge "$(stat -c%s "$j")" ] && basename "$f"; done)
 if [ -n "$worse" ]; then say "WebP כבד מ-JPEG" "✗"; echo "$worse" | sed 's/^/    /'; fail=1; else say "כל WebP קטן מה-JPEG" "✓"; fi
 
+# Same rule one format along, and the reason is the same inversion: <picture>
+# serves the FIRST source the browser understands, so an AVIF heavier than the
+# WebP beside it hands the newest browsers the biggest file. build-assets.mjs
+# steps the AVIF quality down until it wins and writes NO file if it never
+# does — so a losing .avif on disk means someone put it there by hand.
+avifworse=$(for f in assets/img/*.avif; do [ -e "$f" ] || continue; w="${f%.avif}.webp"; [ -f "$w" ] || continue
+  [ "$(stat -c%s "$f")" -ge "$(stat -c%s "$w")" ] && basename "$f"; done)
+if [ -n "$avifworse" ]; then say "AVIF כבד מ-WebP" "✗"; echo "$avifworse" | sed 's/^/    /'; fail=1
+else say "כל AVIF קטן מה-WebP" "✓ ($(ls assets/img/*.avif 2>/dev/null | wc -l) קבצים)"; fi
+
 # the placeholder must be gone before launch
 if grep -rq 'SITE_URL' index.html robots.txt sitemap.xml 2>/dev/null; then
   say "SITE_URL עדיין placeholder" "✗ הרץ tools/set-site-url.sh"; fail=1
@@ -240,9 +250,15 @@ print(f'{"טבעת פוקוס לא בוטלה ולא נשברה":<46} ✓')
 PY
 
 # CSP hashes vs the inline scripts that are actually on the pages. A one-word
-# edit to the inline bootstrap silently invalidates its hash; today the policy
-# is Report-Only so nothing breaks visibly, which is exactly why this needs a
-# machine to notice.
+# edit to the inline bootstrap silently invalidates its hash.
+# THIS STOPPED BEING COSMETIC ON 2026-08-13. The comment here used to say "the
+# policy is Report-Only so nothing breaks visibly" — true when written, and
+# false the moment vercel.json moved to an enforcing Content-Security-Policy.
+# An unhashed boot is now BLOCKED, not reported: a returning en/ru visitor gets
+# the full-page RTL->LTR mirror flash that the boot exists to prevent.
+# Known limit, stated rather than hidden: this asserts that every copy's hash is
+# ALLOWED, not that the nine copies are identical to each other. Fork the boot
+# on one page, add a fifth sha256 to vercel.json, and this still prints green.
 # Only executable inline scripts are hashed. <script type="application/ld+json">
 # is a data block: HTML never prepares it as a script, so script-src never sees
 # it. Verified in Chromium — an ld+json block under `script-src 'none'` raises
@@ -475,5 +491,209 @@ for never in ('id', 'created_at', 'handled'):
         sys.exit(1)
 print(f'{"שדות הטופס מול הרשאת anon":<46} ✓ ({len(posts)} עמודות)')
 PY
+
+# The lead form exists in EIGHT copies and main.js binds
+# the first [data-form] on the page, so nothing at runtime notices when they
+# drift -- a visitor on the wrong page simply gets a different question set.
+# Compares the ordered field/option/error/step attribute sequence of each copy.
+python3 - <<'PYFORM' || fail=1
+import io, re, sys, glob
+
+def shape(html):
+    m = re.search(r'<form class="form" data-form.*?</form>', html, re.S)
+    if not m: return None
+    b = m.group(0)
+    # Four lists was not enough. type=, inputmode= and autocomplete= were all
+    # outside the tuple, so changing type="tel" to type="text" on ONE page kept
+    # this green while Android stopped offering a numeric keypad on the single
+    # field the database declares NOT NULL. Labels and the three submit-label
+    # spans were outside it too — a page could ask a different question under
+    # the same data-field name.
+    return (re.findall(r'data-field="([^"]+)"', b),
+            re.findall(r'<option value="([^"]*)"', b),
+            re.findall(r'data-error="([^"]+)"', b),
+            re.findall(r'data-form-step="([^"]+)"', b),
+            re.findall(r'\stype="([^"]+)"', b),
+            re.findall(r'\sinputmode="([^"]+)"', b),
+            re.findall(r'\sautocomplete="([^"]+)"', b),
+            re.findall(r'\sname="([^"]+)"', b),
+            re.findall(r'\saria-required="([^"]+)"', b),
+            re.findall(r'data-submit-label="([^"]+)"', b),
+            [re.sub(r'\s+', ' ', t).strip()
+             for t in re.findall(r'<span class="field__label">(.*?)</span>', b, re.S)])
+
+shapes = {}
+for p in sorted(glob.glob('*.html')):
+    sh = shape(io.open(p, encoding='utf-8').read())
+    if sh: shapes[p] = sh
+pages = sorted(shapes)
+if len(pages) < 2:
+    print(f'{"עותקי הטופס זהים":<46} ✗ נמצא רק עותק אחד'); sys.exit(1)
+base = pages[0]
+bad = [p for p in pages[1:] if shapes[p] != shapes[base]]
+if bad:
+    print(f'{"עותקי הטופס זהים":<46} ✗')
+    for p in bad:
+        for i, name in enumerate(('data-field', 'option', 'data-error', 'data-form-step')):
+            if shapes[p][i] != shapes[base][i]:
+                print(f'    {p} vs {base} — {name}')
+                print(f'      {base}: {shapes[base][i]}')
+                print(f'      {p}: {shapes[p][i]}')
+    sys.exit(1)
+print(f'{"עותקי הטופס זהים":<46} ✓ ({len(pages)} עותקים)')
+PYFORM
+# Two link guards. Both exist because the site grew from 4 pages to 9 in one
+# day and neither failure was visible to anything:
+#
+#  (a) CROSS-PAGE FRAGMENTS. The id-reference check above matches href="#..."
+#      anchored at the quote, so href="index.html#services" -- 25 of them --
+#      was invisible to it. Renaming one homepage section id killed 25 links
+#      across 8 files with a green build.
+#  (b) REACHABILITY. delivery.html, save-the-date.html and corporate.html
+#      shipped with ZERO inbound links from anywhere on the site. They were
+#      in sitemap.xml and in llms.txt and could not be reached by clicking.
+python3 - <<'PYLINKS' || fail=1
+import io, os, re, sys, glob
+
+pages = sorted(glob.glob("*.html"))
+src = {p: io.open(p, encoding="utf-8").read() for p in pages}
+ids = {p: set(re.findall(r'\sid="([^"]+)"', s)) for p, s in src.items()}
+
+# (a) every href="other.html#frag" must resolve in THAT file
+dead = []
+for p, s in src.items():
+    for tgt, frag in re.findall(r'href="([A-Za-z0-9._-]+\.html)#([^"]+)"', s):
+        if not os.path.isfile(tgt):
+            dead.append(f"{p}: {tgt} לא קיים"); continue
+        # gallery deep links are JS filter values, not ids — main.js resolves them
+        if frag.startswith("gallery-") or frag.startswith("photo-"): continue
+        if frag not in ids[tgt]:
+            dead.append(f"{p}: {tgt}#{frag}")
+if dead:
+    print(f'{"עוגנים חוצי-עמודים נפתרים":<46} ✗')
+    for d in sorted(set(dead))[:12]: print("    " + d)
+    sys.exit(1)
+print(f'{"עוגנים חוצי-עמודים נפתרים":<46} ✓')
+
+# (b) every indexable page must be reachable by clicking from index.html
+def links(s):
+    return set(re.findall(r'href="([A-Za-z0-9._-]+\.html)(?:#[^"]*)?"', s))
+indexable = set()
+for p, s in src.items():
+    m = re.search(r'<meta name="robots" content="([^"]*)"', s)
+    if m and "noindex" in m.group(1): continue
+    if p == "admin.html": continue
+    indexable.add(p)
+seen, frontier = {"index.html"}, ["index.html"]
+while frontier:
+    cur = frontier.pop()
+    for nxt in links(src.get(cur, "")):
+        if nxt in src and nxt not in seen:
+            seen.add(nxt); frontier.append(nxt)
+orphans = sorted(indexable - seen)
+if orphans:
+    print(f'{"כל עמוד ניתן להגעה מעמוד הבית":<46} ✗')
+    for o in orphans: print(f"    {o} — אין אליו מסלול קליקים מ-index.html")
+    sys.exit(1)
+print(f'{"כל עמוד ניתן להגעה מעמוד הבית":<46} ✓ ({len(indexable)} עמודים)')
+PYLINKS
+# Shell parity. The header, the mobile menu and the footer exist in nine
+# hand-copied copies each, and until now NOTHING compared them — the CSP hash
+# covered the RTL boot and the parity check above covered the form, and that
+# was the whole of it. What drift costs, concretely:
+#   header  — lose data-header-solid on one page and it spends its first 80px
+#             painting ivory text on sand: an invisible nav.
+#   menu    — lose data-menu-close on one page and AMORA_LOCK is never
+#             released: the body stays position:fixed and the visitor cannot
+#             scroll at all, with no way out but a reload.
+#   footer  — one stale phone number or one 404ing legal link, on one page,
+#             seen by nobody because nobody visits all nine footers.
+#   scripts — drop i18n.js from one copy and that page silently loses the
+#             language switcher; drop main.js and the form binds to nothing
+#             and writes no lead, with no error anywhere.
+#
+# The family is the pages carrying data-header-solid — the shared subpage
+# shell. index.html is EXCLUDED and named here rather than silently skipped:
+# it owns #gear and #process, which exist on no other page, so its nav is
+# legitimately two items longer. camera-3d.html is inside the family; its
+# cross-page #contact is normalised below, and its two extra module scripts
+# are ignored because only the three shared ones are order-critical.
+python3 - <<'PYSHELL' || fail=1
+import io, re, sys, glob
+
+def norm(t):
+    t = re.sub(r"<!--.*?-->", "", t, flags=re.S)      # comments drift freely
+    t = t.replace('href="index.html#', 'href="#')   # camera-3d's cross-page contact
+    return re.sub(r"\s+", " ", t).strip()
+
+def block(s, start, end):
+    i = s.find(start)
+    if i < 0: return None
+    j = s.find(end, i)
+    return norm(s[i:j + len(end)]) if j > 0 else None
+
+def scripts(s):
+    core = ("main.js", "assistant.js", "i18n.js")
+    got = re.findall(r'<script src="assets/js/([a-z0-9-]+\.js)"([^>]*)>', s)
+    return [(f, "defer" in a) for f, a in got if f in core]
+
+family = sorted(p for p in glob.glob("*.html")
+                if "data-header-solid" in io.open(p, encoding="utf-8").read())
+if len(family) < 2:
+    print(f'{"מעטפת זהה בין העמודים":<46} ✗ פחות משני עמודים במשפחה'); sys.exit(1)
+
+PARTS = {
+    "header": ('<header class="site-header', "</header>"),
+    "menu": ('<div class="menu" id="mobile-menu"', "</div>"),
+    "footer": ('<footer class="site-footer">', "</footer>"),
+}
+shapes = {}
+for p in family:
+    s = io.open(p, encoding="utf-8").read()
+    d = {k: block(s, a, b) for k, (a, b) in PARTS.items()}
+    d["scripts"] = scripts(s)
+    shapes[p] = d
+
+base = family[0]
+bad = []
+for p in family[1:]:
+    for k in list(PARTS) + ["scripts"]:
+        if shapes[p][k] != shapes[base][k]:
+            bad.append((p, k))
+missing = [(p, k) for p in family for k in PARTS if shapes[p][k] is None]
+if bad or missing:
+    print(f'{"מעטפת זהה בין העמודים":<46} ✗')
+    for p, k in missing: print(f"    {p}: אין בלוק {k} בכלל")
+    for p, k in bad:     print(f"    {p}: {k} שונה מ-{base}")
+    sys.exit(1)
+print(f'{"מעטפת זהה בין העמודים":<46} ✓ ({len(family)} עמודים, 4 בלוקים)')
+PYSHELL
+# Gallery deep links vs the filter values that resolve them. #gallery-<cat> is
+# NOT an id — main.js matches the fragment against the chips' data-filter
+# values at runtime — so the cross-page fragment check above deliberately skips
+# them and nothing else looked. CLAUDE.md is explicit that these addresses have
+# already been sent to people: renaming a data-filter value breaks links that
+# are sitting in strangers' WhatsApp threads, and nothing fails loudly.
+python3 - <<'PYGAL' || fail=1
+import io, re, sys, glob
+
+LABEL = "קישורי גלריה תואמים לפילטרים"
+home = io.open("index.html", encoding="utf-8").read()
+chips = set(re.findall(r'data-filter="([^"]+)"', home))
+if not chips:
+    print(f'{LABEL:<46} ✗ no data-filter chips found'); sys.exit(1)
+bad = []
+for p in sorted(glob.glob("*.html")):
+    s = io.open(p, encoding="utf-8").read()
+    for cat in re.findall(r'href="(?:index\.html)?#gallery-([a-z]+)"', s):
+        if cat not in chips:
+            bad.append(f"{p}: #gallery-{cat}")
+if bad:
+    print(f'{LABEL:<46} ✗')
+    for d in sorted(set(bad)): print("    " + d)
+    print("    " + "available: " + ", ".join(sorted(chips)))
+    sys.exit(1)
+print(f'{LABEL:<46} ✓ ({len(chips)} filters)')
+PYGAL
 
 exit $fail
