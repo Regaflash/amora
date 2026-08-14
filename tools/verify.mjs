@@ -2093,11 +2093,18 @@ await page.waitForTimeout(200);
 // submit and be rejected. Found when a real attempt to fill the form stalled on
 // exactly that, twice, before reaching the network.
 //
-// Both pages that carry the form are checked, derived rather than listed: the
-// homepage and cost.html hold separate copies of the same markup, and a fix
-// applied to one of them is the drift this repo keeps producing.
+// Every page that carries the form, derived from disk rather than listed. The
+// comment here used to say "derived rather than listed" above a two-item
+// literal — and when the site went from two form copies to eight, six of them
+// were never measured. They passed by omission, which is the failure mode this
+// whole file exists to prevent.
+const FORM_PAGES = fs.readdirSync(ROOT)
+  .filter((f) => f.endsWith('.html'))
+  .filter((f) => fs.readFileSync(path.join(ROOT, f), 'utf8').includes('class="form" data-form'))
+  .map((f) => (f === 'index.html' ? '/' : '/' + f))
+  .sort();
 {
-  const pages = ['/', '/cost.html'];
+  const pages = FORM_PAGES;
   const bad = [];
   for (const url of pages) {
     const p = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
@@ -2124,10 +2131,16 @@ await page.waitForTimeout(200);
 // ------------------------------------------------------------ target sizes --
 // WCAG 2.2 SC 2.5.8. The exceptions are real and narrow: the honeypot is bot
 // bait no user can reach, and words inside a sentence are explicitly exempt.
+// Measured on every form-bearing page, not just the homepage. The six content
+// pages introduced no new interactive element, so this passed them by
+// construction rather than by inspection — and "passes because nothing looked"
+// is exactly what this file is supposed to make impossible.
 {
-  await page.goto(BASE + '/', { waitUntil: 'load' });
+  const small = [];
+  for (const url of FORM_PAGES) {
+  await page.goto(BASE + url, { waitUntil: 'load' });
   await page.waitForTimeout(700);
-  const small = await page.evaluate(() => {
+  small.push(...await page.evaluate((where) => {
     const INLINE_EXEMPT = ['.form__consent', '.form__alt'];
     return [...document.querySelectorAll('a,button,input,select,textarea,[role=button]')]
       .filter((n) => {
@@ -2138,11 +2151,12 @@ await page.waitForTimeout(200);
       })
       .map((n) => {
         const r = n.getBoundingClientRect();
-        return `${n.tagName}.${(n.className || '').toString().split(' ')[0]} ${r.width.toFixed(0)}x${r.height.toFixed(0)}`;
+        return `${where} ${n.tagName}.${(n.className || '').toString().split(' ')[0]} ${r.width.toFixed(0)}x${r.height.toFixed(0)}`;
       });
-  });
-  ok('every non-exempt target is at least 24x24 (WCAG 2.2 SC 2.5.8)',
-     small.length === 0, small.length ? small : 'all at or above 24px', 'none under 24px');
+  }, url));
+  }
+  ok('every non-exempt target is at least 24x24 on every form page (SC 2.5.8)',
+     small.length === 0, small.length ? small : `${FORM_PAGES.length} pages clean`, 'none under 24px');
 }
 
 // --------------------------- camera-3d: chrome standalone, no chrome embedded --

@@ -312,7 +312,7 @@
 
           <!-- Back, not "cancel": nothing is cleared, so returning and continuing is
                lossless. In RTL forward is <- and back is ->, as everywhere else. -->
-          <button class="form__back" type="button" data-form-back hidden>→ חזרה</button>
+          <button class="form__back" type="button" data-form-back hidden><span>חזרה</span></button>
         </div>
 
         <input class="honeypot" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" data-field="company" />
@@ -325,13 +325,13 @@
              visibility. Accessible-name computation skips display:none subtrees,
              so the button announces exactly one of them. -->
         <button class="form__submit" type="submit" data-submit>
-          <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים ←</span>
+          <span data-submit-label="next" hidden>המשך — עוד שאלה או שתיים</span>
           <span data-submit-label="send">שלחו — נחזור אליכם היום</span>
           <span data-submit-label="sending" hidden>שולחים…</span>
         </button>
         <p class="form__consent">מה קורה עם הפרטים שאתם משאירים — <a href="privacy.html">מדיניות הפרטיות</a></p>
         <p class="form__failure" data-form-failure role="alert" hidden></p>
-        <p class="form__alt">או בוואטסאפ ישירות ← <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
+        <p class="form__alt"><span class="form__alt-lead">או בוואטסאפ ישירות</span> <a href="https://wa.me/972503662699" target="_blank" rel="noopener">050-3662699</a></p>
       </div>
 
       <div class="form__done" data-form-done hidden>

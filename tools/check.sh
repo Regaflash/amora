@@ -503,10 +503,24 @@ def shape(html):
     m = re.search(r'<form class="form" data-form.*?</form>', html, re.S)
     if not m: return None
     b = m.group(0)
+    # Four lists was not enough. type=, inputmode= and autocomplete= were all
+    # outside the tuple, so changing type="tel" to type="text" on ONE page kept
+    # this green while Android stopped offering a numeric keypad on the single
+    # field the database declares NOT NULL. Labels and the three submit-label
+    # spans were outside it too — a page could ask a different question under
+    # the same data-field name.
     return (re.findall(r'data-field="([^"]+)"', b),
             re.findall(r'<option value="([^"]*)"', b),
             re.findall(r'data-error="([^"]+)"', b),
-            re.findall(r'data-form-step="([^"]+)"', b))
+            re.findall(r'data-form-step="([^"]+)"', b),
+            re.findall(r'\stype="([^"]+)"', b),
+            re.findall(r'\sinputmode="([^"]+)"', b),
+            re.findall(r'\sautocomplete="([^"]+)"', b),
+            re.findall(r'\sname="([^"]+)"', b),
+            re.findall(r'\saria-required="([^"]+)"', b),
+            re.findall(r'data-submit-label="([^"]+)"', b),
+            [re.sub(r'\s+', ' ', t).strip()
+             for t in re.findall(r'<span class="field__label">(.*?)</span>', b, re.S)])
 
 shapes = {}
 for p in sorted(glob.glob('*.html')):
@@ -654,4 +668,32 @@ if bad or missing:
     sys.exit(1)
 print(f'{"מעטפת זהה בין העמודים":<46} ✓ ({len(family)} עמודים, 4 בלוקים)')
 PYSHELL
+# Gallery deep links vs the filter values that resolve them. #gallery-<cat> is
+# NOT an id — main.js matches the fragment against the chips' data-filter
+# values at runtime — so the cross-page fragment check above deliberately skips
+# them and nothing else looked. CLAUDE.md is explicit that these addresses have
+# already been sent to people: renaming a data-filter value breaks links that
+# are sitting in strangers' WhatsApp threads, and nothing fails loudly.
+python3 - <<'PYGAL' || fail=1
+import io, re, sys, glob
+
+LABEL = "קישורי גלריה תואמים לפילטרים"
+home = io.open("index.html", encoding="utf-8").read()
+chips = set(re.findall(r'data-filter="([^"]+)"', home))
+if not chips:
+    print(f'{LABEL:<46} ✗ no data-filter chips found'); sys.exit(1)
+bad = []
+for p in sorted(glob.glob("*.html")):
+    s = io.open(p, encoding="utf-8").read()
+    for cat in re.findall(r'href="(?:index\.html)?#gallery-([a-z]+)"', s):
+        if cat not in chips:
+            bad.append(f"{p}: #gallery-{cat}")
+if bad:
+    print(f'{LABEL:<46} ✗')
+    for d in sorted(set(bad)): print("    " + d)
+    print("    " + "available: " + ", ".join(sorted(chips)))
+    sys.exit(1)
+print(f'{LABEL:<46} ✓ ({len(chips)} filters)')
+PYGAL
+
 exit $fail

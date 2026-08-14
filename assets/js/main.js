@@ -2026,7 +2026,16 @@
             failure.textContent = 'צריך להשלים: ' + names;
           }
         }
-        var firstBad = $('[aria-invalid="true"]', form);
+        // Scoped to the step on screen. errorsForStep uses `<= step`, so on
+        // step 2 a step-1 error is still reported — and showError then marks
+        // aria-invalid on a control inside the HIDDEN step-1 panel. Focusing a
+        // display:none element is a silent no-op: focus would stay on the
+        // submit button while the alert panel named a field the visitor can
+        // neither see nor reach. Fall back to the whole form only when the
+        // form is not stepped at all (scripting-off parity, and cost.html
+        // before the split shipped).
+        var scope = twoStep ? stepPanels[stepNow] : form;
+        var firstBad = $('[aria-invalid="true"]', scope) || $('[aria-invalid="true"]', form);
         if (firstBad) firstBad.focus();
         return;
       }
