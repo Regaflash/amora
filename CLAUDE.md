@@ -58,6 +58,25 @@ The owner's accounts are already wired together:
   entry used to say it did, and it was wrong. Vercel lists
   `amora-studios.com` as "registered with a third party" and exposes no DNS
   tab for it.
+- **The Vercel MCP connector is authorised but points at an EMPTY scope, and
+  that is the whole story — do not re-derive it.** Measured 2026-08-14:
+  `list_teams` returns exactly one team (`amora`, slug `amora5`,
+  `team_AFHaG9WExAgNuDXRSuLhhxi4`); `list_projects` on it returns **zero
+  projects**; `get_project` on the slugs `amora` and `amora-studios` returns
+  404; and the repo has no `.vercel/project.json` to read an id from. The
+  project that serves `amora-studios.com` lives under a different account or
+  team than the one the connector was authorised against. Until that is
+  corrected, deploy status, runtime logs and Analytics data are all
+  unreachable from here regardless of how the connector is described.
+
+  **And even with the right scope, Analytics cannot be switched on from here.**
+  The MCP surface has `get_web_analytics` — a *query* tool — and no enable
+  tool. Vercel's own documented route is the CLI:
+  `npx vercel link && npx vercel project web-analytics --format json`.
+  There is no `vercel` binary and no `VERCEL_*` token in this environment, and
+  the MCP keeps its credentials internally, so that command is the owner's to
+  run. Asking for "full Vercel access" does not change either fact.
+
 - **Hostinger** — the registrar, and where DNS actually lives. Every DNS
   record for `amora-studios.com` is edited there, not in the Vercel
   dashboard: the `A` record pointing at Vercel, the `www` CNAME, the Google
