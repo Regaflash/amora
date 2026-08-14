@@ -751,10 +751,18 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   around by pointing at the owner's own inbox. **What verification buys is any
   recipient, not this one.**
 
-  **Still unverified:** whether Gmail recorded `SPF=PASS` / `DKIM=PASS` and a
-  DMARC result. That needs "show original" in the mailbox, and nobody guessed
-  at it. "Reached the inbox" is weaker evidence than a PASS line, and it is the
-  evidence there is.
+  ~~**Still unverified:** whether Gmail recorded `SPF=PASS` / `DKIM=PASS`~~ —
+  **it was verified, and this entry did not know.** `docs/chrome-agent-tasks.md`
+  records the result in its own status table: **SPF PASS, DKIM PASS, and no
+  DMARC record at all.** A browser agent read it out of "show original" in the
+  mailbox. The DMARC gap is the part that is still open, and it is a decision
+  about the business's mail rather than a provider setting — same reasoning as
+  the missing apex SPF below.
+
+  Worth naming the pattern rather than just the fact: this is the fifth claim in
+  this file to have been stale about production, and the answer was sitting in
+  another file in the same repo. **Before writing "unverified" here, grep
+  `docs/` for it.**
 
   Recorded but deliberately untouched: the domain has **no apex SPF record at
   all**, although its MX points at Google. Apex SPF governs every piece of mail
