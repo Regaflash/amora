@@ -113,6 +113,30 @@ grant execute on function public.meta_capi_hook_secret() to service_role;
 -- The address needs no mailbox behind it: lead-alert sets reply_to to the
 -- first destination, so replies land somewhere real.
 --
+-- Lead alert SHARED SECRET. Applied 2026-08-17 as `lead_alert_secret_in_settings`.
+-- The trigger (docs/supabase-lead-alert-webhook.sql) sends it as the
+-- x-lead-alert-secret header; the function now FAILS CLOSED if no secret is
+-- configured, so a missing value can no longer silently open an email relay.
+-- It was previously only a dashboard env (LEAD_ALERT_SECRET). Moving it into
+-- private.settings — beside the destination and sender — means the function can
+-- read the expected value itself (no human dashboard step) and it rotates with
+-- one UPDATE. The env var stays a fallback. The VALUE is intentionally not in
+-- this repo; it was inserted directly with the trigger's existing secret so the
+-- change never broke a live alert:
+--
+--   insert into private.settings (key, value)
+--   values ('lead_alert_secret', '<the trigger secret>')
+--   on conflict (key) do update set value = excluded.value;
+--
+--   create or replace function public.lead_alert_secret()
+--   returns text language sql stable security definer set search_path to ''
+--   as $$ select value from private.settings where key = 'lead_alert_secret'; $$;
+--
+--   revoke all on function public.lead_alert_secret() from public, anon, authenticated;
+--   grant execute on function public.lead_alert_secret() to service_role;
+--
+-- To rotate: UPDATE this row AND the trigger's header to the same new value.
+--
 -- lead_alert_to is split on commas, so a second recipient is one statement:
 --
 --   update private.settings

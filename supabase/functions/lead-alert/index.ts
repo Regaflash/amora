@@ -97,6 +97,35 @@ async function setting(rpc: string): Promise<string | null> {
   }
 }
 
+// The shared secret that authenticates the trigger. It lives in private.settings
+// beside the destination and sender, read through a service_role-only SECURITY
+// DEFINER RPC (public.lead_alert_secret) — the same pattern as
+// lead_alert_to()/from(). Storing it there rather than ONLY in a dashboard env
+// means it can be rotated with one UPDATE and is knowable to this code without a
+// human ever setting a Secret; the LEAD_ALERT_SECRET env var stays a fallback.
+async function hookSecret(): Promise<string | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/lead_alert_secret`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE_KEY,
+        authorization: `Bearer ${SERVICE_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: '{}',
+    });
+    if (res.ok) {
+      const v = await res.json().catch(() => null);
+      if (typeof v === 'string' && v.length >= 16) return v;
+    } else {
+      console.error('lead-alert: secret lookup http', { status: res.status });
+    }
+  } catch (e) {
+    console.error('lead-alert: secret lookup threw', { e: String(e) });
+  }
+  return HOOK_SECRET && HOOK_SECRET.length >= 16 ? HOOK_SECRET : null;
+}
+
 async function alertTo(): Promise<{ to: string[] | null; source: string }> {
   const row = await setting('lead_alert_to');
   // Comma-separated, because verifying amora-studios.com in Resend on
@@ -141,6 +170,32 @@ function stripBidi(v: unknown): string {
 }
 
 const label = (v: string | null, fallback = '—') => (v && v.trim() ? stripBidi(v) : fallback);
+
+// Global send-rate ceiling. Every INSERT into public.leads fires this function,
+// and anon can insert without limit, so a flood of inserts would become a flood
+// of emails — the studio inbox and the Resend quota, amplified by anyone with
+// the public anon key. lead_alert_take(n) adds n to the current minute's counter
+// and returns whether we are still under the cap. The lead is already committed
+// and shows in the CRM regardless; only the alert email is suppressed during a
+// burst. Fail-OPEN: a meter outage must never silence a real alert.
+async function sendBudgetOk(n: number): Promise<boolean> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/lead_alert_take`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE_KEY,
+        authorization: `Bearer ${SERVICE_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ n }),
+    });
+    if (!res.ok) return true;
+    const v = await res.json().catch(() => true);
+    return v !== false;
+  } catch {
+    return true;
+  }
+}
 
 function buildEmail(lead: Lead) {
   const name = label(lead.name);
@@ -221,12 +276,20 @@ Deno.serve(async (req: Request) => {
     return new Response('method not allowed', { status: 405 });
   }
 
-  // The trigger sends a shared secret as a header. If one is configured,
-  // require it — otherwise the function URL alone would let anyone send the
-  // studio arbitrary email.
-  if (HOOK_SECRET) {
-    const got = req.headers.get('x-lead-alert-secret');
-    if (got !== HOOK_SECRET) return new Response('forbidden', { status: 403 });
+  // The trigger authenticates with a shared secret sent as x-lead-alert-secret.
+  // FAIL CLOSED: with no secret configured, the function URL alone is an open
+  // email relay — anyone who learns it can make the studio send arbitrary mail.
+  // This block used to SKIP the check when the secret was unset, turning a
+  // missing config into a silent open door; it now refuses. The expected value
+  // is read from private.settings (see hookSecret), which the trigger's header
+  // is kept in step with, so this never breaks a correctly-wired alert.
+  const expected = await hookSecret();
+  if (!expected) {
+    console.error('lead-alert: no shared secret configured (private.settings.lead_alert_secret / LEAD_ALERT_SECRET); refusing (fail-closed)');
+    return new Response('not configured', { status: 503 });
+  }
+  if (req.headers.get('x-lead-alert-secret') !== expected) {
+    return new Response('forbidden', { status: 403 });
   }
 
   let payload: WebhookPayload;
@@ -258,6 +321,17 @@ Deno.serve(async (req: Request) => {
     }), { status: 500, headers: { 'content-type': 'application/json' } });
   }
   const ALERT_TO = dest.to;
+
+  // Cap the alert rate before spending a Resend send. A burst of inserts is
+  // suppressed here, not amplified into the inbox; the leads are still in the
+  // CRM to be worked. 200 so pg_net treats it as handled and does not retry.
+  if (!(await sendBudgetOk(1))) {
+    console.warn('lead-alert: send-rate ceiling hit; alert suppressed (lead is in the CRM)',
+                 { leadId: payload.record.id });
+    return new Response(JSON.stringify({ skipped: 'rate', leadId: payload.record.id }), {
+      status: 200, headers: { 'content-type': 'application/json' },
+    });
+  }
 
   const mail = buildEmail(payload.record);
 

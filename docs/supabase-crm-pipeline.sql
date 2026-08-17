@@ -32,8 +32,17 @@ alter table public.leads
 
 -- Ad-platform rows arrive via pollers/webhooks that may fire twice; the id
 -- from the platform makes the insert idempotent.
+--
+-- FULL unique index, NOT partial. It was `... where external_id is not null`
+-- once, which broke the whole point: PostgREST's on_conflict=external_id cannot
+-- infer a PARTIAL index, so lead-intake-google's insert failed 42P10 ("no
+-- unique or exclusion constraint matching the ON CONFLICT specification") and
+-- every Google Ads lead was dropped. A full unique index still allows any
+-- number of NULL external_ids — website and WhatsApp leads — because Postgres
+-- treats NULLs as distinct in a unique index, so the partial predicate bought
+-- nothing and cost the idempotency it was meant to provide. Fixed 2026-08-17.
 create unique index if not exists leads_external_id_key
-  on public.leads (external_id) where external_id is not null;
+  on public.leads (external_id);
 
 -- Existing rows: anything already marked handled has at least been contacted.
 update public.leads set status = 'contacted' where handled and status = 'new';

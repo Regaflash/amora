@@ -1927,6 +1927,117 @@ html.a11y-no-motion::view-transition-new(*) { animation: none !important; }
   cursor: pointer;
 }
 .film__back:hover { border-color: var(--champagne); }
+
+/* ---- vertical reels: the wedding's short cuts, same facade as the film ---- */
+.reels {
+  margin-top: clamp(40px, 6vw, 72px);
+  text-align: center;
+}
+.reels__title {
+  margin: 0 0 24px;
+  font-size: clamp(17px, 2.2vw, 21px);
+  font-weight: 500;
+  letter-spacing: .01em;
+  color: var(--mocha);
+}
+.reels__strip {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* Below the breakpoint the row becomes a swipeable strip, so three 9:16 cards
+   never crush to unreadable widths. Above it they sit centred in a row. */
+@media (max-width: 640px) {
+  .reels__strip {
+    justify-content: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+  .reel { scroll-snap-align: center; }
+}
+.reel {
+  flex: 0 0 auto;
+  width: min(240px, 62vw);
+}
+/* Same clip-driven inward ring as .film__play: the card is overflow:hidden. */
+.reel__play:focus-visible { outline-offset: -4px; }
+.reel__play {
+  display: block;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  /* Branded poster: a card, not an image, so nothing loads off-origin before
+     a tap. YouTube-Shorts thumbnails are 16:9 and would letterbox in a 9:16
+     card, so this reads better than a real thumbnail would anyway. */
+  background:
+    radial-gradient(120% 80% at 50% 32%, rgba(201, 174, 140, 0.20), transparent 60%),
+    linear-gradient(160deg, var(--charcoal), #2a2622);
+}
+.reel__play[hidden] { display: none; }
+/* Champagne play triangle, borders only, matching .film__play-icon at a smaller
+   size for the narrower card. */
+.reel__icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62px;
+  height: 62px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--champagne);
+  border-radius: 50%;
+  background: rgba(28, 26, 24, 0.42);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  transition: background 320ms, transform 320ms;
+}
+.reel__icon::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-40%, -50%);
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent var(--sand);
+}
+@media (hover: hover) {
+  .reel__play:hover .reel__icon {
+    background: rgba(201, 174, 140, 0.28);
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+}
+.reel iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border: 0;
+  border-radius: 2px;
+}
+.reel__back {
+  display: block;
+  margin: 12px auto 4px;
+  padding: 9px 18px;
+  min-height: 24px;
+  border: 1px solid rgba(201, 174, 140, 0.55);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--sand);
+  font: inherit;
+  font-size: 13px;
+  transition: border-color var(--t-btn) var(--ease), color var(--t-btn) var(--ease);
+  cursor: pointer;
+}
+.reel__back:hover { border-color: var(--champagne); }
 /* --------------------------------------------------------------- gear --- */
 
 .gear {
@@ -2836,6 +2947,7 @@ three-d-stage::part(note) { font-family: var(--sans); color: var(--mocha); }
 .menu__close:active,
 .gear__cta:active,
 .film__back:active,
+.reel__back:active,
 .form__submit:active,
 .form__done-cta:active,
 .wa-float:active,

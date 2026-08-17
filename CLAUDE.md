@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 27 checks + a phone-format count
+1. tools/check.sh          # must exit 0 — 32 checks + a phone-format count
    node tools/verify.mjs   # must exit 0 — 270 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
@@ -265,8 +265,9 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
 - Testimonial portraits were deliberately removed: they showed real people who
   had not said the quoted words. Do not re-add without written permission.
 - The hero streams the studio's real footage from YouTube — `2DHdORDXVmo`
-  (showreel, landscape) and `3O13FGO_f08` (vertical Short), chosen by viewport
-  orientation. Orientation is only the first choice: a refused autoplay is
+  (showreel, landscape) and `WkxpnR5A1BY` (a real wedding's vertical cut),
+  chosen by viewport orientation. (The vertical was `3O13FGO_f08` until
+  2026-08-17.) Orientation is only the first choice: a refused autoplay is
   asked again, muted and bounded to three tries, and if the vertical cut never
   plays the hero falls back once to the wide one. Both exist because an iPhone
   in Low Power Mode refuses autoplay and leaves YouTube's poster sitting
@@ -274,7 +275,14 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   someone else's chrome is a bug. There is no local hero video and no
   `assets/video/`. It was the owner's call, `privacy.html` states it, and
   `frame-src` in `vercel.json` names the two origins. The film section further
-  down still asks before it loads.
+  down still asks before it loads — its `data-yt` is `Ur-dXFZ5xoU` (a real
+  wedding film), and beneath it a **reels** strip (`.reel__play`, three vertical
+  Shorts: `WkxpnR5A1BY`, `K5aqxkFoe20`, `9dMmv7hZpWA`) uses the SAME click-to-load
+  facade — `mountYtFacade()` in `main.js`, refactored out of the old single film
+  handler. The reels' posters are CSS cards, not images (a 9:16 card would
+  letterbox YouTube's 16:9 Shorts thumbnail), so nothing loads off-origin before
+  a tap and `img-src` did not need widening. `privacy.html`'s
+  "הסרטונים שבאתר" clause counts all of them.
 
   This entry used to say "this is the only third-party request the site makes
   on load". That was true when it was written and stopped being true when the
@@ -918,6 +926,110 @@ someone who read the old copy still asks for a "צלם שני".
 
 `sitemap.xml` needed regenerating afterwards (`tools/gen-sitemap.py`) —
 `check.sh` catches this, and it is the reminder that the file is generated.
+
+## The security wave — 2026-08-17
+
+A hardening pass. Three audit agents mapped the whole surface; a live
+`get_advisors` run settled the one thing the repo cannot prove. The headline
+finding is reassuring and worth keeping: **`public.leads` has RLS ON and anon is
+INSERT-only** on the live project, so the CRM's confidentiality does not hinge on
+an unverifiable belief — it was checked. The client side was already clean (every
+lead field rendered through `textContent`+strip-bidi, no `innerHTML` sink is
+attacker-reachable, the translate/assistant responses land as text, every
+`target=_blank` carries `noopener`). The real gaps were in the two
+anonymous-by-design edge paths and in the HTTP headers. What shipped:
+
+- **HTTP headers (`vercel.json`, global block):** added
+  `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy:
+  same-origin`, `X-Permitted-Cross-Domain-Policies: none`. **COEP was NOT added —
+  it breaks the YouTube hero** (a cross-origin frame under `require-corp` must
+  opt in, and youtube-nocookie does not). **`frame-ancestors` stays `'self'`, not
+  `'none'`** — the homepage embeds `camera-3d.html?embed=1` same-origin, and
+  `'none'` would blank that hero. HSTS `preload` is still a standing owner
+  decision, deliberately not added.
+- **`_headers` was resynced** to mirror the full set (it was a minimal subset, so
+  a Netlify/CF migration would have silently stripped CSP+HSTS). It is dead on
+  Vercel; `check.sh` now asserts it still carries CSP and HSTS so it cannot rot.
+- **`.well-known/security.txt`** (RFC 9116) with a `/security.txt` redirect.
+  `check.sh` fails the build once `Expires` lapses — a live reminder, so **bump
+  the date when it nears** (currently 2027-11-30).
+- **`translate` function — deployed (v8), live-verified.** The cache key is now
+  **derived from the source ON THE SERVER** (`sha256Hex(norm(s))`); the caller's
+  `h` is ignored. This kills two unauth attacks at once — PostgREST filter
+  injection through `h` into the service-role query, and cache poisoning by
+  seeding a real string's key. `norm` is idempotent and matches the client, so
+  the 821 warm rows still hit (proved live: a probe with a malicious `h` returned
+  200 and the correctly-derived cache hit). CORS is **origin-locked** to the
+  amora domains (was `*`, the vector that defeats per-IP limiting), provider
+  error bodies are **no longer reflected** to anonymous callers, and a **global
+  per-minute model-spend ceiling** (`public.translate_take`, 600 items/min) caps
+  cost during a burst — fail-open, so a meter hiccup never breaks the page.
+- **`lead-alert` function — deployed (v13), live-verified end to end.** It now
+  **fails closed** if no shared secret is configured (was: silently skipped the
+  check — an open email relay), and a **global send-rate ceiling**
+  (`public.lead_alert_take`, 20/min) stops a flood of anon inserts becoming a
+  flood of email; the leads still land in the CRM. **The secret moved into
+  `private.settings.lead_alert_secret`**, read via a service_role-only RPC — the
+  same pattern as `lead_alert_to/from`. That is what made fail-closed safe with
+  ZERO dashboard step and zero broken window: the value stored is the one the
+  trigger already sends, so the function's expected secret matches by
+  construction. Verified: correct secret → 200, no secret → 403, and a real test
+  insert delivered `sent:true, recipients:2` before the row was deleted.
+- **Two new meter tables** (`translate_meter`, `lead_alert_meter`) — RLS on, no
+  policy, no anon/authenticated grant (deny-all, service_role only). They show as
+  `rls_enabled_no_policy` INFO in the advisor **on purpose**, exactly like
+  `private.settings` and `public.admins`. Not a finding. SQL in
+  `docs/supabase-rate-limits.sql`; the secret RPC in `docs/supabase-meta-capi.sql`
+  (value never committed — it lives only in the live `private.settings`).
+
+**Wave 2 (same day) closed the last edge gap and proved the two "owner" items
+are not mine to do:**
+
+- **`lead-intake-google` — deployed, live-verified.** It cached NOTHING: every
+  request, including an unauthenticated flood, ran one `google_lead_webhook_key`
+  RPC before the key was even checked. It now caches the key per-instance (the
+  meta-capi/lead-alert pattern), rejects a body over 64 KB before parsing, and
+  caps `user_column_data` at 60 columns. Verified live via `net.http_post`: a
+  wrong key returns 403, a correct-key `is_test` insert landed and was deleted.
+- **`check.sh` +1 guard (→ 32):** no secret-shaped literal (`eyJ…` JWT,
+  `sk-ant-`, `sb_secret_`, `re_…`, `sk_live_`) may appear in
+  `supabase/functions/**`. They all read from `Deno.env`; this keeps them that
+  way now that the functions deploy live from the repo. Mutation-tested.
+- **Reliability bug found while verifying (fixed).** Live-testing the hardened
+  `lead-intake-google` surfaced a pre-existing defect it did not cause: the
+  `leads_external_id_key` index was **partial** (`WHERE external_id IS NOT
+  NULL`), and PostgREST's `on_conflict=external_id` cannot infer a partial
+  index — so every insert failed `42P10` and **every Google Ads lead was
+  silently dropped** (Google retries a 502, gets 502 again, gives up). Fixed to
+  a **full** unique index (`docs/supabase-crm-pipeline.sql`): still allows
+  multiple NULL external_ids (website/WhatsApp leads — NULLs are distinct), and
+  now `ON CONFLICT` infers correctly. Verified live: correct key + `is_test` →
+  200 and a row landed, then deleted. The webhook key was configured in
+  `private.settings`, so this had been costing real leads.
+
+**Still open, owner-only — I checked, and I genuinely cannot do these:**
+
+- **Leaked-password protection is OFF** in Auth (advisor WARN). One dashboard
+  toggle (Authentication → Policies / Password), and these are the CRM admin
+  credentials — worth enabling. **There is NO Supabase MCP tool that edits Auth
+  config**, so this one is the owner's click, not mine.
+- **`pg_net` is installed in `public`** (advisor WARN). **Cannot be moved, and
+  now with proof:** `pg_net.extrelocatable = false` (checked live), so
+  `ALTER EXTENSION … SET SCHEMA` errors; the only "move" is drop+recreate, which
+  destroys the `net` schema the lead-alert trigger's `net.http_post` depends on.
+  Leaving it is the correct call, not a deferral.
+- **`is_admin()` is callable by `authenticated`** via RPC (advisor WARN). Benign:
+  it returns a boolean about the caller and `authenticated` needs EXECUTE for the
+  read policy. Left as-is.
+- The three retired probe functions (`capi-read`, `meta-capi-probe`,
+  `lead-alert-probe`) are already 410 stubs touching no secret — safe to delete
+  from the dashboard whenever (the MCP has no delete), no rush.
+
+Across both waves `check.sh` grew 27 → 32 (every guard mutation-tested).
+`verify.mjs` is unchanged at 270 — no client DOM was touched. No honeypot was
+added to the form: it does not stop a direct POST (the real vector), and it would
+complicate the 8-copy form parity and the `privacy.html` enumeration; RLS + the
+rate ceilings already contain the impact.
 
 ## Before any deploy
 
