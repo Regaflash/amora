@@ -1,0 +1,8 @@
+# Amora Studio — coordinated vulnerability disclosure
+# RFC 9116. If you have found a security issue on this site or its lead
+# pipeline, please email the address below. Hebrew or English are both fine.
+
+Contact: mailto:support@amora-studios.com
+Expires: 2027-11-30T00:00:00.000Z
+Preferred-Languages: he, en
+Canonical: https://www.amora-studios.com/.well-known/security.txt

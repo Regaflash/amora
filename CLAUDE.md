@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 27 checks + a phone-format count
+1. tools/check.sh          # must exit 0 — 31 checks + a phone-format count
    node tools/verify.mjs   # must exit 0 — 270 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
@@ -918,6 +918,80 @@ someone who read the old copy still asks for a "צלם שני".
 
 `sitemap.xml` needed regenerating afterwards (`tools/gen-sitemap.py`) —
 `check.sh` catches this, and it is the reminder that the file is generated.
+
+## The security wave — 2026-08-17
+
+A hardening pass. Three audit agents mapped the whole surface; a live
+`get_advisors` run settled the one thing the repo cannot prove. The headline
+finding is reassuring and worth keeping: **`public.leads` has RLS ON and anon is
+INSERT-only** on the live project, so the CRM's confidentiality does not hinge on
+an unverifiable belief — it was checked. The client side was already clean (every
+lead field rendered through `textContent`+strip-bidi, no `innerHTML` sink is
+attacker-reachable, the translate/assistant responses land as text, every
+`target=_blank` carries `noopener`). The real gaps were in the two
+anonymous-by-design edge paths and in the HTTP headers. What shipped:
+
+- **HTTP headers (`vercel.json`, global block):** added
+  `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy:
+  same-origin`, `X-Permitted-Cross-Domain-Policies: none`. **COEP was NOT added —
+  it breaks the YouTube hero** (a cross-origin frame under `require-corp` must
+  opt in, and youtube-nocookie does not). **`frame-ancestors` stays `'self'`, not
+  `'none'`** — the homepage embeds `camera-3d.html?embed=1` same-origin, and
+  `'none'` would blank that hero. HSTS `preload` is still a standing owner
+  decision, deliberately not added.
+- **`_headers` was resynced** to mirror the full set (it was a minimal subset, so
+  a Netlify/CF migration would have silently stripped CSP+HSTS). It is dead on
+  Vercel; `check.sh` now asserts it still carries CSP and HSTS so it cannot rot.
+- **`.well-known/security.txt`** (RFC 9116) with a `/security.txt` redirect.
+  `check.sh` fails the build once `Expires` lapses — a live reminder, so **bump
+  the date when it nears** (currently 2027-11-30).
+- **`translate` function — deployed (v8), live-verified.** The cache key is now
+  **derived from the source ON THE SERVER** (`sha256Hex(norm(s))`); the caller's
+  `h` is ignored. This kills two unauth attacks at once — PostgREST filter
+  injection through `h` into the service-role query, and cache poisoning by
+  seeding a real string's key. `norm` is idempotent and matches the client, so
+  the 821 warm rows still hit (proved live: a probe with a malicious `h` returned
+  200 and the correctly-derived cache hit). CORS is **origin-locked** to the
+  amora domains (was `*`, the vector that defeats per-IP limiting), provider
+  error bodies are **no longer reflected** to anonymous callers, and a **global
+  per-minute model-spend ceiling** (`public.translate_take`, 600 items/min) caps
+  cost during a burst — fail-open, so a meter hiccup never breaks the page.
+- **`lead-alert` function — deployed (v13), live-verified end to end.** It now
+  **fails closed** if no shared secret is configured (was: silently skipped the
+  check — an open email relay), and a **global send-rate ceiling**
+  (`public.lead_alert_take`, 20/min) stops a flood of anon inserts becoming a
+  flood of email; the leads still land in the CRM. **The secret moved into
+  `private.settings.lead_alert_secret`**, read via a service_role-only RPC — the
+  same pattern as `lead_alert_to/from`. That is what made fail-closed safe with
+  ZERO dashboard step and zero broken window: the value stored is the one the
+  trigger already sends, so the function's expected secret matches by
+  construction. Verified: correct secret → 200, no secret → 403, and a real test
+  insert delivered `sent:true, recipients:2` before the row was deleted.
+- **Two new meter tables** (`translate_meter`, `lead_alert_meter`) — RLS on, no
+  policy, no anon/authenticated grant (deny-all, service_role only). They show as
+  `rls_enabled_no_policy` INFO in the advisor **on purpose**, exactly like
+  `private.settings` and `public.admins`. Not a finding. SQL in
+  `docs/supabase-rate-limits.sql`; the secret RPC in `docs/supabase-meta-capi.sql`
+  (value never committed — it lives only in the live `private.settings`).
+
+**Still open, owner/infra — asked and left, not forgotten:**
+
+- **Leaked-password protection is OFF** in Auth (advisor WARN). One dashboard
+  toggle, and these are the CRM admin credentials — worth enabling. No MCP tool
+  for it.
+- **`pg_net` is installed in `public`** (advisor WARN). **Deliberately NOT moved.**
+  The lead-alert trigger's `net.http_post` — just proven load-bearing — depends
+  on it, and moving the extension risks that live pipeline for a lint. Defer to a
+  careful migration with a test insert either side, or leave it.
+- **`is_admin()` is callable by `authenticated`** via RPC (advisor WARN). Benign:
+  it returns a boolean about the caller and `authenticated` needs EXECUTE for the
+  read policy. Left as-is.
+
+`check.sh` grew 27 → 31 (each new guard mutation-tested). `verify.mjs` is
+unchanged at 270 — the wave touched headers, edge functions and SQL, no client
+DOM. No honeypot was added to the form: it does not stop a direct POST (the real
+vector), and it would complicate the 8-copy form parity and the `privacy.html`
+enumeration; RLS + the rate ceilings already contain the impact.
 
 ## Before any deploy
 

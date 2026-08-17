@@ -323,6 +323,86 @@ if bad:
 print(f'{"connect-src מכסה את Supabase":<46} ✓')
 PY
 
+# Cross-origin isolation headers. COOP/CORP close the window/opener and the
+# resource-hotlink surfaces; X-Permitted-Cross-Domain-Policies kills the legacy
+# Flash/Acrobat cross-domain surface. COEP is deliberately NOT required (it would
+# break the YouTube hero) and HSTS preload is a standing owner decision — so this
+# asserts the three that are safe on THIS site, not "all of them".
+python3 - <<'PY' || fail=1
+import io, json, sys
+cfg = json.load(io.open('vercel.json', encoding='utf-8'))
+g = {}
+for b in cfg.get('headers', []):
+    if b.get('source') == '/(.*)':
+        for h in b.get('headers', []): g[h['key'].lower()] = h['value'].lower()
+want = {'cross-origin-opener-policy': 'same-origin',
+        'cross-origin-resource-policy': 'same-origin',
+        'x-permitted-cross-domain-policies': 'none'}
+bad = [f'{k}: {g.get(k, "(חסר)")} != {v}' for k, v in want.items() if g.get(k) != v]
+if bad:
+    print(f'{"כותרות בידוד חוצה-מקור":<46} ✗'); print('    ' + '\n    '.join(bad)); sys.exit(1)
+print(f'{"כותרות בידוד חוצה-מקור COOP/CORP/XPCDP":<46} ✓')
+PY
+
+# _headers is dead on Vercel but becomes the LIVE policy on a Netlify/CF
+# migration. It used to carry a minimal subset, so a host move would silently
+# strip CSP and HSTS. Assert the two load-bearing ones are present so the
+# portability floor holds — change them in vercel.json, change them here too.
+python3 - <<'PY' || fail=1
+import io, sys
+h = io.open('_headers', encoding='utf-8').read().lower()
+miss = [n for n, t in (('CSP', 'content-security-policy:'),
+                       ('HSTS', 'strict-transport-security:')) if t not in h]
+if miss:
+    print(f'{"_headers משקף CSP+HSTS":<46} ✗ חסר: ' + ', '.join(miss)); sys.exit(1)
+print(f'{"_headers משקף CSP+HSTS":<46} ✓')
+PY
+
+# RFC 9116. Expires is mandatory and an EXPIRED file is worse than none, so this
+# fails the build once it lapses — a live reminder rather than a static asset
+# that quietly goes stale.
+python3 - <<'PY' || fail=1
+import io, re, sys, datetime
+try:
+    t = io.open('.well-known/security.txt', encoding='utf-8').read()
+except OSError:
+    print(f'{"security.txt קיים ותקף":<46} ✗ הקובץ חסר'); sys.exit(1)
+if 'contact:' not in t.lower():
+    print(f'{"security.txt קיים ותקף":<46} ✗ אין שדה Contact'); sys.exit(1)
+m = re.search(r'(?im)^\s*expires:\s*(\S+)', t)
+if not m:
+    print(f'{"security.txt קיים ותקף":<46} ✗ אין שדה Expires'); sys.exit(1)
+try:
+    exp = datetime.datetime.fromisoformat(m.group(1).replace('Z', '+00:00'))
+except ValueError:
+    print(f'{"security.txt קיים ותקף":<46} ✗ Expires לא ISO'); sys.exit(1)
+if exp <= datetime.datetime.now(datetime.timezone.utc):
+    print(f'{"security.txt קיים ותקף":<46} ✗ Expires פג ({m.group(1)}) — עדכן'); sys.exit(1)
+print(f'{"security.txt קיים ותקף":<46} ✓')
+PY
+
+# translate derives the cache key from the source SERVER-SIDE, so a caller's `h`
+# cannot inject into the PostgREST filter or poison another string's entry, and
+# CORS is origin-locked, not '*'. Guard the fix from a regression that re-trusts
+# the client hash or re-opens CORS.
+python3 - <<'PY' || fail=1
+import io, sys
+try:
+    s = io.open('supabase/functions/translate/index.ts', encoding='utf-8').read()
+except OSError:
+    print(f'{"translate מוקשח: hash שרת + CORS":<46} ·'); sys.exit(0)
+bad = []
+if "crypto.subtle.digest('SHA-256'" not in s and 'crypto.subtle.digest("SHA-256"' not in s:
+    bad.append('אין גזירת sha256 בצד שרת')
+if 'uniq.set(it.h' in s:
+    bad.append('עדיין ממפתח cache לפי h של הקורא')
+if "allow-origin': '*'" in s or 'allow-origin": "*"' in s:
+    bad.append("CORS פתוח ל-'*'")
+if bad:
+    print(f'{"translate מוקשח: hash שרת + CORS":<46} ✗'); print('    ' + '\n    '.join(bad)); sys.exit(1)
+print(f'{"translate מוקשח: hash שרת + CORS":<46} ✓')
+PY
+
 # Supabase: a policy without a matching GRANT, and the privileges RLS cannot
 # see. This project lost an afternoon to the first one — RLS chooses which rows
 # a role may touch, but Postgres checks the table privilege first, so a policy

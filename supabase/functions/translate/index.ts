@@ -10,9 +10,16 @@
 // copy repeat across the site, so after the first page view most of the next
 // page is already warm.
 //
-// verify_jwt is off: the caller is an anonymous visitor. The protections are a
-// size ceiling, a per-IP rate limit, and the fact that this endpoint can only
-// ever write to one table.
+// verify_jwt is off: the caller is an anonymous visitor. The protections are:
+//   - a size ceiling (MAX_ITEMS / MAX_CHARS);
+//   - the cache key is DERIVED FROM THE SOURCE ON THE SERVER, so the caller's
+//     `h` is never trusted — it cannot inject into the query below, and it
+//     cannot poison another string's cache entry;
+//   - CORS is locked to the studio's own origins, so a hostile third-party page
+//     cannot drive this endpoint from its visitors' browsers;
+//   - a global per-minute model-spend ceiling (translate_take), so no burst can
+//     run the paid model without bound;
+//   - the endpoint can only ever write to one table.
 //
 // Model choice was measured, not assumed. Listing both providers' catalogues
 // with the project's own keys showed Cerebras serves gpt-oss-120b, gemma-4-31b
@@ -35,8 +42,9 @@ const LANGS: Record<string, string> = { en: 'English', ru: 'Russian', ar: 'Arabi
 const MAX_ITEMS = 240;
 const MAX_CHARS = 16000;
 
-// Per-IP rate limit, in memory. Instances are short-lived, so this is a speed
-// bump rather than a wall -- enough to stop a loop burning the model quota.
+// Per-IP rate limit, in memory. Instances are short-lived and x-forwarded-for's
+// left-most value is caller-supplied, so this is a speed bump, not the wall --
+// the wall is the global model-spend ceiling (translate_take) and the CORS lock.
 const hits = new Map<string, { n: number; until: number }>();
 function rateLimited(ip: string): boolean {
   const now = Date.now();
@@ -49,18 +57,60 @@ function rateLimited(ip: string): boolean {
   return rec.n > 30;
 }
 
-const CORS = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'content-type',
-  'access-control-allow-methods': 'POST, OPTIONS',
-};
-const JSON_HEADERS = { ...CORS, 'content-type': 'application/json' };
+// The client normalises whitespace before hashing (i18n.js `norm`); we repeat it
+// so the hash we derive equals the hash the client sent for honest traffic, and
+// the warm cache (keyed by sha256 of the normalised Hebrew) still hits. `norm`
+// is idempotent, so it is safe whether the client sent raw or normalised text.
+function norm(s: string): string {
+  return s.replace(/\s+/g, ' ').trim();
+}
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// CORS is locked to the studio's own origins. `*` let any page on the internet
+// drive this endpoint from its visitors' real IPs -- the one vector that
+// defeats a per-IP limit. The Origin is echoed only when it is on the list.
+const ALLOW_ORIGINS = new Set([
+  'https://www.amora-studios.com',
+  'https://amora-studios.com',
+]);
+function corsFor(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') ?? '';
+  const allow = ALLOW_ORIGINS.has(origin) ? origin : 'https://www.amora-studios.com';
+  return {
+    'access-control-allow-origin': allow,
+    'vary': 'Origin',
+    'access-control-allow-headers': 'content-type',
+    'access-control-allow-methods': 'POST, OPTIONS',
+  };
+}
 
 async function rest(path: string, init: RequestInit): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set('apikey', SERVICE_KEY);
   headers.set('authorization', `Bearer ${SERVICE_KEY}`);
   return fetch(`${SUPABASE_URL}/rest/v1${path}`, { ...init, headers });
+}
+
+// Global model-spend ceiling. translate_take(n) atomically adds n to the
+// current minute's counter and returns whether the running total is still under
+// the cap. Fail-OPEN: a meter outage must never break translation for real
+// visitors -- it is a cost brake, not a security control.
+async function modelBudgetOk(n: number): Promise<boolean> {
+  try {
+    const r = await rest('/rpc/translate_take', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ n }),
+    });
+    if (!r.ok) return true;
+    const v = await r.json().catch(() => true);
+    return v !== false;
+  } catch {
+    return true;
+  }
 }
 
 function prompt(lang: string, items: string[]): string {
@@ -169,48 +219,57 @@ async function viaCerebras(lang: string, items: string[], note: string[]): Promi
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  const cors = corsFor(req);
+  const jsonHeaders = { ...cors, 'content-type': 'application/json' };
+
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') {
-    return new Response('method not allowed', { status: 405, headers: CORS });
+    return new Response('method not allowed', { status: 405, headers: cors });
   }
 
   const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
   if (rateLimited(ip)) {
-    return new Response(JSON.stringify({ error: 'rate limited' }), { status: 429, headers: JSON_HEADERS });
+    return new Response(JSON.stringify({ error: 'rate limited' }), { status: 429, headers: jsonHeaders });
   }
 
   let payload: { lang?: string; items?: Array<{ h?: string; s?: string }> };
   try {
     payload = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'bad json' }), { status: 400, headers: JSON_HEADERS });
+    return new Response(JSON.stringify({ error: 'bad json' }), { status: 400, headers: jsonHeaders });
   }
 
   const lang = String(payload.lang ?? '');
   if (!LANGS[lang]) {
-    return new Response(JSON.stringify({ error: 'unsupported lang' }), { status: 400, headers: JSON_HEADERS });
+    return new Response(JSON.stringify({ error: 'unsupported lang' }), { status: 400, headers: jsonHeaders });
   }
 
   const raw = (payload.items ?? []).filter(
-    (i) => typeof i?.h === 'string' && typeof i?.s === 'string',
-  ).slice(0, MAX_ITEMS) as Array<{ h: string; s: string }>;
+    (i) => typeof i?.s === 'string',
+  ).slice(0, MAX_ITEMS) as Array<{ s: string }>;
 
   let budget = 0;
-  const capped: Array<{ h: string; s: string }> = [];
+  const capped: Array<{ s: string }> = [];
   for (const it of raw) {
     if (budget + it.s.length > MAX_CHARS) break;
     budget += it.s.length;
     capped.push(it);
   }
   if (!capped.length) {
-    return new Response(JSON.stringify({ t: {}, cached: 0, fresh: 0 }), { headers: JSON_HEADERS });
+    return new Response(JSON.stringify({ t: {}, cached: 0, fresh: 0 }), { headers: jsonHeaders });
   }
 
-  // 1 - cache lookup
+  // 1 - cache lookup. The key is derived from the source here, never taken from
+  //     the caller: `h` is advisory. This kills two attacks at once -- PostgREST
+  //     filter injection through `h` into the service-role query below, and
+  //     cache poisoning by seeding a real string's key with a bogus target.
   const out: Record<string, string> = {};
-  const uniq = new Map<string, string>();
-  for (const it of capped) uniq.set(it.h, it.s);
-  const hashes = [...uniq.keys()];
+  const uniq = new Map<string, string>();          // derived hex hash -> normalised source
+  for (const it of capped) {
+    const src = norm(it.s);
+    uniq.set(await sha256Hex(src), src);
+  }
+  const hashes = [...uniq.keys()];                  // every entry is [0-9a-f]{64}
 
   const hit = await rest(
     `/translations?select=hash,target&lang=eq.${lang}&hash=in.(${hashes.map((h) => `"${h}"`).join(',')})`,
@@ -225,7 +284,18 @@ Deno.serve(async (req: Request) => {
 
   const missing = hashes.filter((h) => !(h in out));
   if (!missing.length) {
-    return new Response(JSON.stringify({ t: out, cached: hashes.length, fresh: 0 }), { headers: JSON_HEADERS });
+    return new Response(JSON.stringify({ t: out, cached: hashes.length, fresh: 0 }), { headers: jsonHeaders });
+  }
+
+  // Cost circuit-breaker: a global ceiling on fresh items per minute. During an
+  // abusive burst the model is skipped and cold strings simply stay Hebrew; the
+  // warm cache still serves everyone. Fail-open (see modelBudgetOk).
+  if (!(await modelBudgetOk(missing.length))) {
+    console.warn('translate: model budget exceeded, serving cache only', { lang, skipped: missing.length });
+    return new Response(
+      JSON.stringify({ t: out, cached: hashes.length - missing.length, fresh: 0 }),
+      { headers: jsonHeaders },
+    );
   }
 
   // 2 - one batched model call for the misses
@@ -240,12 +310,13 @@ Deno.serve(async (req: Request) => {
 
   if (!translated) {
     // Every provider failed. Return the hits we have; the client leaves the
-    // rest in Hebrew. A partly translated page beats a broken one -- and the
-    // reason travels with the response instead of dying in a log nobody reads.
+    // rest in Hebrew. A partly translated page beats a broken one. The reason
+    // is logged, but NOT reflected to the anonymous caller -- upstream error
+    // bodies are ours to read, not to hand back to the internet.
     console.error('translate: all providers failed', { lang, missing: missing.length, note });
     return new Response(
-      JSON.stringify({ t: out, cached: hashes.length - missing.length, fresh: 0, note }),
-      { headers: JSON_HEADERS },
+      JSON.stringify({ t: out, cached: hashes.length - missing.length, fresh: 0 }),
+      { headers: jsonHeaders },
     );
   }
 
@@ -265,6 +336,6 @@ Deno.serve(async (req: Request) => {
   console.log('translate: done', { lang, cached: hashes.length - missing.length, fresh: missing.length, model });
   return new Response(
     JSON.stringify({ t: out, cached: hashes.length - missing.length, fresh: missing.length }),
-    { headers: JSON_HEADERS },
+    { headers: jsonHeaders },
   );
 });
