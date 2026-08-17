@@ -58,6 +58,13 @@ async function rest(path: string, init: RequestInit): Promise<Response> {
   return fetch(`${SUPABASE_URL}/rest/v1${path}`, { ...init, headers });
 }
 
+// Cached per-instance, like meta-capi's cachedSecret and lead-alert's cache.
+// Before this, EVERY request — including an unauthenticated flood of bogus
+// POSTs — ran one google_lead_webhook_key RPC before the key was even checked,
+// turning junk traffic into database load. Instances are short-lived, so a
+// rotation still takes effect within minutes without a redeploy.
+let cachedKey: string | null = null;
+
 async function expectedKey(): Promise<string | null> {
   // The key is born in docs/supabase-crm-pipeline.sql, in private.settings.
   // PostgREST serves only the public schema, so it is read through the
@@ -67,6 +74,8 @@ async function expectedKey(): Promise<string | null> {
   const fromEnv = Deno.env.get('GOOGLE_LEAD_KEY');
   if (fromEnv) return fromEnv;
 
+  if (cachedKey) return cachedKey;
+
   const res = await rest('/rpc/google_lead_webhook_key', {
     method: 'POST',
     body: '{}',
@@ -74,12 +83,24 @@ async function expectedKey(): Promise<string | null> {
   });
   if (!res.ok) return null;
   const value = await res.json().catch(() => null);
-  return typeof value === 'string' && value ? value : null;
+  if (typeof value === 'string' && value) {
+    cachedKey = value;
+    return value;
+  }
+  return null;
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('method not allowed', { status: 405 });
+  }
+
+  // A real Google lead-form webhook is a few KB. Anything past this is not a
+  // lead, so refuse it before pulling it into memory — a cheap ceiling on an
+  // endpoint anyone can POST to.
+  const len = Number(req.headers.get('content-length') ?? '0');
+  if (len > 64 * 1024) {
+    return new Response('payload too large', { status: 413 });
   }
 
   let payload: GoogleLeadPayload;
@@ -105,7 +126,11 @@ Deno.serve(async (req: Request) => {
   // through with their text as column_name.
   let name = '', phone = '', email = '';
   const extras: string[] = [];
-  for (const col of payload.user_column_data ?? []) {
+  // A genuine form has a handful of columns; cap the iteration so a crafted
+  // payload cannot make us loop over an enormous array. The message is clamped
+  // to 2000 chars below regardless, but bound the work too.
+  const columns = (payload.user_column_data ?? []).slice(0, 60);
+  for (const col of columns) {
     const id = String(col.column_id ?? '').toUpperCase();
     const val = stripBidi(col.string_value ?? '').trim();
     if (!val) continue;

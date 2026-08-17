@@ -105,6 +105,15 @@ if [ -n "$ext" ]; then say "תלות חיצונית חזרה" "✗"; echo "$ext"
 secrets=$(grep -lE 'service_role[\"'"'"']*[[:space:]]*[:=]|sb_secret_|sk-ant-' index.html admin.html assets/js/*.js 2>/dev/null)
 if [ -n "$secrets" ]; then say "סוד בקוד צד-לקוח" "✗"; echo "$secrets" | sed 's/^/    /'; fail=1; else say "אין סודות בקוד צד-לקוח" "✓"; fi
 
+# The edge functions read EVERY secret from Deno.env — the service key, the Meta
+# token, the Resend key, the hook secrets. A hardcoded credential VALUE (a JWT, an
+# Anthropic/Resend/Stripe key) in one of these deploys straight to production and
+# is unrecoverable once out. The word "service_role" is fine (it names an env var
+# and a role in comments); a literal KEY is not. They are clean today — this keeps
+# them so, and it matters now that these files are deployed live from the repo.
+fnsecrets=$(grep -rlE 'eyJ[A-Za-z0-9_-]{30,}|sk-ant-|sb_secret_|\bre_[A-Za-z0-9]{16,}|sk_live_' supabase/functions 2>/dev/null)
+if [ -n "$fnsecrets" ]; then say "סוד קשיח ב-edge functions" "✗"; echo "$fnsecrets" | sed 's/^/    /'; fail=1; else say "אין סודות קשיחים ב-edge functions" "✓"; fi
+
 # ---------------------------------------------------------------------------
 # Additions below. Each one exists because this project actually shipped the
 # defect once. Ordered cheapest first. Every one is deterministic: same tree,

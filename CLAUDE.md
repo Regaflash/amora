@@ -9,7 +9,7 @@ private CRM at `admin.html` reads it back.
 
 ```
 Before any change goes out:
-1. tools/check.sh          # must exit 0 — 31 checks + a phone-format count
+1. tools/check.sh          # must exit 0 — 32 checks + a phone-format count
    node tools/verify.mjs   # must exit 0 — 270 runtime checks in a real browser
    # That second number said 43 while the suite ran 174. Both counts were
    # suspect on 2026-08-09 and both were re-counted against real output: the
@@ -974,24 +974,54 @@ anonymous-by-design edge paths and in the HTTP headers. What shipped:
   `docs/supabase-rate-limits.sql`; the secret RPC in `docs/supabase-meta-capi.sql`
   (value never committed — it lives only in the live `private.settings`).
 
-**Still open, owner/infra — asked and left, not forgotten:**
+**Wave 2 (same day) closed the last edge gap and proved the two "owner" items
+are not mine to do:**
+
+- **`lead-intake-google` — deployed, live-verified.** It cached NOTHING: every
+  request, including an unauthenticated flood, ran one `google_lead_webhook_key`
+  RPC before the key was even checked. It now caches the key per-instance (the
+  meta-capi/lead-alert pattern), rejects a body over 64 KB before parsing, and
+  caps `user_column_data` at 60 columns. Verified live via `net.http_post`: a
+  wrong key returns 403, a correct-key `is_test` insert landed and was deleted.
+- **`check.sh` +1 guard (→ 32):** no secret-shaped literal (`eyJ…` JWT,
+  `sk-ant-`, `sb_secret_`, `re_…`, `sk_live_`) may appear in
+  `supabase/functions/**`. They all read from `Deno.env`; this keeps them that
+  way now that the functions deploy live from the repo. Mutation-tested.
+- **Reliability bug found while verifying (fixed).** Live-testing the hardened
+  `lead-intake-google` surfaced a pre-existing defect it did not cause: the
+  `leads_external_id_key` index was **partial** (`WHERE external_id IS NOT
+  NULL`), and PostgREST's `on_conflict=external_id` cannot infer a partial
+  index — so every insert failed `42P10` and **every Google Ads lead was
+  silently dropped** (Google retries a 502, gets 502 again, gives up). Fixed to
+  a **full** unique index (`docs/supabase-crm-pipeline.sql`): still allows
+  multiple NULL external_ids (website/WhatsApp leads — NULLs are distinct), and
+  now `ON CONFLICT` infers correctly. Verified live: correct key + `is_test` →
+  200 and a row landed, then deleted. The webhook key was configured in
+  `private.settings`, so this had been costing real leads.
+
+**Still open, owner-only — I checked, and I genuinely cannot do these:**
 
 - **Leaked-password protection is OFF** in Auth (advisor WARN). One dashboard
-  toggle, and these are the CRM admin credentials — worth enabling. No MCP tool
-  for it.
-- **`pg_net` is installed in `public`** (advisor WARN). **Deliberately NOT moved.**
-  The lead-alert trigger's `net.http_post` — just proven load-bearing — depends
-  on it, and moving the extension risks that live pipeline for a lint. Defer to a
-  careful migration with a test insert either side, or leave it.
+  toggle (Authentication → Policies / Password), and these are the CRM admin
+  credentials — worth enabling. **There is NO Supabase MCP tool that edits Auth
+  config**, so this one is the owner's click, not mine.
+- **`pg_net` is installed in `public`** (advisor WARN). **Cannot be moved, and
+  now with proof:** `pg_net.extrelocatable = false` (checked live), so
+  `ALTER EXTENSION … SET SCHEMA` errors; the only "move" is drop+recreate, which
+  destroys the `net` schema the lead-alert trigger's `net.http_post` depends on.
+  Leaving it is the correct call, not a deferral.
 - **`is_admin()` is callable by `authenticated`** via RPC (advisor WARN). Benign:
   it returns a boolean about the caller and `authenticated` needs EXECUTE for the
   read policy. Left as-is.
+- The three retired probe functions (`capi-read`, `meta-capi-probe`,
+  `lead-alert-probe`) are already 410 stubs touching no secret — safe to delete
+  from the dashboard whenever (the MCP has no delete), no rush.
 
-`check.sh` grew 27 → 31 (each new guard mutation-tested). `verify.mjs` is
-unchanged at 270 — the wave touched headers, edge functions and SQL, no client
-DOM. No honeypot was added to the form: it does not stop a direct POST (the real
-vector), and it would complicate the 8-copy form parity and the `privacy.html`
-enumeration; RLS + the rate ceilings already contain the impact.
+Across both waves `check.sh` grew 27 → 32 (every guard mutation-tested).
+`verify.mjs` is unchanged at 270 — no client DOM was touched. No honeypot was
+added to the form: it does not stop a direct POST (the real vector), and it would
+complicate the 8-copy form parity and the `privacy.html` enumeration; RLS + the
+rate ceilings already contain the impact.
 
 ## Before any deploy
 
