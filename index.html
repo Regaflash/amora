@@ -998,7 +998,7 @@
       <div class="film__frame">
         <!-- Click-to-load facade: nothing is fetched from YouTube, and no cookie
              is set, until the visitor actually asks to watch. -->
-        <button class="film__play" type="button" data-yt="2DHdORDXVmo" aria-label="נגן את סרטון הסטודיו">
+        <button class="film__play" type="button" data-yt="Ur-dXFZ5xoU" aria-label="נגן את סרטון הסטודיו">
           <picture>
             <source type="image/avif" srcset="assets/img/film-poster-900.avif 900w, assets/img/film-poster-1600.avif 1600w" sizes="(max-width: 1180px) 100vw, 1180px" />
             <source type="image/webp" srcset="assets/img/film-poster-900.webp 900w, assets/img/film-poster-1600.webp 1600w" sizes="(max-width: 1180px) 100vw, 1180px" />
@@ -1007,6 +1007,30 @@
           </picture>
           <span class="film__play-icon" aria-hidden="true"></span>
         </button>
+      </div>
+      <!-- Vertical reels: the same wedding's short cuts. Click-to-load exactly
+           like the film above — no YouTube request and no cookie until a tap —
+           and the poster is a CSS card, not an image, so nothing loads
+           off-origin before then. privacy.html §"הסרטונים שבאתר" covers these. -->
+      <div class="reels" aria-labelledby="reels-title">
+        <h3 class="reels__title" id="reels-title">רגעים קצרים מהיום</h3>
+        <ul class="reels__strip" role="list">
+          <li class="reel">
+            <button class="reel__play" type="button" data-yt="WkxpnR5A1BY" aria-label="נגן רגע קצר מהחתונה (1)">
+              <span class="reel__icon" aria-hidden="true"></span>
+            </button>
+          </li>
+          <li class="reel">
+            <button class="reel__play" type="button" data-yt="K5aqxkFoe20" aria-label="נגן רגע קצר מהחתונה (2)">
+              <span class="reel__icon" aria-hidden="true"></span>
+            </button>
+          </li>
+          <li class="reel">
+            <button class="reel__play" type="button" data-yt="9dMmv7hZpWA" aria-label="נגן רגע קצר מהחתונה (3)">
+              <span class="reel__icon" aria-hidden="true"></span>
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
   </section>

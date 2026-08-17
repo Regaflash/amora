@@ -332,7 +332,11 @@
   // every visitor's browser now contacts Google the moment the page settles,
   // where the film section further down still asks first. privacy.html says so
   // in as many words — keep the two in step if this ever changes back.
-  var HERO_YT = { wide: '2DHdORDXVmo', vertical: '3O13FGO_f08' };
+  // wide: the studio showreel (landscape montage). vertical: a real wedding's
+  // vertical cut, shown on portrait viewports. Both are the studio's own YouTube
+  // footage; privacy.html states the hero streams from YouTube. Change these two
+  // in step with the film-section data-yt and the reels below if the set moves.
+  var HERO_YT = { wide: '2DHdORDXVmo', vertical: 'WkxpnR5A1BY' };
 
   // Origins the embed may legitimately speak from. frame-src in vercel.json
   // already allows both; nocookie is what we ask for, youtube.com is where it
@@ -1298,14 +1302,18 @@
   // The poster is a local image and the button is inert until clicked, so the
   // page costs nothing in third-party JS or cookies unless someone presses play.
   // youtube-nocookie defers YouTube's tracking cookie until playback starts.
-  var filmBtn = $('[data-yt]');
-  if (filmBtn) {
-    filmBtn.addEventListener('click', function () {
-      var id = filmBtn.dataset.yt;
+  // Click-to-load facade, shared by the film section and each reel below. The
+  // poster is a local image (or a CSS card for the reels) and the button is
+  // inert until clicked, so the page costs nothing in third-party JS or cookies
+  // unless someone presses play. youtube-nocookie defers YouTube's tracking
+  // cookie until playback starts.
+  function mountYtFacade(btn, title, backClass) {
+    btn.addEventListener('click', function () {
+      var id = btn.dataset.yt;
       var frame = document.createElement('iframe');
       frame.src = 'https://www.youtube-nocookie.com/embed/' + id +
         '?autoplay=1&rel=0&modestbranding=1&playsinline=1&hl=he';
-      frame.title = 'סרטון תדמית — Amora Studio';
+      frame.title = title;
       frame.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
       frame.allowFullscreen = true;
       frame.referrerPolicy = 'strict-origin-when-cross-origin';
@@ -1317,8 +1325,8 @@
       // keyboard focus parked inside a dead cross-origin document, and no way
       // back short of guessing that a reload would help. The hero above already
       // refuses to trust a cross-origin iframe for exactly this reason.
-      filmBtn.hidden = true;
-      filmBtn.parentNode.insertBefore(frame, filmBtn.nextSibling);
+      btn.hidden = true;
+      btn.parentNode.insertBefore(frame, btn.nextSibling);
       frame.focus();
 
       // Deliberately not a timeout that removes the frame on silence: this
@@ -1327,17 +1335,26 @@
       // the visitor presses cannot be wrong.
       var back = document.createElement('button');
       back.type = 'button';
-      back.className = 'film__back';
+      back.className = backClass;
       back.textContent = 'סגירת הסרטון';
       back.addEventListener('click', function () {
         if (frame.parentNode) frame.parentNode.removeChild(frame);
         if (back.parentNode) back.parentNode.removeChild(back);
-        filmBtn.hidden = false;
-        filmBtn.focus();
+        btn.hidden = false;
+        btn.focus();
       });
       frame.parentNode.insertBefore(back, frame.nextSibling);
     });
   }
+
+  // The film section's button is the first [data-yt] in the document; the reels
+  // carry data-yt too but are addressed by their own class, so there is no
+  // collision and each button is wired exactly once.
+  var filmBtn = $('[data-yt]');
+  if (filmBtn) mountYtFacade(filmBtn, 'סרטון תדמית — Amora Studio', 'film__back');
+  $$('.reel__play').forEach(function (btn) {
+    mountYtFacade(btn, 'רגע קצר מהחתונה — Amora Studio', 'reel__back');
+  });
 
   /* ---------------------------------------------------------- focus trap --- */
 

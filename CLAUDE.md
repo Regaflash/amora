@@ -265,8 +265,9 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
 - Testimonial portraits were deliberately removed: they showed real people who
   had not said the quoted words. Do not re-add without written permission.
 - The hero streams the studio's real footage from YouTube — `2DHdORDXVmo`
-  (showreel, landscape) and `3O13FGO_f08` (vertical Short), chosen by viewport
-  orientation. Orientation is only the first choice: a refused autoplay is
+  (showreel, landscape) and `WkxpnR5A1BY` (a real wedding's vertical cut),
+  chosen by viewport orientation. (The vertical was `3O13FGO_f08` until
+  2026-08-17.) Orientation is only the first choice: a refused autoplay is
   asked again, muted and bounded to three tries, and if the vertical cut never
   plays the hero falls back once to the wide one. Both exist because an iPhone
   in Low Power Mode refuses autoplay and leaves YouTube's poster sitting
@@ -274,7 +275,14 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   someone else's chrome is a bug. There is no local hero video and no
   `assets/video/`. It was the owner's call, `privacy.html` states it, and
   `frame-src` in `vercel.json` names the two origins. The film section further
-  down still asks before it loads.
+  down still asks before it loads — its `data-yt` is `Ur-dXFZ5xoU` (a real
+  wedding film), and beneath it a **reels** strip (`.reel__play`, three vertical
+  Shorts: `WkxpnR5A1BY`, `K5aqxkFoe20`, `9dMmv7hZpWA`) uses the SAME click-to-load
+  facade — `mountYtFacade()` in `main.js`, refactored out of the old single film
+  handler. The reels' posters are CSS cards, not images (a 9:16 card would
+  letterbox YouTube's 16:9 Shorts thumbnail), so nothing loads off-origin before
+  a tap and `img-src` did not need widening. `privacy.html`'s
+  "הסרטונים שבאתר" clause counts all of them.
 
   This entry used to say "this is the only third-party request the site makes
   on load". That was true when it was written and stopped being true when the
