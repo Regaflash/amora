@@ -276,10 +276,13 @@ went 600-only → 600+1100, `cta` → 2000), and a hard-coded count in
   `assets/video/`. It was the owner's call, `privacy.html` states it, and
   `frame-src` in `vercel.json` names the two origins. The film section further
   down still asks before it loads — its `data-yt` is `Ur-dXFZ5xoU` (a real
-  wedding film), and beneath it a **reels** strip (`.reel__play`, three vertical
-  Shorts: `WkxpnR5A1BY`, `K5aqxkFoe20`, `9dMmv7hZpWA`) uses the SAME click-to-load
+  wedding film), and beneath it a **reels** strip uses the SAME click-to-load
   facade — `mountYtFacade()` in `main.js`, refactored out of the old single film
-  handler. The reels' posters are CSS cards, not images (a 9:16 card would
+  handler. The reels show the **two** vertical Shorts that are NOT the hero
+  (`K5aqxkFoe20`, `9dMmv7hZpWA`): the vertical hero is `WkxpnR5A1BY` (the bride
+  reel), and putting it in the reels too played the same clip twice on one phone
+  screen — caught on the live site, fixed to two cards. The reels' posters are
+  CSS cards, not images (a 9:16 card would
   letterbox YouTube's 16:9 Shorts thumbnail), so nothing loads off-origin before
   a tap and `img-src` did not need widening. `privacy.html`'s
   "הסרטונים שבאתר" clause counts all of them.
@@ -1009,10 +1012,12 @@ are not mine to do:**
 
 **Still open, owner-only — I checked, and I genuinely cannot do these:**
 
-- **Leaked-password protection is OFF** in Auth (advisor WARN). One dashboard
-  toggle (Authentication → Policies / Password), and these are the CRM admin
-  credentials — worth enabling. **There is NO Supabase MCP tool that edits Auth
-  config**, so this one is the owner's click, not mine.
+- **Leaked-password protection is OFF** in Auth (advisor WARN). Verified from the
+  dashboard on 2026-08-17: enabling it **requires the Pro plan** — it is not a
+  free toggle. The org is on Free, so this stays off until (and unless) they
+  upgrade; there is also no Supabase MCP tool that edits Auth config. Low urgency:
+  it hardens the CRM admin login, and the admin gate already rests on
+  `is_admin()` membership, not password strength alone.
 - **`pg_net` is installed in `public`** (advisor WARN). **Cannot be moved, and
   now with proof:** `pg_net.extrelocatable = false` (checked live), so
   `ALTER EXTENSION … SET SCHEMA` errors; the only "move" is drop+recreate, which
